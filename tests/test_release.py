@@ -302,7 +302,7 @@ class ReleaseArchiveTests(unittest.TestCase):
                 self.assertIn("job-kit/" + name, files)
         for name in files:
             parts = Path(name).parts
-            self.assertFalse(set(parts) & {".git", ".github", "node_modules", "__pycache__", "tests", "app"}, name)
+            self.assertFalse(set(parts) & {".git", ".github", "node_modules", "__pycache__", "tests", "packages"}, name)
             self.assertFalse(Path(name).name.startswith("test_"), name)
             self.assertFalse(name.endswith((".pyc", ".pyo", "/scripts/test.sh", "/scripts/package_release.py")), name)
         for line in assets["SHA256SUMS"].decode().splitlines():

@@ -27,7 +27,7 @@ normalize_url = harness.load(harness.STORE / "normalize_url.py")
 normalize_source = harness.load(harness.STORE / "normalize_source.py")
 validate_dossier = harness.load(harness.STORE / "validate_dossier.py")
 FLOW_READ: Path = harness.SKILL / "job-store" / "references" / "flows" / "flow-read.md"
-APP_TYPES: Path = harness.REPO / "app" / "src" / "module" / "scout" / "types.ts"
+APP_TYPES: Path = harness.REPO / "packages" / "frontend" / "src" / "module" / "scout" / "types.ts"
 
 DECK: Path = (
     harness.SKILL

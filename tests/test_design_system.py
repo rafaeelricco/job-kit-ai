@@ -1,6 +1,6 @@
 """Pin the design-system docs and preview catalog to the stylesheet they describe.
 
-The job-kit-dev `design-system.md` restates `app/src/index.css` in tables, and its
+The job-kit-dev `design-system.md` restates `packages/frontend/src/index.css` in tables, and its
 catalog renders it. Nothing executes either, so a renamed token or changed hex
 leaves them confidently wrong. The catalog imports index.css rather than copying
 it, so what can still drift is small and checked here: spec tables, var() names,
@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from harness import REPO  # noqa: E402
 
-APP = REPO / "app"
+APP = REPO / "packages" / "frontend"
 SPEC = REPO / ".claude/skills/job-kit-dev/references/front-end/design-system.md"
 CSS = APP / "src" / "index.css"
 FRONT = REPO / ".claude/skills/job-kit-dev/references/front-end"
@@ -65,7 +65,7 @@ _COLOR_FUNCTION = re.compile(r"\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(
 _IFRAME_SRC = re.compile(r'<iframe\b[^>]*\bsrc\s*=\s*"\./preview/([^"]+)"')
 
 _BACKTICKED = re.compile(r"`([^`\n]+)`")
-_MARKDOWN_PATH_PREFIXES = ("app/", "scripts/", "tests/", ".claude/")
+_MARKDOWN_PATH_PREFIXES = ("packages/", "scripts/", "tests/", ".claude/")
 
 
 def _read(path: Path) -> str:
@@ -334,7 +334,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_links_resolve(self) -> None:
         # each relative ref exists on disk; a …/node_modules/<pkg>/… ref instead requires <pkg> in
-        # app/package.json dependencies (CI does not install app deps)
+        # packages/frontend/package.json dependencies (CI does not install app deps)
         package_json = json.loads(_read(APP / "package.json"))
         dependencies: Set[str] = set(package_json.get("dependencies", {}).keys())
 
@@ -350,7 +350,7 @@ class CatalogTests(unittest.TestCase):
                             package,
                             dependencies,
                             "{0} references node_modules package {1!r}, which is not "
-                            "in app/package.json dependencies".format(
+                            "in packages/frontend/package.json dependencies".format(
                                 path.relative_to(REPO).as_posix(), package
                             ),
                         )
