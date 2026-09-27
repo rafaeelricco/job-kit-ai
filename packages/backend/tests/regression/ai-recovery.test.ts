@@ -12,6 +12,7 @@ import { schemas } from "@be/app/events"
 import { type UserActor } from "@be/app/actor"
 import { type AiConnections } from "@be/app/ai/connections"
 import { type Attempts } from "@be/app/ai/attempts"
+import { type SecretVault } from "@be/app/ai/vault"
 
 import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, MemoryVault, memoryAi } from "@tests/support/memory"
 import { result, rejection } from "@tests/support/future"
@@ -297,6 +298,28 @@ describe("AI recovery", () => {
 
     const repeated = await result(s.advance(started.attemptId, step))
     assert.deepEqual(repeated.status, { status: "failed", reason: "superseded", retry: "restart" })
+  })
+
+  test("a test that overlaps a reconnect leaves the reconnected credential ready", async () => {
+    const s = await scenario()
+    const active = (await s.connectKey("sk-first-key")).setup.active
+    assert.ok(active)
+    const vault = s.ai.vault
+    const racingVault: SecretVault = {
+      ...vault,
+      // The reconnect lands while the test reads the old credential; the old one is gone by the time it verifies.
+      get: (workspaceId, ref) =>
+        s
+          .start("openai", "api_key", "reconnect")
+          .chain((started) => s.advance(started.attemptId, { kind: "secret", secret: "sk-second-key" }))
+          .mapRej((e) => new Error(statusOf(e)))
+          .chain(() => vault.get(workspaceId, ref)),
+    }
+    const racing = { ...s.ctx, ai: { ...s.ai, vault: racingVault } }
+
+    const tested = await result(testConnection.handler({ ...racing, payload: { connectionId: active.connectionId } }))
+    assert.equal(tested.setup.active?.connectionId.value, active.connectionId.value)
+    assert.equal(tested.setup.active?.status, "ready")
   })
 
   test("the vault holds exactly the credentials the registry references, through every flow", async () => {

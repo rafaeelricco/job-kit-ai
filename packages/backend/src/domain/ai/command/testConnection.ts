@@ -64,7 +64,11 @@ function checkStatus(
     })
 }
 
-/** Runs one bounded, real `verify` against the connection's current credential and records the result. */
+/**
+ * Runs one bounded, real `verify` against the connection's current credential and records the result — unless the
+ * connection no longer holds that credential by then (a reconnect keeps the id but swaps it, a disconnect drops it),
+ * in which case the result describes a credential that's gone and only the current setup is returned.
+ */
 const handler: CommandHandler<Command, CommandResponse, GuardResult<typeof authGuard>> = ({
   payload,
   auth,
@@ -77,21 +81,25 @@ const handler: CommandHandler<Command, CommandResponse, GuardResult<typeof authG
     return findConnection(workspace.values.ai, payload.connectionId)
   })
     .chain(respondAi)
-    .chain((connection) => checkStatus(ai, workspaceId, connection))
-    .chain((status) =>
-      withEventStore(aiInternalError, function* (store) {
-        yield* store.emit({
-          aggregate: Workspace,
-          event: new AiConnectionChecked({
-            type: AiConnectionChecked.type,
-            aggregateId: workspaceId,
-            connectionId: payload.connectionId,
-            status,
-          }),
+    .chain((tested) =>
+      checkStatus(ai, workspaceId, tested).chain((status) =>
+        withEventStore(aiInternalError, function* (store) {
+          const current = findConnection((yield* store.find(Workspace, workspaceId)).values.ai, payload.connectionId)
+          if (current instanceof Success && current.value.credentialRef.value === tested.credentialRef.value) {
+            yield* store.emit({
+              aggregate: Workspace,
+              event: new AiConnectionChecked({
+                type: AiConnectionChecked.type,
+                aggregateId: workspaceId,
+                connectionId: payload.connectionId,
+                status,
+              }),
+            })
+          }
+          const workspace = yield* store.find(Workspace, workspaceId)
+          return { setup: toSetupView(workspace.values.ai, ai.routes) }
         })
-        const workspace = yield* store.find(Workspace, workspaceId)
-        return { setup: toSetupView(workspace.values.ai, ai.routes) }
-      })
+      )
     )
 }
 
