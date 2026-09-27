@@ -29,7 +29,8 @@ Before the diff, run against the draft and the sources:
 4. Anything the operator would rather not be shown → `volunteer`.
 5. Derive `status` per `./references/schemas/schema-story.md`.
 
-A story with an empty `never_say` after this pass means the pass did not run.
+Empty `never_say` after this pass → say so above the diff and name what items 2
+and 3 checked.
 
 ## Write
 

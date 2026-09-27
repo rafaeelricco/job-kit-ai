@@ -28,8 +28,9 @@ Fixed order. Unfired slots are absent, not empty.
 | 7 Ask       | always      | One sentence proposing the conversation                                                  |
 
 The carrying story is the `ready` or `needs-numbers` story whose `covers`
-overlaps the ad most; at most two supporting facts. Slot 6 fires only when geo,
-authorization, or engagement is unmet. A skill gap belongs in slot 2 or 3.
+overlaps the ad most; the letter rests on it, not on a list of supporting
+facts. Slot 6 fires only when geo, authorization, or engagement is unmet. A
+skill gap belongs in slot 2 or 3.
 No such story → slots 3 and 4 do not fire; slots 1, 2, 5, and 7 draw on
 `data/experiences.yml`, `data/skills.yaml`, and the ad, and slot 5 may carry
 the role that overlaps the ad most. A letter never states a method or an

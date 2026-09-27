@@ -8,10 +8,9 @@
 4. Resolve `HOST_DEFAULT=$HOST_HOME/.config/job-kit` and this-env
    `JOB_KIT_CONFIG` (non-empty `$XDG_CONFIG_HOME` → `$XDG_CONFIG_HOME/job-kit`,
    else `HOST_DEFAULT`). Path-convention branch when `REPO` equals
-   `HOST_DEFAULT` **and** this process is **not** inside Aside runtime (`$HOME`
-   does not end with `/.aside/runtime/home`) **and** `JOB_KIT_CONFIG` either
-   equals `HOST_DEFAULT` or fails the two-file probe. Host-default needs no
-   pointer except the fall-through cases below.
+   `HOST_DEFAULT` **and** `JOB_KIT_CONFIG` either equals `HOST_DEFAULT` or
+   fails the two-file probe. Host-default needs no pointer except the
+   fall-through cases below.
    - **Do not write** a host/Aside pointer naming `REPO` in the pure-convention
      case.
    - **Do read** shadowing registrations: host
@@ -33,10 +32,7 @@
    - `REPO` is `HOST_DEFAULT` but `JOB_KIT_CONFIG` differs **and** passes the
      two-file probe — a durable pointer is required so claimed activation
      outranks the valid XDG convention path (Activate already confirmed Yes;
-     treat as intentional switch from that XDG profile), or
-   - `REPO` is `HOST_DEFAULT` and this process is inside Aside runtime —
-     host `$XDG_CONFIG_HOME` is not visible here; keep a durable pointer so a
-     later host session with a probe-passing XDG profile does not re-outrank.
+     treat as intentional switch from that XDG profile).
 5. Host / Aside registration conflicts (when writing pointers — includes
    host-default fallthrough from (4)):
    - Read one-line `current` from host `$HOST_HOME/.config/profile-root` if
@@ -86,8 +82,6 @@
      set to a single line:
      `- Resolve remaining Gaps from the fill report: <gap bullets or summary>.`
      If none (or register-existing wrote no tree): set to **empty** (omit the line).
-     **Scaffold-only: report the gaps the completed fill actually left**, and
-     fall back to values still holding their placeholder only.
    - `{{ACTIVATE_NOTE}}` — if Activate ran: host-default-location active, **or**
      host path written + mirror yes/no (including XDG-only defaults); session
      export yes/no. If skipped: how to Activate later — re-run
@@ -120,17 +114,24 @@
      `$KIT_ROOT/skill/<name>` for every name in that set. A home counts
      installed only when the whole set matches; matching some is _partial_, and
      partial is not installed. Installed = at least one complete home.
-   - Aside: `ASIDE_ROOT="${ASIDE_SKILLS:-$HOST_HOME/.aside/u/${ASIDE_ACCOUNT:-0}/skills/builtin}"`.
+   - Aside, probed only when Aside is set up here (`ASIDE_SKILLS` set, or
+     `$HOST_HOME/.aside/u/${ASIDE_ACCOUNT:-0}/skills` is a directory — mirrors
+     `scripts/common.sh` `aside_ready`):
+     `ASIDE_ROOT="${ASIDE_SKILLS:-$HOST_HOME/.aside/u/${ASIDE_ACCOUNT:-0}/skills/builtin}"`.
      The skill set is `SKILL_NAMES` in `$KIT_ROOT/scripts/aside/lib.sh`.
      Installed = for every name in that set, the single line of
      `$ASIDE_ROOT/<name>/.job-kit` equals `$KIT_ROOT/skill/<name>`.
+   - Browser: the skill set is `BROWSER_SKILL_NAMES` in
+     `$KIT_ROOT/scripts/agents/lib.sh`, linked into the same agent homes by the
+     `browser-use` channel. Same bare-`readlink` comparison and complete-home
+     rule as Agents.
    - **Never probe by directory existence.** Those homes hold skill directories
      the installer does not own, so presence alone proves nothing.
 
    **If `KIT_ROOT` resolved** — set `{{KIT_INSTALL}}` from the probe. Print
    commands the operator actually needs, never a conditional they must evaluate:
 
-   - Both channels installed → `Kit channels already installed from <KIT_ROOT>.
+   - Every probed channel installed → `Kit channels already installed from <KIT_ROOT>.
 Nothing to run.`
    - Aside not installed →
      `Install the Aside skills:
@@ -142,6 +143,9 @@ bash "<KIT_ROOT>/scripts/install.sh" agents`
      partially → name each home and the skills it is missing, then the same
      absolute command. A partial home is named here, never passed over as
      installed.
+   - Browser probe matched no complete home → name each partial home as above,
+     then `Link job-scout, job-apply, and job-prep into your agent homes:
+bash "<KIT_ROOT>/scripts/install.sh" browser-use`
    - Any probe _unknown_ → print its command with the reason it could not be
      checked. Commands are absolute; CWD does not matter.
 
@@ -154,7 +158,7 @@ bash "<KIT_ROOT>/scripts/install.sh" agents`
    to (mirror README SSOT; do not invent a different host or script path):
 
    > Kit skills are not on this machine as a checkout. Get job-kit, then
-   > install channels you need (README Install / Work locally sections):
+   > install channels you need (README Install / Development sections):
    >
    > ```bash
    > curl -fsSL https://r1cco.com/install.sh | bash
@@ -162,8 +166,9 @@ bash "<KIT_ROOT>/scripts/install.sh" agents`
    > # or work from a checkout:
    > git clone https://github.com/rafaeelricco/job-kit.git
    > cd job-kit
-   > bash scripts/install.sh aside    # Aside skills
-   > bash scripts/install.sh agents   # only if coding-agent homes lack job-profile
+   > bash scripts/install.sh aside         # Aside skills
+   > bash scripts/install.sh agents        # only if coding-agent homes lack job-profile
+   > bash scripts/install.sh browser-use   # job-scout, job-apply, job-prep in coding agents
    > # or: bash scripts/install.sh all
    > ```
    >

@@ -1,8 +1,8 @@
 # Record confirmed application
 
-This is the only per-posting phase that writes the Profile root, and it writes
-only the dossier store. The run tail's `flow-learn.md` write is the one
-exception.
+This phase records a confirmed application and writes only the dossier store.
+The other Profile-root writes a run makes are the ones `SKILL.md` Write-set
+lists.
 
 Before writing, obey `job-store/references/schemas/schema-dossier.md` and
 `job-store/references/contracts/contract-persistence.md`. Do not reproduce or replace those mechanics.

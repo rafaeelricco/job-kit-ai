@@ -27,6 +27,6 @@ are checked before default dirs so an activated non-default profile wins.
    **and** be readable inside Aside's FS sandbox).
 2. Grant Aside filesystem access to that profile directory (macOS sandbox).
 3. Prefer moving/creating the profile at `$HOST_HOME/.config/job-kit` so step 4
-   resolves without pointers. Else re-run `/job-profile` with Activate **Yes**
+   resolves without pointers. Else re-run `/job-profile` from a coding agent (it stops inside Aside) with Activate **Yes**
    so host + Aside-runtime pointer files match the live profile (required for
    XDG-only or non-default paths).
