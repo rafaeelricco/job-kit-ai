@@ -5,11 +5,11 @@ Supersedes: [Decision 0001: Personal companion execution](0001-personal-companio
 
 ## Context
 
-The initial product proposal depended on a local companion for user-selected AI runtimes and authenticated browsers. The current product target instead retains the existing React/Vite application in `app/` and provides a focused web workflow for the first useful scout and match result. Requiring device enrollment or a local process would add installation and availability dependencies to this journey.
+The initial product proposal depended on a local companion for user-selected AI runtimes and authenticated browsers. The current product target instead retains the existing React/Vite application in `packages/frontend/` and provides a focused web workflow for the first useful scout and match result. Requiring device enrollment or a local process would add installation and availability dependencies to this journey.
 
 ## Decision
 
-Job Kit is web-only in the current and selected future design. Keep the existing `app/` routes, settings, and design system. V1 covers Login, Onboarding, AI profile, First scout, and checking matches in the existing dossiers UI before opening a posting. Server-side services execute bounded work and persist durable progress.
+Job Kit is web-only in the current and selected future design. Keep the existing `packages/frontend/` routes, settings, and design system. V1 covers Login, Onboarding, AI profile, First scout, and checking matches in the existing dossiers UI before opening a posting. Server-side services execute bounded work and persist durable progress.
 
 Do not select or require a companion, desktop app, enrollment, local executor, browser extension, or device wait. Keep the current local skill distribution unchanged. Preserve profile and dossier import/export compatibility while migrating data access to authorized API commands and queries.
 

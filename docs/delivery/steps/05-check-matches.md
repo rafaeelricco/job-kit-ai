@@ -10,7 +10,7 @@ The backend evaluates persisted jobs against the user's confirmed profile using 
 
 ## Current state
 
-The app [displays dossiers](../../../app/src/module/scout/components/dossier.tsx); deeper matching runs through [job-match](../../../skill/job-match/SKILL.md). The complete hosted match-review journey is not implemented.
+The app [displays dossiers](../../../packages/frontend/src/module/scout/components/dossier.tsx); deeper matching runs through [job-match](../../../skill/job-match/SKILL.md). The complete hosted match-review journey is not implemented.
 
 ## V1 boundaries and dependencies
 

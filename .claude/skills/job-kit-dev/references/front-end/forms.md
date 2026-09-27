@@ -6,11 +6,11 @@ onSuccess)`** at the boundary. Build the inputs with **`useForm`** —
 **config classes** for `fields`, a `validate` keyed to those fields, and `<FormInput>` to render
 each one. Model submit state as a **`RemoteData`** cell.
 
-Page that hosts a form: `./pages.md`. Collection a write mutates: `./tables.md`. HTTP helpers live in `app/src/api/request.ts`; the `api` object in `app/src/api/endpoints.ts`.
+Page that hosts a form: `./pages.md`. Collection a write mutates: `./tables.md`. HTTP helpers live in `packages/frontend/src/api/request.ts`; the `api` object in `packages/frontend/src/api/endpoints.ts`.
 
 ## Audit
 
-- Inspect `app/package.json` and the aliases in `app/tsconfig.json` (`@api/*`, `@ui/*`, `@lib/*`, `@module/*`).
+- Inspect `packages/frontend/package.json` and the aliases in `packages/frontend/tsconfig.json` (`@api/*`, `@ui/*`, `@lib/*`, `@module/*`).
 - Find `src/api/endpoints.ts` (the `api` object), `src/api/request.ts` (`call`, `fetchErrorToString`),
   and `src/components/ui/forms.tsx` (`useForm`/`FormInput`).
 - Read one or two nearby write flows before editing — `src/pages/sign-in.tsx` for a server write,
@@ -149,13 +149,13 @@ with fresh defaults.
 
 ## Examples
 
-`call` source: `app/src/api/request.ts`. Registry source: `app/src/api/endpoints.ts`.
+`call` source: `packages/frontend/src/api/request.ts`. Registry source: `packages/frontend/src/api/endpoints.ts`.
 
 Catalog entries are self-contained (`<form>` boilerplate repeated) so any one block stands alone.
 
 ### A worked write flow — sign-in email step
 
-The real flow in `app/src/pages/sign-in.tsx`: `useForm` + `validate` → `RemoteData` submit cell →
+The real flow in `packages/frontend/src/pages/sign-in.tsx`: `useForm` + `validate` → `RemoteData` submit cell →
 `Future` forked, its cancel kept for unmount → inline `Alert` on `Failed`.
 
 ```tsx

@@ -10,21 +10,21 @@ session from its own reply. The Google flow is a full-page redirect: the server 
 boot's `reloadSession` picks it up. **`signOut`** clears the cache first and ends the server session in the
 background.
 
-Code: `app/src/module/session/` (`session.ts`, `components/protected-route.tsx`, `helpers/return-to.ts`), root
-wiring in `app/src/app.tsx`, sign-in screen in `app/src/pages/sign-in.tsx`. Server: `server/src/app/session.ts`
-(cookie + session store), `server/src/domain/auth/`, `server/src/lib/google.ts`. Form mechanics on the sign-in
+Code: `packages/frontend/src/module/session/` (`session.ts`, `components/protected-route.tsx`, `helpers/return-to.ts`), root
+wiring in `packages/frontend/src/app.tsx`, sign-in screen in `packages/frontend/src/pages/sign-in.tsx`. Server: `packages/backend/src/app/session.ts`
+(cookie + session store), `packages/backend/src/domain/auth/`, `packages/backend/src/lib/google.ts`. Form mechanics on the sign-in
 page: `./forms.md`.
 
 ## Audit
 
-- Read `app/src/module/session/session.ts`. Confirm that it owns the `"session"` `localStorage` key, the listener
+- Read `packages/frontend/src/module/session/session.ts`. Confirm that it owns the `"session"` `localStorage` key, the listener
   `Set` and the `generation` counter, and that every write goes through `setSession` / `commitSession`.
-- Confirm `app/src/app.tsx` holds the only `useState<Session>` and passes `session` to `/sign-in` and
+- Confirm `packages/frontend/src/app.tsx` holds the only `useState<Session>` and passes `session` to `/sign-in` and
   `ProtectedRoute`.
-- The cached shape is `schema_actor` (`server/src/app/actor.ts`), the same schema `whoAmI.api.ts` replies with.
+- The cached shape is `schema_actor` (`packages/backend/src/app/actor.ts`), the same schema `whoAmI.api.ts` replies with.
 - Before adding one, search for a second identity source: a `useSession` hook, a React Context, or a
   `localStorage` read of `"session"` outside `session.ts`.
-- Server calls go through `api` in `app/src/api/endpoints.ts`. Today that is `whoAmI`, `requestCode`,
+- Server calls go through `api` in `packages/frontend/src/api/endpoints.ts`. Today that is `whoAmI`, `requestCode`,
   `verifyCode` and `signOut`.
 
 Report the audit briefly:
@@ -82,8 +82,9 @@ state.
   A rejection (network, 5xx, decode) leaves the cache alone. It resolves with the actor either way; `App` handles
   the failure (§4).
 - **`requestCode(email)`** calls `api.requestCode`. There is no allowlist: the server emails a code to any
-  well-formed address, and the reply is always `{}`. The server ignores a resend within 30 seconds (`RESEND_COOLDOWN_SECONDS`, mirrored by the page) and
-  locks the address after 5 wrong codes.
+  well-formed address, and the reply is always `{}`. The server ignores a resend within 30 seconds
+  (`RESEND_COOLDOWN_SECONDS`, exported from `requestCode.api.ts` and imported by the sign-in page through
+  `@api/endpoints`, not hand-copied) and locks the address after 5 wrong codes.
 - **`verifyCode(email, code)`** calls `api.verifyCode`, which replies `{ userId }`. The client builds
   `{ type: "User", userId }` and commits it; no follow-up `whoAmI`. Known gap: the reply carries only `userId`.
   If `UserActor` gains fields, change the server to reply `{ actor }` instead of growing the client-side

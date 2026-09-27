@@ -1,11 +1,11 @@
-/* Catalog layout only. Token values come from app/src/index.css, imported below;
+/* Catalog layout only. Token values come from packages/frontend/src/index.css, imported below;
    nothing here restates a color. tests/test_design_system.py pins the three
    font stacks to index.css @theme inline, which the browser cannot read. */
-@import "../../../../../../app/src/index.css";
-@import "../../../../../../app/node_modules/@fontsource-variable/inter/index.css";
-@import "../../../../../../app/node_modules/@fontsource-variable/space-grotesk/index.css";
-@import "../../../../../../app/node_modules/@fontsource/space-mono/400.css";
-@import "../../../../../../app/node_modules/@fontsource/space-mono/700.css";
+@import "../../../../../../packages/frontend/src/index.css";
+@import "../../../../../../packages/frontend/node_modules/@fontsource-variable/inter/index.css";
+@import "../../../../../../packages/frontend/node_modules/@fontsource-variable/space-grotesk/index.css";
+@import "../../../../../../packages/frontend/node_modules/@fontsource/space-mono/400.css";
+@import "../../../../../../packages/frontend/node_modules/@fontsource/space-mono/700.css";
 
 :root {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;

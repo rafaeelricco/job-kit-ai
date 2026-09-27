@@ -18,7 +18,7 @@ Do not reuse Hermes's browser/profile for platform work. It contains personal co
 
 ```mermaid
 flowchart TD
-    UI[Existing React app in app/] --> API[Fastify TypeScript API]
+    UI[Existing React app in packages/frontend/] --> API[Fastify TypeScript API]
     API --> DB[(PostgreSQL durable runs, operations and intent)]
     DB --> Dispatch[Intent dispatcher]
     Dispatch --> Queue[pg-boss public-source work]

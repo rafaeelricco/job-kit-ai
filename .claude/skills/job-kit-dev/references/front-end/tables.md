@@ -10,11 +10,11 @@ Write that mutates the collection: `./forms.md`. Host page: `./pages.md`.
 
 ## Audit
 
-- Read `app/src/components/ui/datatable.tsx` for the exported surface (`DataTable`, `ColumnDef`,
+- Read `packages/frontend/src/components/ui/datatable.tsx` for the exported surface (`DataTable`, `ColumnDef`,
   `DataTablePagination`, `comparator`, `ColumnsConfig`, `SortState`).
-- Read one existing table before editing — `DossierTable` (`app/src/module/scout/components/dossier.tsx`:
+- Read one existing table before editing — `DossierTable` (`packages/frontend/src/module/scout/components/dossier.tsx`:
   selection, row actions, column toggle, pagination) or `AnswerTable`
-  (`app/src/module/profile/components/answer.tsx`: plain, one page) — plus its `helpers/columns.ts` and
+  (`packages/frontend/src/module/profile/components/answer.tsx`: plain, one page) — plus its `helpers/columns.ts` and
   host page.
 
 Report the audit briefly:
@@ -268,8 +268,8 @@ one fits (`MoreHorizontalIcon`, `LinkSquare02Icon`, `Tick02Icon`, `Delete02Icon`
 
 ## 7. Numeric columns
 
-Project convention — see `app/CONVENTIONS.md` → "Numeric Data in Tables" for the full rule, and
-`app/CLAUDE.md`.
+Project convention — see `packages/frontend/CONVENTIONS.md` → "Numeric Data in Tables" for the full rule, and
+`packages/frontend/CLAUDE.md`.
 
 - Format counts with **`toLocaleString()`** and nothing else — no `toFixed`, no `Intl.NumberFormat`, no
   template literal. The app has no money, hours, or duration formatter module.
@@ -296,8 +296,8 @@ applications: <span className="tabular-nums">{row.applications.toLocaleString()}
 fields, a points breakdown with a total row, or a short read-only log inside a sheet uses the `@ui/table`
 primitives directly (`Table`, `TableBody`, `TableRow`, `TableCell`, plus `TableHeader`/`TableHead` when it
 has a header) instead — see the Score, Facts, and Logs folds of `DossierSheet`
-(`app/src/module/scout/components/dossier.tsx`). The numeric and `font-mono` rules from §7 and
-`app/CLAUDE.md` still apply there.
+(`packages/frontend/src/module/scout/components/dossier.tsx`). The numeric and `font-mono` rules from §7 and
+`packages/frontend/CLAUDE.md` still apply there.
 
 ## Do / Do not
 
@@ -312,7 +312,7 @@ has a header) instead — see the Score, Facts, and Logs folds of `DossierSheet`
 - Do not: pass `pagination`, `defaultSort`, or `isTableFixed` to `DataTable` — none of these props exist.
 - Do not: hand-roll a `<table>` for a sortable or pageable collection (a genuine detail table per §8 is
   fine).
-- Do not: import the table pieces through `@/` or a relative path — `app/CLAUDE.md` requires `@ui/datatable`.
+- Do not: import the table pieces through `@/` or a relative path — `packages/frontend/CLAUDE.md` requires `@ui/datatable`.
 - Do not: format counts with anything but `toLocaleString()`.
 
 ## Examples

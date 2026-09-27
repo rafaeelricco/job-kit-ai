@@ -7,12 +7,12 @@ fills inside `useEffect`; the render branches **exhaustively** (`instanceof … 
 `Future.mapConcurrently` to fan out over a collection). The same skeleton serves list pages, detail pages, dashboards —
 any screen that fetches and renders.
 
-Table a page renders: `./tables.md`. Write that mutates its data: `./forms.md`. Visual constraints: `./design-system.md`. Nearby pages: `app/src/pages/resumes.tsx` (smallest), `app/src/pages/dossiers.tsx` (full).
+Table a page renders: `./tables.md`. Write that mutates its data: `./forms.md`. Visual constraints: `./design-system.md`. Nearby pages: `packages/frontend/src/pages/resumes.tsx` (smallest), `packages/frontend/src/pages/dossiers.tsx` (full).
 
 ## Audit
 
-- Find the layout shell (`AccessGate` in `app/src/module/access/access-gate.tsx`, or the `StoreGate` / `ProfileGate`
-  built on it) and the `RemoteData` / `Future` modules (`app/src/lib/remote-data.ts`, `app/src/lib/future.ts`).
+- Find the layout shell (`AccessGate` in `packages/frontend/src/module/access/access-gate.tsx`, or the `StoreGate` / `ProfileGate`
+  built on it) and the `RemoteData` / `Future` modules (`packages/lib/remote-data.ts`, `packages/lib/future.ts`).
 - Read one nearby page before editing — match its state-cell shape, exhaustive match, and container/presentational
   split.
 
@@ -56,7 +56,7 @@ Page Audit:
 
 Model the whole page as one `RemoteData<FetchError, T>` cell. Kick the read in `useEffect`: set `Loading()`,
 then `.fork(onError → Failed, onSuccess → Ready)`. `fork` returns a cancel function — return it from the effect so an
-in-flight read is cancelled on unmount or dependency change (`app/src/app.tsx` does the same for `reloadSession`):
+in-flight read is cancelled on unmount or dependency change (`packages/frontend/src/app.tsx` does the same for `reloadSession`):
 
     const [state, setState] = useState<RemoteData<FetchError, CampaignDetails[]>>(NotAsked());
     useEffect(() => {
@@ -67,7 +67,7 @@ in-flight read is cancelled on unmount or dependency change (`app/src/app.tsx` d
 The seed follows the cell's success type. A **data cell** (`RemoteData<E, T>`, where `Ready` holds the content the
 page renders — the shape above) always seeds `NotAsked()` and only sets `Loading()` inside the effect. A
 **status-only cell** (`RemoteData<E, void>` — no content on `Ready`, e.g. a save in flight) also seeds `NotAsked()`;
-`useCardSave` in `app/src/module/profile/components/settings-surface.tsx` is the example.
+`useCardSave` in `packages/frontend/src/module/profile/components/settings-surface.tsx` is the example.
 
 ## 2. Exhaustive rendering (`instanceof … satisfies never`)
 
@@ -108,7 +108,7 @@ Only the page's `useEffect` forks; the layer stays lazy until then.
 
 ## Examples
 
-The campaign / org / activity endpoints below are illustrative: `api` in `app/src/api/endpoints.ts` holds only the
+The campaign / org / activity endpoints below are illustrative: `api` in `packages/frontend/src/api/endpoints.ts` holds only the
 auth endpoints today. Swap in the real `api.*` entries and derive their types with `s.Infer`.
 
 ### The page component — `RemoteData` cell + exhaustive match
