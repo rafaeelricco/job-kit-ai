@@ -11,6 +11,7 @@ import { Session } from "@be/app/session"
 import { schemas } from "@be/app/events"
 import { type UserActor } from "@be/app/actor"
 import { type AiConnections } from "@be/app/ai/connections"
+import { type Attempts } from "@be/app/ai/attempts"
 
 import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, MemoryVault, memoryAi } from "@tests/support/memory"
 import { result, rejection } from "@tests/support/future"
@@ -257,6 +258,45 @@ describe("AI recovery", () => {
     assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()))
     const checked = await result(testConnection.handler({ ...s.ctx, payload: { connectionId: staged.connectionId } }))
     assert.equal(checked.setup.active?.status, "ready")
+  })
+
+  test("an attempt that wins its claim but loses the final decision is never reported connected", async () => {
+    const s = await scenario()
+    let raced = false
+    const attempts: Attempts = {
+      ...s.ai.attempts,
+      settle: (workspaceId, attemptId, next) =>
+        s.ai.attempts.settle(workspaceId, attemptId, next).chain((won) => {
+          if (!won || next.state !== "connected" || raced) return Future.resolve<Error, boolean>(won)
+          raced = true
+          // A fresh start commits between the winning claim and the emit.
+          return s
+            .start("openai", "api_key")
+            .mapRej((e) => new Error(statusOf(e)))
+            .map(() => won)
+        }),
+    }
+    const racing = { ...s.ctx, ai: { ...s.ai, attempts } }
+    const started = await result(s.start("openai", "api_key"))
+    const step: StepRequest = { kind: "secret", secret: "sk-racing" }
+
+    const first = await result(advanceAuth.handler({ ...racing, payload: { attemptId: started.attemptId, step } }))
+    assert.deepEqual(first.status, { status: "failed", reason: "superseded", retry: "restart" })
+    const repeated = await result(s.advance(started.attemptId, step))
+    assert.deepEqual(repeated.status, first.status)
+    assert.equal(repeated.setup.active, null)
+  })
+
+  test("a repeated advance after a disconnect reports superseded, not connected", async () => {
+    const s = await scenario()
+    const started = await result(s.start("openai", "api_key"))
+    const step: StepRequest = { kind: "secret", secret: "sk-then-disconnected" }
+    const active = (await result(s.advance(started.attemptId, step))).setup.active
+    assert.ok(active)
+    await result(disconnect.handler({ ...s.ctx, payload: { connectionId: active.connectionId } }))
+
+    const repeated = await result(s.advance(started.attemptId, step))
+    assert.deepEqual(repeated.status, { status: "failed", reason: "superseded", retry: "restart" })
   })
 
   test("the vault holds exactly the credentials the registry references, through every flow", async () => {

@@ -1,7 +1,7 @@
 export { controller, handler }
 
 import { Future } from "@lib/future"
-import { Just, Nothing } from "@lib/maybe"
+import { type Maybe, Just, Nothing } from "@lib/maybe"
 import { type Result, Success, Failure } from "@lib/result"
 import { type Response } from "@be/lib/router"
 import { Id } from "@be/lib/event-sourcing/event"
@@ -40,14 +40,18 @@ function toStep(step: StepRequest): Step {
   }
 }
 
-/** For an already-`connected` attempt (a stale repeat), find which side of the aggregate its credential ended up on. */
-function roleOfConnected(state: AiState, attempt: Attempt): "active" | "staged" {
+/**
+ * For an already-`connected` attempt (a stale repeat), find which side of the aggregate its credential ended up on.
+ * `Nothing` when neither side holds it: the final decision lost after the claim, or the connection has since been
+ * disconnected or replaced, so the row's `connected` no longer describes a connection.
+ */
+function roleOfConnected(state: AiState, attempt: Attempt): Maybe<"active" | "staged"> {
   if (attempt.credentialRef instanceof Just) {
     const ref = attempt.credentialRef.value
-    if (state.active instanceof Just && state.active.value.credentialRef.value === ref.value) return "active"
-    if (state.staged instanceof Just && state.staged.value.credentialRef.value === ref.value) return "staged"
+    if (state.active instanceof Just && state.active.value.credentialRef.value === ref.value) return Just("active")
+    if (state.staged instanceof Just && state.staged.value.credentialRef.value === ref.value) return Just("staged")
   }
-  return "active"
+  return Nothing()
 }
 
 function withCurrentSetup(
@@ -181,8 +185,9 @@ const handler: CommandHandler<Command, CommandResponse, GuardResult<typeof authG
         case "connected":
           return withEventStore(aiInternalError, function* (store) {
             const workspace = yield* store.find(Workspace, workspaceId)
+            const role = roleOfConnected(workspace.values.ai, advanced.attempt)
             return {
-              status: connectedStatus(roleOfConnected(workspace.values.ai, advanced.attempt)),
+              status: role instanceof Just ? connectedStatus(role.value) : failedStatus("superseded"),
               setup: toSetupView(workspace.values.ai, ai.routes),
             }
           })
