@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.pnpm-store
+**/coverage
+*.backup-*
+.claude
+tests/golden
+package-lock.json
+yarn.lock
+
+reports/
+.stryker-tmp/

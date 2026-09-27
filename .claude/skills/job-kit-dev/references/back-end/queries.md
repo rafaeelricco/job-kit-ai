@@ -6,7 +6,7 @@ API schema, projection-read controller, and registration: `templates.md`. `Auth.
 
 ### Query contract: projections, no event store
 
-Queries get the decoded payload, the caller and its guard proof, and read-only access to the projections — no `session`, no `loginCodes`, no `withEventStore`. From `server/src/app/handlers.ts:37-42`:
+Queries get the decoded payload, the caller and its guard proof, and read-only access to the projections — no `session`, no `loginCodes`, no `withEventStore`. From `packages/backend/src/app/handlers.ts:37-42`:
 
 ```ts
 export type QueryHandler<Req, Res, Result extends AuthGuardResult = AuthGuardResult> = (args: {
@@ -19,7 +19,7 @@ export type QueryHandler<Req, Res, Result extends AuthGuardResult = AuthGuardRes
 
 ### Read through the projection reader
 
-Index into `projections` by the repo's `collectionName`, then call one of its reader methods. From `server/src/domain/note/query/getNote.ts:14-17` and `listNotes.ts:11-14`:
+Index into `projections` by the repo's `collectionName`, then call one of its reader methods. From `packages/backend/src/domain/note/query/getNote.ts:14-17` and `listNotes.ts:11-14`:
 
 ```ts
 // getNote.ts: fetch one, then .chain into the not-found check (see below)
@@ -36,11 +36,11 @@ const handler: QueryHandler<Query, QueryResponse> = ({ projections }) =>
 
 ### Store errors become a generic 500
 
-Two layers hide store failures from the client, both mapping to the same reply. The pipeline passes `hideStoreError` (`server/src/app/handleQuery.ts:15`) to `withProjectionReader`, so a failure opening or running the Mongo transaction becomes `internalServerError`; inside the handler, every projection-repo call still needs its own `.mapRej((): Response => internalServerError)` because `ReadProjections` methods reject with `ProjectionStoreError`, not `Response`. Neither layer leaks the underlying error message to the client.
+Two layers hide store failures from the client, both mapping to the same reply. The pipeline passes `hideStoreError` (`packages/backend/src/app/handleQuery.ts:15`) to `withProjectionReader`, so a failure opening or running the Mongo transaction becomes `internalServerError`; inside the handler, every projection-repo call still needs its own `.mapRej((): Response => internalServerError)` because `ReadProjections` methods reject with `ProjectionStoreError`, not `Response`. Neither layer leaks the underlying error message to the client.
 
 ### DTO mapping drops internal fields
 
-Map the projection document to the wire shape explicitly; don't return the document as-is. From `server/src/domain/note/query/noteSchema.ts:18-21`:
+Map the projection document to the wire shape explicitly; don't return the document as-is. From `packages/backend/src/domain/note/query/noteSchema.ts:18-21`:
 
 ```ts
 /** Project a read-model document onto the wire shape, dropping `status`: queries only return live notes. */
@@ -51,7 +51,7 @@ function toNoteDto(doc: NoteDocument): NoteDto {
 
 ### Missing record: 404 via the domain `toResponse`
 
-`.chain`, not `.mapRej`, turns "not found" into its own reply — `mapRej` would collapse it into the generic 500 alongside real store failures. From `server/src/domain/note/query/getNote.ts:18-24`:
+`.chain`, not `.mapRej`, turns "not found" into its own reply — `mapRej` would collapse it into the generic 500 alongside real store failures. From `packages/backend/src/domain/note/query/getNote.ts:18-24`:
 
 ```ts
 const handler: QueryHandler<Query, QueryResponse> = ({ payload, projections }) =>
@@ -71,7 +71,7 @@ Notes aren't owner-scoped yet — any authenticated user can read any note (`lis
 
 ### `ReadProjections` has no writer
 
-A query's `projections` argument is typed `ReadProjections`, which only ever holds a `<Plural>Reader` (`getById`, `findActive`, ...); `WriteProjections` — the type projection handlers get — adds `save` and the idempotency repo. A query that calls `.save(...)` fails to typecheck; there's no runtime guard needed. From `server/src/app/projections.ts:28-36`:
+A query's `projections` argument is typed `ReadProjections`, which only ever holds a `<Plural>Reader` (`getById`, `findActive`, ...); `WriteProjections` — the type projection handlers get — adds `save` and the idempotency repo. A query that calls `.save(...)` fails to typecheck; there's no runtime guard needed. From `packages/backend/src/app/projections.ts:28-36`:
 
 ```ts
 export type ReadProjections = {

@@ -4,10 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - "app/**"
-      - "server/src/**"
-      - "server/package.json"
-      - "server/pnpm-lock.yaml"
+      - "packages/frontend/**"
+      - "packages/backend/src/**"
+      - "packages/backend/package.json"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/deploy-app.yml"
   workflow_dispatch:
 
@@ -42,7 +46,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: app/.node-version
+          node-version-file: .node-version
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -50,28 +54,19 @@ jobs:
           version: "10.33.0"
 
       - name: Install dependencies
-        # app/ is a pnpm project with its own lockfile; an install at the
-        # repository root resolves prettier and pyright only, none of the
-        # dependencies this build needs.
-        working-directory: app
+        # One workspace install: the frontend compiles the backend's `.api.ts` files, whose imports need its packages.
         run: pnpm install --frozen-lockfile
 
-      - name: Install server dependencies
-        # The app imports the server's endpoint schemas through `@be/*`, and
-        # those files import packages that live only in server/node_modules.
-        working-directory: server
-        run: pnpm install --frozen-lockfile --prod
-
       - name: Lint
-        working-directory: app
+        working-directory: packages/frontend
         run: pnpm lint
 
       - name: Typecheck
-        working-directory: app
+        # tsc --build at the root: the frontend (with the backend source it compiles), the backend, and lib.
         run: pnpm typecheck
 
       - name: Build
-        working-directory: app
+        working-directory: packages/frontend
         run: pnpm build
 
       - name: Deploy
@@ -92,7 +87,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s app/dist/index.html
+          test -s packages/frontend/dist/index.html
           rsync -a --delete-delay --delay-updates \
             --no-owner --no-group --chmod=D755,F644 \
-            app/dist/ /var/www/r1cco.com/html/jobs/
+            packages/frontend/dist/ /var/www/r1cco.com/html/jobs/

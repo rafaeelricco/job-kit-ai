@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Render app/public/brand/*.svg into the PNG icon set served from app/public/.
+"""Render packages/frontend/public/brand/*.svg into the PNG icon set served from packages/frontend/public/.
 
-The brand sources are vector; every raster under app/public/ is generated. Edit
+The brand sources are vector; every raster under packages/frontend/public/ is generated. Edit
 the SVG and re-run this, never hand-edit a PNG.
 
 This machine has no rsvg-convert, inkscape or imagemagick, so the rasterizer is
@@ -23,8 +23,8 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-BRAND = REPO / "app" / "public" / "brand"
-PUBLIC = REPO / "app" / "public"
+BRAND = REPO / "packages" / "frontend" / "public" / "brand"
+PUBLIC = REPO / "packages" / "frontend" / "public"
 
 CHROME_CANDIDATES = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

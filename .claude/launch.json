@@ -4,7 +4,7 @@
     {
       "name": "app",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "app", "dev", "--port", "5173", "--strictPort"],
+      "runtimeArgs": ["--dir", "packages/frontend", "dev", "--port", "5173", "--strictPort"],
       "port": 5173
     }
   ]

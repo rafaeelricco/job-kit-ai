@@ -37,15 +37,15 @@ check() {
   fi
 }
 
-if touched '^server/'; then
-  check server pnpm quality
+if touched '^packages/(backend|lib)/'; then
+  check packages/backend pnpm quality
   echo "NOT RUN server: Docker integration and mutation tests"
 fi
 
-if touched '^app/'; then
-  check app pnpm lint
-  check app pnpm typecheck
-  check app pnpm build
+if touched '^packages/(frontend|lib)/'; then
+  check packages/frontend pnpm lint
+  check packages/frontend pnpm typecheck
+  check packages/frontend pnpm build
   echo "NOT RUN app: it has no test suite"
 fi
 

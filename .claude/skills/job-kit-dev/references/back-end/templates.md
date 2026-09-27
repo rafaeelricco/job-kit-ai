@@ -1,12 +1,12 @@
 # Templates
 
-Copy-paste skeletons. Replace `<placeholder>` tokens, keep `.api.ts` client-safe, apply the registration checklist for the thing you add. Every skeleton mirrors a real file under `server/src/domain/note/` unless its comment says otherwise.
+Copy-paste skeletons. Replace `<placeholder>` tokens, keep `.api.ts` client-safe, apply the registration checklist for the thing you add. Every skeleton mirrors a real file under `packages/backend/src/domain/note/` unless its comment says otherwise.
 
 Auth builders: `auth.md`. Env vars and integrations: `services.md`.
 
 ### Command API schema
 
-Put only endpoint metadata, schemas, and schema-derived types in `src/domain/<area>/command/<verbAndNoun>.api.ts`. `PlainEndpoint` takes no `method` option: its `method` is fixed to `"post"` (`server/src/app/endpoint.ts:14`), so every command and query is POST.
+Put only endpoint metadata, schemas, and schema-derived types in `src/domain/<area>/command/<verbAndNoun>.api.ts`. `PlainEndpoint` takes no `method` option: its `method` is fixed to `"post"` (`packages/backend/src/app/endpoint.ts:14`), so every command and query is POST.
 
 ```ts
 export { type Command, type CommandResponse, endpoint }
@@ -31,14 +31,14 @@ type CommandResponse = s.Infer<typeof endpoint.response>
 
 ### Command controller with event-store write
 
-Bind the endpoint, an `Auth.*` guard, and a handler that resolves domain errors as a `Result` before opening `withEventStore`. Same shape as `server/src/domain/note/command/updateNote.ts:18-37`, including its no-op guard: a retried update that changes nothing returns success without emitting (`commands.md`, "No-op guard"). The full domain-error pattern (`<Area>Errors`, `respond`, `Failure`) is in `commands.md`.
+Bind the endpoint, an `Auth.*` guard, and a handler that resolves domain errors as a `Result` before opening `withEventStore`. Same shape as `packages/backend/src/domain/note/command/updateNote.ts:18-37`, including its no-op guard: a retried update that changes nothing returns success without emitting (`commands.md`, "No-op guard"). The full domain-error pattern (`<Area>Errors`, `respond`, `Failure`) is in `commands.md`.
 
 ```ts
 export { controller, handler }
 
 import { Nothing } from "@lib/maybe"
 import { type Result, Success, Failure } from "@lib/result"
-import { Response } from "@lib/router"
+import { Response } from "@be/lib/router"
 import { type Command, type CommandResponse, endpoint } from "@be/domain/<area>/command/<verbAndNoun>.api"
 import { type CommandController, type CommandHandler } from "@be/app/handlers"
 import { Auth } from "@be/app/auth/policy"
@@ -77,9 +77,9 @@ const controller: CommandController<Command, CommandResponse> = {
 - [ ] `<area>_<verbAndNoun>` added to the `command` bucket in `src/api.ts`
 - [ ] `import { controller as <area>_<verbAndNoun> } from "@be/domain/<area>/command/<verbAndNoun>"` added to `src/index.ts`
 - [ ] `<area>_<verbAndNoun>` added to `implementation.command` in `src/index.ts`
-- [ ] Any new emitted event class registered in `server/src/app/events.ts` (see the event registration checklist below)
+- [ ] Any new emitted event class registered in `packages/backend/src/app/events.ts` (see the event registration checklist below)
 - [ ] `Implementation<typeof api>` (`src/index.ts`) fails the build on a bucket/key mismatch between `api.ts` and `index.ts` — that's the compiler's own check
-- [ ] `server/tests/unit/event-server.test.ts` builds its own `impl` and expected call list against `api`; add the new key there too (`pnpm typecheck` fails until you do)
+- [ ] `packages/backend/tests/unit/event-server.test.ts` builds its own `impl` and expected call list against `api`; add the new key there too (`pnpm typecheck` fails until you do)
 
 ### Query API schema
 
@@ -105,13 +105,13 @@ type QueryResponse = s.Infer<typeof endpoint.response>
 
 ### Query controller over projections
 
-Read through `projections[Repo<Plural>.collectionName]`, and map a missing record to a domain `toResponse`, not a generic 500. Same shape as `server/src/domain/note/query/getNote.ts:14-24`.
+Read through `projections[Repo<Plural>.collectionName]`, and map a missing record to a domain `toResponse`, not a generic 500. Same shape as `packages/backend/src/domain/note/query/getNote.ts:14-24`.
 
 ```ts
 export { controller, handler }
 
 import { Future } from "@lib/future"
-import { Response } from "@lib/router"
+import { Response } from "@be/lib/router"
 import { type Query, type QueryResponse, endpoint } from "@be/domain/<area>/query/<verbAndNoun>.api"
 import { type QueryController, type QueryHandler } from "@be/app/handlers"
 import { Auth } from "@be/app/auth/policy"
@@ -138,11 +138,11 @@ const controller: QueryController<Query, QueryResponse> = { endpoint, authGuard:
 - [ ] `<area>_query_<noun>` added to the `query` bucket in `src/api.ts`
 - [ ] `import { controller as <area>_query_<noun> } from "@be/domain/<area>/query/<verbAndNoun>"` added to `src/index.ts`
 - [ ] `<area>_query_<noun>` added to `implementation.query` in `src/index.ts`
-- [ ] `server/tests/unit/event-server.test.ts` `impl` and expected call list updated
+- [ ] `packages/backend/tests/unit/event-server.test.ts` `impl` and expected call list updated
 
 ### Creation event
 
-A creation event builds the first aggregate state for a stream. Same shape as `server/src/domain/note/events/note/noteCreated.ts`.
+A creation event builds the first aggregate state for a stream. Same shape as `packages/backend/src/domain/note/events/note/noteCreated.ts`.
 
 ```ts
 export { <EventName> }
@@ -182,7 +182,7 @@ class <EventName> extends CreationEvent<<Aggregate>> {
 
 ### Transformation event
 
-A transformation event returns a new aggregate with changed fields. Same shape as `server/src/domain/note/events/note/noteUpdated.ts`.
+A transformation event returns a new aggregate with changed fields. Same shape as `packages/backend/src/domain/note/events/note/noteUpdated.ts`.
 
 ```ts
 export { <EventName> }
@@ -221,19 +221,19 @@ class <EventName> extends TransformationEvent<<Aggregate>> {
 
 ### Event registration checklist
 
-Register every new event class in `server/src/app/events.ts`, with the wrapper that matches its base class.
+Register every new event class in `packages/backend/src/app/events.ts`, with the wrapper that matches its base class.
 
 ```ts
 new CSchema(<CreationEventName>.aggregate, <CreationEventName>.schema, <CreationEventName>.type)
 new TSchema(<TransformationEventName>.aggregate, <TransformationEventName>.schema, <TransformationEventName>.type)
 ```
 
-- [ ] Event class added to the `schemas` array in `server/src/app/events.ts`
+- [ ] Event class added to the `schemas` array in `packages/backend/src/app/events.ts`
 - [ ] Never change a shipped event's schema — a stored event that no longer decodes raises `EventStoreCorruptionError`; add a new event type instead
 
 ### Aggregate
 
-Aggregates are plain value containers rebuilt from events; business logic lives in event classes, not aggregate methods. `readonly values` is assigned in the constructor body, never as a parameter property (`erasableSyntaxOnly`). Same shape as `server/src/domain/note/aggregate/note.ts:21-36`.
+Aggregates are plain value containers rebuilt from events; business logic lives in event classes, not aggregate methods. `readonly values` is assigned in the constructor body, never as a parameter property (`erasableSyntaxOnly`). Same shape as `packages/backend/src/domain/note/aggregate/note.ts:21-36`.
 
 ```ts
 export { <Aggregate> }
@@ -266,7 +266,7 @@ class <Aggregate> implements Aggregate<"<Aggregate>"> {
 
 ### Deterministic-id aggregate
 
-For an aggregate keyed by a token, email, or other normalized seed rather than a random id: add a static `idFor<Seed>` that derives the id, so repeat commands find the same stream instead of creating a duplicate. Same shape as `server/src/domain/user/aggregate/user.ts:34-36`.
+For an aggregate keyed by a token, email, or other normalized seed rather than a random id: add a static `idFor<Seed>` that derives the id, so repeat commands find the same stream instead of creating a duplicate. Same shape as `packages/backend/src/domain/user/aggregate/user.ts:34-36`.
 
 ```ts
 /** Deterministic from `<seed>`, so two commands claiming the same `<seed>` collide on aggregate version 0 instead of creating two streams. */
@@ -288,7 +288,7 @@ if (!((yield* store.try_find(<Aggregate>, <aggregate>Id)) instanceof Just))
 
 ### Projection document, repo, and controller
 
-A projection owns its document type, a reader/writer pair, a decoder over the events it accepts, and the handler that applies them. Mirrors `server/src/domain/note/projection/notes.ts` end to end.
+A projection owns its document type, a reader/writer pair, a decoder over the events it accepts, and the handler that applies them. Mirrors `packages/backend/src/domain/note/projection/notes.ts` end to end.
 
 ```ts
 export { controller, Repo<Plural>, type <Singular>Document, type <Plural>Reader, type <Plural>Writer }
@@ -403,16 +403,16 @@ const controller: ProjectionController<Events> = { decoder, handler }
 ### Projection registration checklist
 
 - [ ] `Repo<Plural>` defined in `src/domain/<area>/projection/<plural>.ts`
-- [ ] `server/src/app/projections.ts`: added to `Repositories`, `initializeRepositories`, `ReadProjections`, `WriteProjections`, `readProjections`, `writeProjections`
+- [ ] `packages/backend/src/app/projections.ts`: added to `Repositories`, `initializeRepositories`, `ReadProjections`, `WriteProjections`, `readProjections`, `writeProjections`
 - [ ] `src/index.ts` `mountProjection`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleProjection(path, ...))`
-- [ ] `server/development/application.yaml` `data_destinations` entry, `endpoint` set to the projection's path
-- [ ] `server/development/postie.yaml` `destinations.<Id>: { kind: projection }`
-- [ ] Test fixtures that build a full projection map extended with the new repo: `projectionsHarness` in `server/tests/support/notes.ts`, `server/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `server/tests/unit/domain/note.test.ts` (`pnpm typecheck` lists any you miss)
+- [ ] `packages/backend/development/postie/application.yaml` `data_destinations` entry, `endpoint` set to the projection's path
+- [ ] `packages/backend/development/postie/postie.yaml` `destinations.<Id>: { kind: projection }`
+- [ ] Test fixtures that build a full projection map extended with the new repo: `projectionsHarness` in `packages/backend/tests/support/notes.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/note.test.ts` (`pnpm typecheck` lists any you miss)
 - [ ] Add a query if clients need to read the projection
 
 ### Reaction controller
 
-A reaction subscribes to events and performs a side effect, then emits a marker event. The first reaction also builds the pipeline this skeleton imports (`server/src/app/handleReaction.ts`, `mountReaction`, `mailer` in `Dependencies`); design and wiring are in `consumers.md` ("Build the reaction pipeline").
+A reaction subscribes to events and performs a side effect, then emits a marker event. The first reaction also builds the pipeline this skeleton imports (`packages/backend/src/app/handleReaction.ts`, `mountReaction`, `mailer` in `Dependencies`); design and wiring are in `consumers.md` ("Build the reaction pipeline").
 
 ```ts
 export { controller }
@@ -455,17 +455,17 @@ For a deterministic marker id (`Id.deterministicForEvent` + `store.doesEventAlre
 
 Reactions wire into `index.ts` and the two postie config files, then choose semantic retry safety when a duplicate effect would matter.
 
-- [ ] First reaction only: `server/src/app/handleReaction.ts`, `mailer: Mailer` in `Dependencies` (`server/src/app/integrations.ts`), `handleReaction.ts` in `server/tests/quality/sources.mjs`
-- [ ] `<Marker>` event class created and registered in `server/src/app/events.ts`
+- [ ] First reaction only: `packages/backend/src/app/handleReaction.ts`, `mailer: Mailer` in `Dependencies` (`packages/backend/src/app/integrations.ts`), `handleReaction.ts` in `packages/backend/tests/quality/sources.mjs`
+- [ ] `<Marker>` event class created and registered in `packages/backend/src/app/events.ts`
 - [ ] `mountReaction` in `src/index.ts`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleReaction(path, ...))`, before the global `express.json()`
-- [ ] `server/development/application.yaml` `data_destinations` entry, `endpoint` set to `/api/v1/<area>/reaction/<kebab-name>`
-- [ ] `server/development/postie.yaml` `destinations.<Area>_Reaction_<Name>: { kind: reaction }` (never replayed, no `replay_endpoint`)
+- [ ] `packages/backend/development/postie/application.yaml` `data_destinations` entry, `endpoint` set to `/api/v1/<area>/reaction/<kebab-name>`
+- [ ] `packages/backend/development/postie/postie.yaml` `destinations.<Area>_Reaction_<Name>: { kind: reaction }` (never replayed, no `replay_endpoint`)
 - [ ] Idempotency strategy chosen: marker event with a state check, an inherently idempotent effect, or a deterministic marker id
 - [ ] Every failure maps to `ErrorMustRetry`; the handler never throws
 
 ### Env var decoder entry
 
-Add the entry to `envDecoder` in `server/src/app/environment.ts` before using `env.<MY_VAR>`; a dev-safe default keeps a local run working without a `.env` file.
+Add the entry to `envDecoder` in `packages/backend/src/app/environment.ts` before using `env.<MY_VAR>`; a dev-safe default keeps a local run working without a `.env` file.
 
 ```ts
 const envDecoder = D.object({
@@ -476,7 +476,7 @@ const envDecoder = D.object({
 
 ### Env var registration checklist
 
-- [ ] `envDecoder` entry in `server/src/app/environment.ts` with a dev-safe `optionalDefault`
-- [ ] `server/development/.env.example`, and the `api.environment` block in `server/development/docker-compose.yml`
-- [ ] `server/deploy/compose.production.yml`: `<MY_VAR>: ${<MY_VAR>:?set in /etc/job-kit/api.env}` when production must set it; the value itself goes in `/etc/job-kit/api.env` on the VPS, not in git
+- [ ] `envDecoder` entry in `packages/backend/src/app/environment.ts` with a dev-safe `optionalDefault`
+- [ ] `packages/backend/development/.env.example`, and the `api.environment` block in `packages/backend/development/compose.yaml` (value shared by dev and production) or `compose.dev.yaml` (local default)
+- [ ] `packages/backend/development/compose.prod.yaml`: `<MY_VAR>: ${<MY_VAR>:?set in /etc/job-kit/api.env}` when production must set it; the value itself goes in `/etc/job-kit/api.env` on the VPS, not in git
 - [ ] Rationale for dev-vs-production defaults: `services.md`

@@ -10,7 +10,7 @@ An approved pilot user signs in with Google or a passwordless email one-time cod
 
 ## Current state
 
-Sign-in uses the in-house auth from PR #143: server sessions (`sid`), emailed one-time codes, and Google OIDC (authorization code + PKCE, state, nonce). Only the Google token exchange and ID token check use a library: `google-auth-library`, wrapped in `server/src/lib/google-oidc.ts`.
+Sign-in uses the in-house auth from PR #143: server sessions (`sid`), emailed one-time codes, and Google OIDC (authorization code + PKCE, state, nonce). Only the Google token exchange and ID token check use a library: `google-auth-library`, wrapped in `packages/backend/src/lib/google-oidc.ts`.
 
 ## Design reference
 

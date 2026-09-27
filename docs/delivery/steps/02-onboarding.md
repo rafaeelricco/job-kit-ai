@@ -10,7 +10,7 @@ A signed-in pilot user understands what Job Kit does, connects one of the suppor
 
 ## Current state
 
-The app has [folder-access consent](../../../app/src/module/access/access-gate.tsx), not guided account onboarding or hosted provider connections. The [settings dialog](../../../app/src/module/profile/components/settings-dialog.tsx) has profile and search panels only; it has no AI panel, and every panel renders behind the profile gate.
+The app has [folder-access consent](../../../packages/frontend/src/module/access/access-gate.tsx), not guided account onboarding or hosted provider connections. The [settings dialog](../../../packages/frontend/src/module/profile/components/settings-dialog.tsx) has profile and search panels only; it has no AI panel, and every panel renders behind the profile gate.
 
 ## V1 boundaries and dependencies
 

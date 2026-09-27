@@ -1,12 +1,13 @@
 # Repository organization
 
-Status: proposed · Updated: 2026-09-21 · Implementation: not implemented
+Status: proposed · Updated: 2026-09-27 · Implementation: partial (packages/ workspace)
 
-The deployment target is a web app plus VPS-hosted services. Keep the existing React application under `app/`; do not move it to `apps/web/` or require a UI rewrite. The current routes, settings, design system, and local skill distribution remain the starting point. The existing `.github/workflows/deploy-app.yml` continues to deploy the app to the VPS.
+The deployment target is a web app plus VPS-hosted services. The existing React application lives in `packages/frontend/`, one package of the root pnpm workspace; do not require a UI rewrite. The current routes, settings, design system, and local skill distribution remain the starting point. The existing `.github/workflows/deploy-app.yml` continues to deploy the app to the VPS.
 
 ```text
-app/                    Existing React/Vite UI, routes, settings, design system
-server/
+packages/frontend/           Existing React/Vite UI, routes, settings, design system
+packages/lib/           Shared Maybe/Result/Future, JSON schemas, time
+packages/backend/
   api/                  Fastify TypeScript commands, queries, and auth callbacks
   workers/              TypeScript profile, evaluation, and document workers
   browser-worker/       Python Browser Use worker; dedicated VPS Chrome lifecycle
@@ -26,7 +27,7 @@ Keep domain packages independent of Fastify, Drizzle, `pg-boss`, auth vendors, b
 
 ## Existing application migration
 
-The existing React/Vite app remains in `app/`. Migrate its filesystem-backed data access journey by journey to workspace-scoped API queries and commands. Preserve the route structure, settings, design system, folder imports, editable profile export, and dossier export compatibility. API progress may use polling or SSE; the console does not require an SSR migration. Retain the current VPS deployment workflow for app delivery while adding service deployment deliberately.
+The existing React/Vite app remains in `packages/frontend/`. Migrate its filesystem-backed data access journey by journey to workspace-scoped API queries and commands. Preserve the route structure, settings, design system, folder imports, editable profile export, and dossier export compatibility. API progress may use polling or SSE; the console does not require an SSR migration. Retain the current VPS deployment workflow for app delivery while adding service deployment deliberately.
 
 Use shared runtime schemas and an OpenAPI boundary where they help keep the TypeScript API and UI aligned. Preserve profile and dossier import conflict review, provenance, and deduplication. Keep the current local skill distribution unchanged; platform work can call the skills through an adapter without repackaging or installing a companion.
 

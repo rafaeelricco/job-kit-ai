@@ -1,7 +1,7 @@
 # Time types: POSIX and Duration
 
 Cross-cutting value-type rules for server and web. Import from `@lib/time`
-(`server/src/lib/time.ts`, `app/src/lib/time.ts`). Use this leaf when a field, constant, variable, or schema
+(`packages/lib/time.ts`, shared by both). Use this leaf when a field, constant, variable, or schema
 is an instant or a length of time.
 
 ## Prefer typed storage

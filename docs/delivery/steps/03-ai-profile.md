@@ -10,7 +10,7 @@ After connecting their own AI in [onboarding](02-onboarding.md), the user starts
 
 ## Current state
 
-The [profile skill](../../../skill/job-profile/SKILL.md) creates profiles; the app [loads and edits existing profile files](../../../app/src/module/profile/components/profile-gate.tsx). The guided AI setup journey is not implemented.
+The [profile skill](../../../skill/job-profile/SKILL.md) creates profiles; the app [loads and edits existing profile files](../../../packages/frontend/src/module/profile/components/profile-gate.tsx). The guided AI setup journey is not implemented.
 
 ## V1 boundaries and dependencies
 

@@ -1,7 +1,7 @@
 # job-kit-ai web app — router
 
-React + Vite at `app/src/`. Worked code lives in each leaf. Reviewer rules live in `app/CLAUDE.md`; rationale in
-`app/CONVENTIONS.md`.
+React + Vite at `packages/frontend/src/`. Worked code lives in each leaf. Reviewer rules live in `packages/frontend/CLAUDE.md`; rationale in
+`packages/frontend/CONVENTIONS.md`.
 
 ## Routing table
 
@@ -37,7 +37,7 @@ Run the named leaf's `## Audit` before editing when the work touches:
 
 - **Forms & API → `forms.md`** — `useForm`, `FormInput`, `call` / `Future` / `RemoteData`, submit.
 - **Tables → `tables.md`** — `DataTable`, `ColumnsConfig` / `columnOrder` / `rows`, sorting, pagination.
-- **Pages → `pages.md`** — a page under `app/src/pages/`, a gate, or a read that fills a `RemoteData` cell.
+- **Pages → `pages.md`** — a page under `packages/frontend/src/pages/`, a gate, or a read that fills a `RemoteData` cell.
 - **Session → `session.md`** — `module/session/session.ts`, `app.tsx`, `ProtectedRoute`, sign-in page, session cache.
 
 ## Stop and ask
@@ -45,36 +45,36 @@ Run the named leaf's `## Audit` before editing when the work touches:
 - **Review-only** request: do not edit. Return findings, risks, and prioritized suggestions.
 - **Plan-only / plan mode**: do not edit. Return a concrete implementation plan.
 - **Design drift**: a prototype using undocumented color / radius / type size / spacing is not an automatic winner —
-  stop and ask before adopting it. Design values must come from `app/src/index.css`, as described in `design-system.md`.
+  stop and ask before adopting it. Design values must come from `packages/frontend/src/index.css`, as described in `design-system.md`.
 - **Shared contracts** (tokens, primitives, routes, API shape, data models): flag the conflict and ask before
   normalizing. For isolated local style, follow the nearest local pattern with a scoped diff.
 
 ## Verification
 
-- Run `pnpm typecheck`, `pnpm lint` and `pnpm build` from `app/`. If a script is missing, say so — don't invent one.
+- Run `pnpm typecheck`, `pnpm lint` and `pnpm build` from `packages/frontend/`. If a script is missing, say so — don't invent one.
 - Colors resolve to documented tokens; type / weight / line-height / spacing / radius / motion match `design-system.md`;
   icons are Hugeicons (`@hugeicons/react`), not emoji or unicode glyphs.
 - Forms use `@ui/forms`. API calls use the typed `api` map from `@api/endpoints` + `call` from `@api/request`.
-- A token edit in `app/src/index.css` updates `design-system.md` in the same diff. The preview catalog reads
+- A token edit in `packages/frontend/src/index.css` updates `design-system.md` in the same diff. The preview catalog reads
   `index.css` directly and needs no resync; a new token gets a swatch in its `preview/colors-*.html` shard.
 
 ## Code locations
 
-- Tokens: `app/src/index.css` (authoritative). `preview/preview.css` imports it; there is no mirror,
+- Tokens: `packages/frontend/src/index.css` (authoritative). `preview/preview.css` imports it; there is no mirror,
   `tokens.json`, Style Dictionary or Figma pipeline.
-- Primitives: `app/src/components/ui/`; app shell: `app/src/components/ui/app-layout.tsx` and `app-sidebar.tsx`;
-  routes: `app/src/app.tsx`; pages: `app/src/pages/`; feature code: `app/src/module/<feature>/`.
-- `cn()`: `app/src/lib/utils.ts`. `cva()`: size variants → `components/ui/button.tsx`;
+- Primitives: `packages/frontend/src/components/ui/`; app shell: `packages/frontend/src/components/ui/app-layout.tsx` and `app-sidebar.tsx`;
+  routes: `packages/frontend/src/app.tsx`; pages: `packages/frontend/src/pages/`; feature code: `packages/frontend/src/module/<feature>/`.
+- `cn()`: `packages/frontend/src/components/utils.ts`. `cva()`: size variants → `components/ui/button.tsx`;
   boolean/enum variants → `components/ui/badge.tsx`.
-- Session: `app/src/module/session/session.ts` (API + `localStorage` cache + listeners), state in
-  `app/src/app.tsx`, guard in `app/src/module/session/components/protected-route.tsx`.
+- Session: `packages/frontend/src/module/session/session.ts` (API + `localStorage` cache + listeners), state in
+  `packages/frontend/src/app.tsx`, guard in `packages/frontend/src/module/session/components/protected-route.tsx`.
 
 Open `index.html` for the preview catalog (`preview/*`); `design-system.md` has the serve command.
 
 ## Scope
 
 In: tokens, type, spacing, motion, chrome, shadcn primitives, app composites, Hugeicons, Inter, preview cards,
-pages and feature modules under `app/src/`.
+pages and feature modules under `packages/frontend/src/`.
 
 Out: backend logic, auth domain logic, API modeling, data modeling, infra, illustrations, stock photography.
 Backend changes → `../back-end/index.md`.

@@ -1,13 +1,13 @@
 # Consumers: projections and reactions
 
-postie delivers committed events over HTTP to consumer endpoints. Projections write MongoDB read models; reactions trigger side effects or follow-up events (their pipeline is not built yet, see below). Document/repo/handler/wiring skeletons: `templates.md`. Services a reaction calls: `services.md`. New events first: `domain.md`, then `server/src/app/events.ts`.
+postie delivers committed events over HTTP to consumer endpoints. Projections write MongoDB read models; reactions trigger side effects or follow-up events (their pipeline is not built yet, see below). Document/repo/handler/wiring skeletons: `templates.md`. Services a reaction calls: `services.md`. New events first: `domain.md`, then `packages/backend/src/app/events.ts`.
 
 ### Delivery and acknowledgement
 
-postie POSTs each committed event to the destinations listed for its source (`server/development/postie.yaml`, `server/development/application.yaml`), at least once. The request hits `EventBusAuthMiddleware` (HTTP Basic against `EVENT_BUS_USERNAME`/`EVENT_BUS_PASSWORD`), then the route built by `handleProjection` (`server/src/app/handleProjection.ts`, `server/src/lib/event-delivery.ts`).
+postie POSTs each committed event to the destinations listed for its source (`packages/backend/development/postie/postie.yaml`, `packages/backend/development/postie/application.yaml`), at least once. The request hits `EventBusAuthMiddleware` (HTTP Basic against `EVENT_BUS_USERNAME`/`EVENT_BUS_PASSWORD`), then the route built by `handleProjection` (`packages/backend/src/app/handleProjection.ts`, `packages/backend/src/lib/event-delivery.ts`).
 
 ```ts
-// server/src/lib/event-delivery.ts:19-32
+// packages/backend/src/lib/event-delivery.ts:19-32
 class Success {
   constructor() {}
 }
@@ -29,7 +29,7 @@ type AmbarResponse = Success | ErrorMustRetry
 `handleProjection` wraps every projection call in `withIdempotency`, so an individual projection handler never has to guard against redelivery itself.
 
 ```ts
-// server/src/app/handleProjection.ts:49-65
+// packages/backend/src/app/handleProjection.ts:49-65
 return route((req: express.Request) =>
   decodeEvent(decoder, req)
     .chain((maybeEvent) =>
@@ -48,14 +48,14 @@ return route((req: express.Request) =>
 )
 ```
 
-`withIdempotency` (`handleProjection.ts:72-95`) checks the `Idempotency` Mongo collection for `{ eventId, projection }` before running the handler, and records it after the handler succeeds; a redelivered event is logged and skipped without re-running the handler. The `(eventId, projection)` pair has a unique index (`server/src/app/idempotency.ts:36-47`, `RepoProjectionIdempotency`), so the same event can be redelivered to two different projection endpoints and each still runs exactly once. A decoder `Nothing` — an event this projection doesn't care about — short-circuits to `Success` before idempotency is even checked.
+`withIdempotency` (`handleProjection.ts:72-95`) checks the `Idempotency` Mongo collection for `{ eventId, projection }` before running the handler, and records it after the handler succeeds; a redelivered event is logged and skipped without re-running the handler. The `(eventId, projection)` pair has a unique index (`packages/backend/src/app/idempotency.ts:36-47`, `RepoProjectionIdempotency`), so the same event can be redelivered to two different projection endpoints and each still runs exactly once. A decoder `Nothing` — an event this projection doesn't care about — short-circuits to `Success` before idempotency is even checked.
 
 ### Projection handler: create, amend, not-yet-projected retry
 
 `accept([...])` decodes only the events this projection cares about; the handler switches on event class and calls `apply`, which returns a rejected `Future<string, void>` (never throws) for every failure mode, folded into one `ErrorMustRetry` at the boundary.
 
 ```ts
-// server/src/domain/note/projection/notes.ts
+// packages/backend/src/domain/note/projection/notes.ts
 const decoder = accept([NoteCreated, NoteUpdated, NoteDeleted])
 type Events = m.Infer<d.Infer<typeof decoder>>
 
@@ -82,10 +82,10 @@ const controller: ProjectionController<Events> = { decoder, handler }
 
 ### Projection registration
 
-A new projection touches six places in `server/src/app/projections.ts`, plus its route in `src/index.ts`, plus both delivery YAML files.
+A new projection touches six places in `packages/backend/src/app/projections.ts`, plus its route in `src/index.ts`, plus both delivery YAML files.
 
 ```ts
-// server/src/app/projections.ts
+// packages/backend/src/app/projections.ts
 export type Repositories = {
   [RepoNotes.collectionName]: Repository<NoteDocument>
   [RepoProjectionIdempotency.collectionName]: Repository<ProjectedEvent>
@@ -107,7 +107,7 @@ export function writeProjections(repositories: Repositories, store: ProjectionWr
 ```
 
 ```ts
-// server/src/index.ts:65-73
+// packages/backend/src/index.ts:65-73
 function mountProjection(app: express.Express, dependencies: Dependencies): void {
   const projectionPath = "/api/v1/note/projection/notes"
   app.post(
@@ -122,7 +122,7 @@ function mountProjection(app: express.Express, dependencies: Dependencies): void
 The projection route is mounted with its own `express.json({ limit: "5mb" })` ahead of the global parser (`createApp` in `src/index.ts`), so a large delivered event isn't rejected by the default body-size limit that applies to command/query traffic.
 
 ```yaml
-# server/development/application.yaml
+# packages/backend/development/postie/application.yaml
 data_destinations:
   - id: Note_Projection_Notes
     description: Notes read model
@@ -135,31 +135,31 @@ data_destinations:
 ```
 
 ```yaml
-# server/development/postie.yaml
+# packages/backend/development/postie/postie.yaml
 destinations:
   Note_Projection_Notes:
     kind: projection
 ```
 
 - [ ] `Repo<Plural>` in `domain/<area>/projection/<plural>.ts`: `collectionName`, `schema`, `createIndexes`, `toId`, `reader`, `writer`.
-- [ ] `Repositories`, `initializeRepositories`, `ReadProjections`, `WriteProjections`, `readProjections`, `writeProjections` in `server/src/app/projections.ts`.
-- [ ] `mountProjection` in `server/src/index.ts`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleProjection(path, ...))`, mounted before the global `express.json()`.
-- [ ] `data_destinations` entry in `server/development/application.yaml` (`endpoint` matches the route path) and a matching `destinations.<Id>: { kind: projection }` in `server/development/postie.yaml`.
-- [ ] Test fixtures that build a full projection map extended: `projectionsHarness` in `server/tests/support/notes.ts`, `server/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `server/tests/unit/domain/note.test.ts`. `pnpm typecheck` lists any you miss.
+- [ ] `Repositories`, `initializeRepositories`, `ReadProjections`, `WriteProjections`, `readProjections`, `writeProjections` in `packages/backend/src/app/projections.ts`.
+- [ ] `mountProjection` in `packages/backend/src/index.ts`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleProjection(path, ...))`, mounted before the global `express.json()`.
+- [ ] `data_destinations` entry in `packages/backend/development/postie/application.yaml` (`endpoint` matches the route path) and a matching `destinations.<Id>: { kind: projection }` in `packages/backend/development/postie/postie.yaml`.
+- [ ] Test fixtures that build a full projection map extended: `projectionsHarness` in `packages/backend/tests/support/notes.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/note.test.ts`. `pnpm typecheck` lists any you miss.
 - [ ] A query added if clients need to read the new projection (`queries.md`).
 
 ### Reactions: side effects after an event commits
 
 A reaction is the other kind of consumer: postie delivers an event to it, and it performs a side effect (an email, a webhook, a follow-up command) or emits a follow-up event. Use one when the effect belongs to a business fact that already happened, rather than to the request that caused it. Examples: an application moving to `interviewing` sends the candidate a note; a posting going stale emits a reminder.
 
-> **Pipeline not built yet.** `server/src` has no `handleReaction`, `ReactionController`, or reaction route. The first reaction adds that pipeline (see "Build the reaction pipeline" below). The shared pieces already exist: `accept` says it is for "projections and reactions" (`server/src/lib/event-sourcing/projection.ts:27`), and the idempotency log is "used both for projections and for reactions" (`server/src/app/idempotency.ts:31`). Until the pipeline exists, request-scoped side effects stay in the command, outside `withEventStore` (`requestCode.ts` → `loginCodes.send`, `verifyCode.ts` → `session.start`).
+> **Pipeline not built yet.** `packages/backend/src` has no `handleReaction`, `ReactionController`, or reaction route. The first reaction adds that pipeline (see "Build the reaction pipeline" below). The shared pieces already exist: `accept` says it is for "projections and reactions" (`packages/backend/src/lib/event-sourcing/projection.ts:27`), and the idempotency log is "used both for projections and for reactions" (`packages/backend/src/app/idempotency.ts:31`). Until the pipeline exists, request-scoped side effects stay in the command, outside `withEventStore` (`requestCode.ts` → `loginCodes.send`, `verifyCode.ts` → `session.start`).
 
 ### Build the reaction pipeline
 
-`server/src/app/handleReaction.ts` mirrors `handleProjection.ts`. It uses the same decode step, the same `withIdempotency` keyed on `(eventId, endpoint)`, and the same event-bus reply. The difference is what the handler receives: the event store and the services it calls, instead of `WriteProjections`.
+`packages/backend/src/app/handleReaction.ts` mirrors `handleProjection.ts`. It uses the same decode step, the same `withIdempotency` keyed on `(eventId, endpoint)`, and the same event-bus reply. The difference is what the handler receives: the event store and the services it calls, instead of `WriteProjections`.
 
 ```ts
-// server/src/app/handleReaction.ts (to add; mirrors server/src/app/handleProjection.ts)
+// packages/backend/src/app/handleReaction.ts (to add; mirrors packages/backend/src/app/handleProjection.ts)
 type ReactionHandler<E> = (v: {
   event: E
   info: EventInfo
@@ -199,18 +199,18 @@ function handleReaction<E extends Event<Aggregate<string>>>(
 
 Wiring for the first reaction:
 
-- `mailer: Mailer` added to `Dependencies` in `server/src/app/integrations.ts`. Today `mailerFromEnv()` is built inline and handed only to `postgresLoginCodes` (`integrations.ts:119`); build it once and pass the same instance to both.
-- A `mountReaction` in `server/src/index.ts`, shaped like `mountProjection`: `EventBusAuthMiddleware`, its own `express.json({ limit: "5mb" })`, mounted before the global parser.
-- `handleReaction.ts` added to `criticalSources` in `server/tests/quality/sources.mjs`, next to `handleProjection`.
+- `mailer: Mailer` added to `Dependencies` in `packages/backend/src/app/integrations.ts`. Today `mailerFromEnv()` is built inline and handed only to `postgresLoginCodes` (`integrations.ts:119`); build it once and pass the same instance to both.
+- A `mountReaction` in `packages/backend/src/index.ts`, shaped like `mountProjection`: `EventBusAuthMiddleware`, its own `express.json({ limit: "5mb" })`, mounted before the global parser.
+- `handleReaction.ts` added to `criticalSources` in `packages/backend/tests/quality/sources.mjs`, next to `handleProjection`.
 
 `withIdempotency` makes a _successful_ delivery safe to redeliver: the log row is saved only after the handler resolves. It does not cover a crash between the side effect and that save, and it does not cover a failure after the effect ran. Those need the semantic choices below.
 
 ### Reaction file: send then mark
 
-A reaction lives in `server/src/domain/<area>/reaction/<name>.ts`. It performs the effect, then records it with a marker event, so the domain has a durable fact that the effect happened and later logic can read it. Map every failure to `ErrorMustRetry`; never throw past the boundary.
+A reaction lives in `packages/backend/src/domain/<area>/reaction/<name>.ts`. It performs the effect, then records it with a marker event, so the domain has a durable fact that the effect happened and later logic can read it. Map every failure to `ErrorMustRetry`; never throw past the boundary.
 
 ```ts
-// server/src/domain/<area>/reaction/<name>.ts
+// packages/backend/src/domain/<area>/reaction/<name>.ts
 const decoder = accept([<TriggerEvent>])
 type Events = m.Infer<d.Infer<typeof decoder>>
 
@@ -233,7 +233,7 @@ const handler: ReactionHandler<Events> = ({ event, mailer, withEventStore }) =>
 const controller: ReactionController<Events> = { decoder, handler }
 ```
 
-`Mailer.send` already returns `Future<Error, void>` (`server/src/app/mailer.ts:8`), so there is no promise to wrap. Every service a reaction calls arrives through its handler arguments, built once in `configureDependencies`. There is no nullable service registry: `mailerFromEnv` refuses a missing `SMTP_URL` in production and logs in development (`services.md`).
+`Mailer.send` already returns `Future<Error, void>` (`packages/backend/src/app/mailer.ts:8`), so there is no promise to wrap. Every service a reaction calls arrives through its handler arguments, built once in `configureDependencies`. There is no nullable service registry: `mailerFromEnv` refuses a missing `SMTP_URL` in production and logs in development (`services.md`).
 
 ### Reaction idempotency choices
 
@@ -259,14 +259,14 @@ withEventStore(
 )
 ```
 
-Seed with the trigger's event id, not the aggregate id: an aggregate id gives every trigger on that aggregate the same marker id, so the first marker suppresses every later legitimate effect. `Id.deterministicForEvent` (`server/src/lib/event-sourcing/event.ts:51`) returns a `Result`, so unwrap it like `deterministicForAggregate`. `emit` accepts an explicit `event_id` (`EmitArgs`, `server/src/lib/event-sourcing/store.ts:558-561`), and `store.doesEventAlreadyExist` (`store.ts:615`) reads it back. Use this form when the effect is itself an event-store write (a follow-up event). For an external effect, check the marker, perform the effect outside the generator, then emit the marker. A crash between the effect and the marker repeats the effect once, so the effect must still tolerate a duplicate.
+Seed with the trigger's event id, not the aggregate id: an aggregate id gives every trigger on that aggregate the same marker id, so the first marker suppresses every later legitimate effect. `Id.deterministicForEvent` (`packages/backend/src/lib/event-sourcing/event.ts:51`) returns a `Result`, so unwrap it like `deterministicForAggregate`. `emit` accepts an explicit `event_id` (`EmitArgs`, `packages/backend/src/lib/event-sourcing/store.ts:558-561`), and `store.doesEventAlreadyExist` (`store.ts:615`) reads it back. Use this form when the effect is itself an event-store write (a follow-up event). For an external effect, check the marker, perform the effect outside the generator, then emit the marker. A crash between the effect and the marker repeats the effect once, so the effect must still tolerate a duplicate.
 
 ### Reaction registration
 
-A reaction has no projection repo, so none of the six `server/src/app/projections.ts` touch points apply. It does share the idempotency collection those touch points already create.
+A reaction has no projection repo, so none of the six `packages/backend/src/app/projections.ts` touch points apply. It does share the idempotency collection those touch points already create.
 
 ```ts
-// server/src/index.ts, next to mountProjection
+// packages/backend/src/index.ts, next to mountProjection
 function mountReaction(app: express.Express, dependencies: Dependencies): void {
   const reactionPath = "/api/v1/<area>/reaction/<kebab-name>"
   app.post(
@@ -285,7 +285,7 @@ function mountReaction(app: express.Express, dependencies: Dependencies): void {
 ```
 
 ```yaml
-# server/development/application.yaml
+# packages/backend/development/postie/application.yaml
 data_destinations:
   - id: <Area>_Reaction_<Name>
     description: <what the side effect does>
@@ -298,7 +298,7 @@ data_destinations:
 ```
 
 ```yaml
-# server/development/postie.yaml
+# packages/backend/development/postie/postie.yaml
 destinations:
   <Area>_Reaction_<Name>:
     kind: reaction
@@ -312,7 +312,7 @@ postie treats `kind: reaction` as never replayable and rejects a `replay_endpoin
 - [ ] Handler maps every failure — storage errors and "not yet projected" alike — to `ErrorMustRetry`, never throws past the boundary.
 - [ ] Exhaustive `switch (true)` over event classes includes `default: return event satisfies never`.
 - [ ] An event that depends on prior projected state rejects (retry) rather than silently no-ops when that state isn't there yet.
-- [ ] Projection registered in all six `projections.ts` spots, `mountProjection` in `index.ts`, and both `development/application.yaml` + `development/postie.yaml`.
+- [ ] Projection registered in all six `projections.ts` spots, `mountProjection` in `index.ts`, and both `development/postie/application.yaml` + `development/postie/postie.yaml`.
 - [ ] `Repo<Plural>` has `collectionName`, `schema`, `createIndexes`, and `toId`.
 - [ ] The first reaction builds `handleReaction.ts`, `mountReaction`, and `mailer` in `Dependencies` before its own file.
 - [ ] Reaction receives its services as handler arguments; nothing is constructed inside the handler.

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "sourceMap": false,
+    "declaration": true,
+    "declarationMap": false
+  },
+  "exclude": ["tests"]
+}

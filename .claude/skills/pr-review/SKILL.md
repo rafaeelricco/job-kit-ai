@@ -53,11 +53,9 @@ git fetch -q https://github.com/<owner>/<repo> pull/N/head
 git checkout -q --detach <head sha>
 ```
 
-Then run `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile` in
-each touched package (`server/`, `app/`, and the repo root when root areas
-changed). Whenever `app/` is installed, also install `server/`, with `--prod`
-when the PR leaves `server/` untouched: `app/tsconfig.json` maps `@be/*` into
-`server/src`, whose imports live in `server/node_modules`. In CI add `--store-dir "$SCRATCH/pnpm-store"`: the runner's default
+Then run `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile` once
+at the repo root: `packages/*` (frontend, backend, lib) is one pnpm workspace
+with one lockfile. In CI add `--store-dir "$SCRATCH/pnpm-store"`: the runner's default
 store is read-only to Claude's commands.
 
 Review rules come from the base branch, because the PR can edit them. Fetch it
@@ -84,8 +82,8 @@ In one message, launch in the foreground:
   each check's output.
 - **Rules** (two sonnet agents, changed files split between them): CLAUDE.md
   compliance. A rule applies only under its CLAUDE.md's directory. Quote it.
-- **Bugs** (one opus agent per touched area: `server/src/app`,
-  `server/src/domain`, `server/src/lib`, `app/src`, everything else): read each
+- **Bugs** (one opus agent per touched area: `packages/backend/src/app`,
+  `packages/backend/src/domain`, `packages/backend/src/lib`, `packages/frontend/src`, everything else): read each
   changed function's callers and callees.
 - **Lifecycle** (one opus agent, whole diff): security and auth, cleanup on
   failure and cancellation, Future laziness and double execution, concurrency.
@@ -110,8 +108,8 @@ raised it. It shows the bug fires on the PR head, or that it does not.
 - **Bugs**: write a throwaway test or script that drives the trigger through the
   real callers, run it, and keep the command and the output lines that show the
   failure. For the server, create
-  `server/tests/unit/pr-review-proof-<cluster>.test.ts` and run
-  `pnpm vitest run tests/unit/pr-review-proof-<cluster>.test.ts` in `server/`.
+  `packages/backend/tests/unit/pr-review-proof-<cluster>.test.ts` and run
+  `pnpm vitest run tests/unit/pr-review-proof-<cluster>.test.ts` in `packages/backend/`.
   When the proof needs a database, start only that service with Docker
   on a random host port, since provers run in parallel
   (`docker run -d --rm -p 127.0.0.1::5432 -e POSTGRES_PASSWORD=proof postgres:16.4`,

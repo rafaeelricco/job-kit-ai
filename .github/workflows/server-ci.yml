@@ -3,11 +3,21 @@ name: Server quality
 on:
   pull_request:
     paths:
-      - "server/**"
+      - "packages/backend/**"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/server-ci.yml"
   push:
     paths:
-      - "server/**"
+      - "packages/backend/**"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/server-ci.yml"
   schedule:
     - cron: "0 6 * * *"
@@ -23,7 +33,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -31,10 +41,11 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: server/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --filter @job-kit/backend...
+        working-directory: .
       - name: Run fast quality gates
         run: pnpm quality
       - name: Write quality summary
@@ -45,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: server-quality-${{ github.run_id }}-${{ github.run_attempt }}
-          path: server/reports/**
+          path: packages/backend/reports/**
           if-no-files-found: warn
           retention-days: 14
 
@@ -57,7 +68,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -65,10 +76,11 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: server/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --filter @job-kit/backend...
+        working-directory: .
       - name: Run mutation tests
         run: pnpm test:mutation
       - name: Write quality summary
@@ -79,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: server-mutation-${{ github.run_id }}-${{ github.run_attempt }}
-          path: server/reports/**
+          path: packages/backend/reports/**
           if-no-files-found: warn
           retention-days: 14
 
@@ -91,7 +103,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -99,10 +111,11 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: server/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --filter @job-kit/backend...
+        working-directory: .
       - name: Measure all-source coverage
         run: pnpm test:coverage:all
       - name: Write quality summary
@@ -113,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: server-coverage-all-${{ github.run_id }}-${{ github.run_attempt }}
-          path: server/reports/**
+          path: packages/backend/reports/**
           if-no-files-found: warn
           retention-days: 14
 
@@ -125,7 +138,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -133,10 +146,11 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: server/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --filter @job-kit/backend...
+        working-directory: .
       - name: Choose an isolated Compose project
         run: echo "COMPOSE_PROJECT=server-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
       - name: Run Docker-backed integration tests
@@ -146,7 +160,7 @@ jobs:
             echo "A unique CI Compose project was not configured; refusing to use the default project."
             exit 1
           fi
-          compose=(docker compose -p "$COMPOSE_PROJECT" -f development/docker-compose.yml -f development/docker-compose.ci.yml)
+          compose=(docker compose -p "$COMPOSE_PROJECT" -f development/compose.yaml -f development/compose.dev.yaml -f development/compose.ci.yaml)
           if "${compose[@]}" up --build --detach --wait --remove-orphans; then
             # Recreate containers while retaining volumes to verify Kafka persistence.
             "${compose[@]}" down
@@ -175,11 +189,11 @@ jobs:
             echo "A unique CI Compose project was not configured; skipping Compose collection."
             exit 1
           fi
-          compose=(docker compose -p "$COMPOSE_PROJECT" -f development/docker-compose.yml -f development/docker-compose.ci.yml)
+          compose=(docker compose -p "$COMPOSE_PROJECT" -f development/compose.yaml -f development/compose.dev.yaml -f development/compose.ci.yaml)
           "${compose[@]}" logs --no-color > "$artifact_dir/docker-compose.log" 2>&1 || true
           api_container=$("${compose[@]}" ps -aq api 2>/dev/null | head -n 1)
           if [ -n "$api_container" ]; then
-            docker cp "$api_container:/app/reports/." reports/ 2> "$artifact_dir/report-copy.log"
+            docker cp "$api_container:/app/packages/backend/reports/." reports/ 2> "$artifact_dir/report-copy.log"
           fi
           pnpm quality:report
       - name: Remove the isolated Compose project and its volumes
@@ -190,14 +204,14 @@ jobs:
             echo "A unique CI Compose project was not configured; refusing cleanup without an explicit project."
             exit 1
           fi
-          docker compose -p "$COMPOSE_PROJECT" -f development/docker-compose.yml -f development/docker-compose.ci.yml down --volumes --remove-orphans
+          docker compose -p "$COMPOSE_PROJECT" -f development/compose.yaml -f development/compose.dev.yaml -f development/compose.ci.yaml down --volumes --remove-orphans
       - name: Upload Docker test reports and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: server-docker-tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            server/reports/**
+            packages/backend/reports/**
             ${{ runner.temp }}/server-ci-artifacts/**
           if-no-files-found: warn
           retention-days: 14

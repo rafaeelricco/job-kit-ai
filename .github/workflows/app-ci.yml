@@ -1,7 +1,7 @@
 name: App CI
 
 # The app is not covered by test.yml: its paths filter is workflow-wide, so
-# adding app/** there would run the Python and installer matrices for a change
+# adding packages/frontend/** there would run the Python and installer matrices for a change
 # that cannot affect them. This workflow is the app's own gate, and it runs on
 # GitHub-hosted infrastructure so that pull request code never executes on the
 # self-hosted deployment runner.
@@ -10,17 +10,25 @@ on:
   push:
     branches: ["**"]
     paths:
-      - "app/**"
-      - "server/src/**"
-      - "server/package.json"
-      - "server/pnpm-lock.yaml"
+      - "packages/frontend/**"
+      - "packages/backend/src/**"
+      - "packages/backend/package.json"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/app-ci.yml"
   pull_request:
     paths:
-      - "app/**"
-      - "server/src/**"
-      - "server/package.json"
-      - "server/pnpm-lock.yaml"
+      - "packages/frontend/**"
+      - "packages/backend/src/**"
+      - "packages/backend/package.json"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/app-ci.yml"
 
 permissions:
@@ -39,30 +47,22 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: app/.node-version
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: |
-            app/pnpm-lock.yaml
-            server/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: app
+        # One workspace install: the frontend compiles the backend's `.api.ts` files, whose imports need its packages.
         run: pnpm install --frozen-lockfile
 
-      - name: Install server dependencies
-        # The app imports the server's endpoint schemas through `@be/*`, and
-        # those files import packages that live only in server/node_modules.
-        working-directory: server
-        run: pnpm install --frozen-lockfile --prod
-
       - name: Lint
-        working-directory: app
+        working-directory: packages/frontend
         run: pnpm lint
 
       - name: Typecheck
-        working-directory: app
+        # tsc --build at the root: the frontend (with the backend source it compiles), the backend, and lib.
         run: pnpm typecheck
 
       - name: Build
-        working-directory: app
+        working-directory: packages/frontend
         run: pnpm build

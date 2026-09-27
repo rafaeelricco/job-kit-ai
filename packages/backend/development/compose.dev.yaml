@@ -1,0 +1,23 @@
+# Local development: live-reloading source and local-only credentials.
+name: job-kit-server
+services:
+  api:
+    command: pnpm dev
+    environment:
+      EVENT_STORE_PASSWORD: notepad
+      MONGODB_PROJECTION_PASSWORD: local_notepad_mongo
+      ENGINE_OPERATOR_TOKEN: ${ENGINE_OPERATOR_TOKEN:-change-me}
+      APP_URL: ${APP_URL:-http://localhost:5173/jobs/}
+      SMTP_URL: ${SMTP_URL:-}
+      LOGIN_CODE_SECRET: ${LOGIN_CODE_SECRET:-}
+    volumes:
+      - ../src:/app/packages/backend/src:ro
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: notepad
+  mongo:
+    environment:
+      MONGO_INITDB_ROOT_PASSWORD: local_notepad_mongo
+  postie:
+    environment:
+      POSTIE_OPERATOR_TOKEN: ${ENGINE_OPERATOR_TOKEN:-change-me}

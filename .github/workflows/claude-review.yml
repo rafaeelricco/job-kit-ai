@@ -67,14 +67,14 @@ jobs:
           fetch-depth: 1
 
       # Provers run the repo's checks and throwaway tests with the toolchain from
-      # server-ci.yml. The app builds on Node 22 too. pr-review installs
+      # server-ci.yml, on the Node version in .node-version. pr-review installs
       # dependencies into its own review tree, so none are installed here.
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
 
       # The subprocess secret scrub needs bubblewrap, which the action installs
       # only for allowed_non_write_users. Same setup as its own step.

@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="app/public/brand/lockup-horizontal-dark.svg">
-    <img src="app/public/brand/lockup-horizontal.svg" alt="Job Kit AI — your job search, made simpler" width="700">
+    <source media="(prefers-color-scheme: dark)" srcset="packages/frontend/public/brand/lockup-horizontal-dark.svg">
+    <img src="packages/frontend/public/brand/lockup-horizontal.svg" alt="Job Kit AI — your job search, made simpler" width="700">
   </picture>
 </h1>
 
@@ -138,14 +138,14 @@ Re-run the installer to refresh Aside copies.
 To develop the dashboard, install Node.js and pnpm, then run from the repository root:
 
 ```bash
-pnpm --dir app install
-pnpm --dir app dev
+pnpm install
+pnpm --dir packages/frontend dev
 ```
 
 Check dashboard changes with:
 
 ```bash
-pnpm --dir app typecheck
-pnpm --dir app lint
-pnpm --dir app build
+pnpm --dir packages/frontend typecheck
+pnpm --dir packages/frontend lint
+pnpm --dir packages/frontend build
 ```

@@ -7,9 +7,9 @@ on:
       - "skill/**"
       - "scripts/**"
       - "tests/**"
-      - "app/src/index.css"
-      - "app/public/**"
-      - "app/package.json"
+      - "packages/frontend/src/index.css"
+      - "packages/frontend/public/**"
+      - "packages/frontend/package.json"
       - ".claude/skills/job-kit-dev/references/front-end/**"
       - ".gitattributes"
       - "LICENSE"
@@ -23,9 +23,9 @@ on:
       - "skill/**"
       - "scripts/**"
       - "tests/**"
-      - "app/src/index.css"
-      - "app/public/**"
-      - "app/package.json"
+      - "packages/frontend/src/index.css"
+      - "packages/frontend/public/**"
+      - "packages/frontend/package.json"
       - ".claude/skills/job-kit-dev/references/front-end/**"
       - ".gitattributes"
       - "LICENSE"
@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .node-version
           cache: pnpm
 
       - name: Install development dependencies
