@@ -55,30 +55,37 @@ return route((req: express.Request) =>
 `accept([...])` decodes only the events this projection cares about; the handler switches on event class and calls `apply`, which returns a rejected `Future<string, void>` (never throws) for every failure mode, folded into one `ErrorMustRetry` at the boundary.
 
 ```ts
-// packages/backend/src/domain/note/projection/notes.ts
-const decoder = accept([NoteCreated, NoteUpdated, NoteDeleted])
+// packages/backend/src/domain/ai/projection/aiSetups.ts:94-147
+const decoder = accept([
+  WorkspaceProvisioned,
+  SetupStepCompleted,
+  AiAuthorizationStarted,
+  AiConnectionVerified,
+  AiConnectionReconnected,
+  AiConnectionChecked,
+  AiSwitchConfirmed,
+  AiSwitchDiscarded,
+  AiConnectionDisconnected,
+  AiPreferencesChanged,
+])
 type Events = m.Infer<d.Infer<typeof decoder>>
 
-function apply(repo: NotesWriter, event: Events, info: EventInfo): Future<string, void> {
-  switch (true) {
-    case event instanceof NoteCreated:
-      return save(repo, createdDocument(event, info))
-    case event instanceof NoteUpdated:
-      return amend(repo, event.values.aggregateId, (existing) => updatedDocument(existing, event, info))
-    case event instanceof NoteDeleted:
-      return amend(repo, event.values.aggregateId, (existing) => deletedDocument(existing, info))
-    default:
-      return event satisfies never
-  }
+function apply(repo: AiSetupsWriter, event: Events, info: EventInfo): Future<string, void> {
+  return event instanceof WorkspaceProvisioned ?
+      save(repo, { workspaceId: event.values.aggregateId, ai: initialAi })
+    : amend(repo, event.values.aggregateId, (existing) => ({
+        ...existing,
+        ai: applyAiEvent(existing.ai, event.values, info.recorded_on),
+      }))
 }
 
 const handler: ProjectionHandler<Events> = ({ event, info, projections }): Future<AmbarResponse, void> =>
-  apply(projections[RepoNotes.collectionName], event, info).mapRej((message) => new ErrorMustRetry(message))
+  apply(projections[RepoAiSetups.collectionName], event, info).mapRej((message) => new ErrorMustRetry(message))
 
 const controller: ProjectionController<Events> = { decoder, handler }
 ```
 
-`amend` (`notes.ts:164-173`) loads the existing document and rejects with a "not yet projected; will retry" message when it isn't there — a `NoteUpdated` can be delivered before the `NoteCreated` that should have created its document has finished projecting, and that rejection becomes `ErrorMustRetry` so postie redelivers instead of the update being silently dropped.
+This projection only has two shapes to switch on (the creation event vs. everything else), so it uses a ternary instead of `switch (true)`; a projection accepting more than one creation-shaped event, or more than two branches generally, reads better as `switch (true) { case event instanceof X: ...; default: return event satisfies never }` (`templates.md`'s skeleton uses that form). `amend` (`aiSetups.ts:122-133`) loads the existing document and rejects with a "not yet projected; will retry" message when it isn't there — an AI event can be delivered before the `WorkspaceProvisioned` that should have created its document has finished projecting, and that rejection becomes `ErrorMustRetry` so postie redelivers instead of the event being silently dropped.
 
 ### Projection registration
 
@@ -87,18 +94,18 @@ A new projection touches six places in `packages/backend/src/app/projections.ts`
 ```ts
 // packages/backend/src/app/projections.ts
 export type Repositories = {
-  [RepoNotes.collectionName]: Repository<NoteDocument>
+  [RepoAiSetups.collectionName]: Repository<AiSetupDocument>
   [RepoProjectionIdempotency.collectionName]: Repository<ProjectedEvent>
 }
 
 export function initializeRepositories(db: Db): Future<ProjectionStoreError, Repositories> { ... }
 
 export type ReadProjections = {
-  readonly [RepoNotes.collectionName]: NotesReader
+  readonly [RepoAiSetups.collectionName]: AiSetupsReader
 }
 
 export type WriteProjections = {
-  readonly [RepoNotes.collectionName]: NotesWriter
+  readonly [RepoAiSetups.collectionName]: AiSetupsWriter
   readonly [RepoProjectionIdempotency.collectionName]: IdempotencyRepo
 }
 
@@ -107,27 +114,30 @@ export function writeProjections(repositories: Repositories, store: ProjectionWr
 ```
 
 ```ts
-// packages/backend/src/index.ts:65-73
+// packages/backend/src/index.ts:84-95
+/** Mount the event-projection endpoints: each with its own auth middleware and a 5mb JSON limit, ahead of the global parser. */
 function mountProjection(app: express.Express, dependencies: Dependencies): void {
-  const projectionPath = "/api/v1/note/projection/notes"
-  app.post(
-    projectionPath,
-    EventBusAuthMiddleware,
-    express.json({ limit: "5mb" }),
-    handleProjection(projectionPath, dependencies.withProjectionWriter, dependencies.repositories, notesProjection)
-  )
+  const mount = <E extends Event<Aggregate<string>>>(path: string, controller: ProjectionController<E>): void => {
+    app.post(
+      path,
+      EventBusAuthMiddleware,
+      express.json({ limit: "5mb" }),
+      handleProjection(path, dependencies.withProjectionWriter, dependencies.repositories, controller)
+    )
+  }
+  mount("/api/v1/ai/projection/ai-setups", aiSetupsProjection)
 }
 ```
 
-The projection route is mounted with its own `express.json({ limit: "5mb" })` ahead of the global parser (`createApp` in `src/index.ts`), so a large delivered event isn't rejected by the default body-size limit that applies to command/query traffic.
+Each projection's own `express.json({ limit: "5mb" })` runs ahead of the global parser (`createApp` in `src/index.ts`), so a large delivered event isn't rejected by the default body-size limit that applies to command/query traffic. Add a new projection by calling `mount` again with its own path and controller.
 
 ```yaml
 # packages/backend/development/postie/application.yaml
 data_destinations:
-  - id: Note_Projection_Notes
-    description: Notes read model
+  - id: Workspace_Projection_AiSetups
+    description: Workspace AI setup read model
     type: http-push
-    endpoint: http://api:8080/api/v1/note/projection/notes
+    endpoint: http://api:8080/api/v1/ai/projection/ai-setups
     username: notepad_event_bus
     password: local_notepad_event_bus
     sources:
@@ -137,15 +147,15 @@ data_destinations:
 ```yaml
 # packages/backend/development/postie/postie.yaml
 destinations:
-  Note_Projection_Notes:
+  Workspace_Projection_AiSetups:
     kind: projection
 ```
 
 - [ ] `Repo<Plural>` in `domain/<area>/projection/<plural>.ts`: `collectionName`, `schema`, `createIndexes`, `toId`, `reader`, `writer`.
 - [ ] `Repositories`, `initializeRepositories`, `ReadProjections`, `WriteProjections`, `readProjections`, `writeProjections` in `packages/backend/src/app/projections.ts`.
-- [ ] `mountProjection` in `packages/backend/src/index.ts`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleProjection(path, ...))`, mounted before the global `express.json()`.
+- [ ] A `mount(...)` call added inside `mountProjection` in `packages/backend/src/index.ts`.
 - [ ] `data_destinations` entry in `packages/backend/development/postie/application.yaml` (`endpoint` matches the route path) and a matching `destinations.<Id>: { kind: projection }` in `packages/backend/development/postie/postie.yaml`.
-- [ ] Test fixtures that build a full projection map extended: `projectionsHarness` in `packages/backend/tests/support/notes.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/note.test.ts`. `pnpm typecheck` lists any you miss.
+- [ ] Test fixtures that build a full projection map extended: `projectionsHarness` in `packages/backend/tests/support/aiSetups.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/ai-projection.test.ts`. `pnpm typecheck` lists any you miss.
 - [ ] A query added if clients need to read the new projection (`queries.md`).
 
 ### Reactions: side effects after an event commits

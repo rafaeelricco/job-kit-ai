@@ -23,7 +23,7 @@ Rules a reviewer can check on a diff. Rationale and examples live in `CONVENTION
 
 ## Events
 
-- An event is a `CreationEvent` or `TransformationEvent` whose `type` is PascalCase past tense (`NoteCreated`), built with `toSchema`, in `src/domain/<aggregate>/events/<aggregate>/`.
+- An event is a `CreationEvent` or `TransformationEvent` whose `type` is PascalCase past tense (`WorkspaceProvisioned`), built with `toSchema`, in `src/domain/<aggregate>/events/<aggregate>/`.
 - Don't change a shipped event's schema: stored events that no longer decode raise `EventStoreCorruptionError`. Add a new event type instead.
 
 ## Tests

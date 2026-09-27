@@ -14,24 +14,28 @@ pnpm test:coverage     # pnpm test with the critical-source coverage gate
 pnpm test -t "delete"  # one test by name, any tier
 ```
 
-`test:integration` needs the full Compose stack (Postgres, MongoDB, Kafka, postie) and runs inside the `api` container — see `packages/backend/tests/README.md` for the exact `pnpm run up` / `docker compose exec` sequence. Integration tests drive real HTTP and a real Postgres `Pool` through `createLiveFixture()` (`packages/backend/tests/support/live.ts`: `call`, `eventually`, `history`, `seedLoginCode`, `deliver`, `withRestoredSubscription`). `test:coverage:all` (informational, all sources) and `test:mutation` (Stryker) are nightly/manual checks, not part of `pnpm quality`.
+`test:integration` needs the full Compose stack (Postgres, MongoDB, Kafka, postie) and runs inside the `api` container — see `packages/backend/tests/README.md` for the exact `pnpm run up` / `docker compose exec` sequence. Integration tests drive real HTTP and a real Postgres `Pool` through `createLiveFixture()` (`packages/backend/tests/support/live.ts`: `call`, `eventually`, `history`, `seedLoginCode`, `withRestoredSubscription`). `test:coverage:all` (informational, all sources) and `test:mutation` (Stryker) are nightly/manual checks, not part of `pnpm quality`.
 
 ### Write a test with `describe`/`test` and `node:assert/strict`
 
 Use Vitest's `describe`/`test`, not a custom runner, and assert with `node:assert/strict`.
 
 ```ts
-// packages/backend/tests/unit/domain/note.test.ts:1-3, 30-44
+// packages/backend/tests/unit/domain/ai-decide.test.ts:1-2, 339-350
 import assert from "node:assert/strict"
 import { describe, test } from "vitest"
 
-describe("Notes", () => {
-  test("create trims only title and preserves body including whitespace", async () => {
-    const db = new MemoryEventDatabase()
-    const noteId = await newNote(db, "  shopping  ", "  milk\n")
-    assert.equal(db.entries.length, 1)
-    assert.equal(db.entries[0]?.event_name, "NoteCreated")
-    // ...
+describe("decideStep", () => {
+  test("overview completes once and is a no-op after", () => {
+    const decided = decideStep(initialAi, workspaceId, "overview")
+    assert.ok(decided instanceof Success)
+    const event = unwrap(decided.value)
+    assert.ok(event instanceof SetupStepCompleted)
+    assert.equal(event.values.step, "overview")
+
+    const again = decideStep({ ...initialAi, overviewCompleted: true }, workspaceId, "overview")
+    assert.ok(again instanceof Success)
+    assert.ok(again.value instanceof Nothing)
   })
 })
 ```
@@ -56,15 +60,11 @@ export function asUserCommand(sessions = new MemorySessionStore()) {
 
 Spread `asUser` into a `QueryHandler` call, `asUserCommand()` into a `CommandHandler` call, and pass a fresh `MemoryEventDatabase().withEventStore` as `withEventStore`.
 
-### Reuse the note test helpers for a new domain area
+### Reuse the shared test helpers for a new domain area
 
-`packages/backend/tests/support/notes.ts` is domain-specific, but its shape is the one to copy for a new aggregate's support file:
+`packages/backend/tests/support/future.ts` gives every test the same two calls to unwrap a handler's `Future<Response, T>` into a plain `Promise`: `result` for the resolved case, `rejection` for the rejected case.
 
-- `result` / `rejection` (`notes.ts:19-27`) unwrap a handler's `Future<Response, T>` into a plain `Promise`, one for the resolved case and one for the rejected case.
-- `newNote` (`notes.ts:29-44`) calls the real `create.handler` and returns the id — the standard way to get a seeded aggregate into a test without hand-building event rows.
-- `hydrate` (`notes.ts:46-48`) replays a `MemoryEventDatabase`'s entries through `schemas.hydrate` to get the current aggregate.
-- `projectionsHarness` (`notes.ts:61-103`) builds an in-memory `WriteProjections` (a `NotesWriter` plus `RepoProjectionIdempotency`) whose `save` defers through `Future.create`, matching how the real Mongo-backed `save` defers via `Future.attemptP` — a harness whose `save` runs eagerly would hide bugs a real projection wouldn't.
-- `delivery` (`notes.ts:105-119`) wraps a projection controller's `handler` in `withIdempotency`, exactly as `handleProjection` does in production, so a projection test sees real duplicate-delivery behavior.
+`packages/backend/tests/support/aiSetups.ts`'s `projectionsHarness` is domain-specific (it builds a `WriteProjections` over `RepoAiSetups` plus `RepoProjectionIdempotency`), but its shape is the one to copy for a new aggregate's support file: an in-memory writer whose `save` defers through `Future.create`, matching how the real Mongo-backed `save` defers via `Future.attemptP` — a harness whose `save` runs eagerly would hide bugs a real projection wouldn't. It returns `{ projections, aiSetups, seen }`: the `WriteProjections` to pass into a handler, the in-memory document map, and the idempotency log's key set. A test wraps the projection controller's own `handler` in `withIdempotency` locally (see `packages/backend/tests/unit/domain/ai-projection.test.ts`'s `deliver` helper) to see real duplicate-delivery behavior, exactly as `handleProjection` does in production.
 
 ### Test an auth guard directly
 
@@ -92,18 +92,16 @@ test("Auth.authenticated denies an anonymous caller and allows a signed-in one",
 Call `controller.handler` directly with the memory fixtures and assert on the rejected `Response`.
 
 ```ts
-// packages/backend/tests/unit/domain/note.test.ts:52-63
-test("blank title fails before opening the event store", async () => {
+// packages/backend/tests/regression/ai-readiness.test.ts:131-138
+test("a purpose that does not fit the registry is refused before any attempt opens", async () => {
   const db = new MemoryEventDatabase()
-  const error = await rejection(
-    create.handler({
-      payload: { noteId: Id.random<"Note">(), title: " \n ", body: "" },
-      withEventStore: db.withEventStore,
-      ...asUserCommand(),
-    })
+  const ai = memoryAi()
+  const { ctx } = await signedIn(db, ai)
+
+  const reconnectNothing = await rejection(
+    startAuth.handler({ ...ctx, payload: { provider: "openai", method: "api_key", purpose: "reconnect" } })
   )
-  assert.match(JSON.stringify(error), /400/)
-  assert.equal(db.entries.length, 0)
+  assert.match(statusOf(reconnectNothing), /"status":409/)
 })
 ```
 
@@ -114,30 +112,33 @@ test("blank title fails before opening the event store", async () => {
 Build a `projectionsHarness`, deliver an event through it, and assert on the saved document or the idempotency set.
 
 ```ts
-// packages/backend/tests/regression/notes.test.ts:43-64
-test("projection duplicate delivery cannot resurrect a deleted note", async () => {
+// packages/backend/tests/unit/domain/ai-projection.test.ts:189-202
+test("duplicate delivery through withIdempotency applies the event once", async () => {
   const h = projectionsHarness()
-  const noteId = new Id<"Note">("duplicate")
-  const created = new NoteCreated({ type: NoteCreated.type, aggregateId: noteId, title: "Hello", body: "" })
-  const deleted = new NoteDeleted({ type: NoteDeleted.type, aggregateId: noteId })
-  await delivery(h, created, info(noteId, 0)).promise((e) => new Error(JSON.stringify(e)))
-  await delivery(h, deleted, info(noteId, 1)).promise((e) => new Error(JSON.stringify(e)))
-  await delivery(h, created, info(noteId, 0)).promise((e) => new Error(JSON.stringify(e)))
-  assert.equal(h.docs.get(noteId.value)?.status === "Deleted", true)
+  const workspaceId = Id.random<"Workspace">()
+  const ownerId = Id.random<"User">()
+  const provisioned = new WorkspaceProvisioned({ type: WorkspaceProvisioned.type, aggregateId: workspaceId, ownerId })
+  const step = new SetupStepCompleted({ type: SetupStepCompleted.type, aggregateId: workspaceId, step: "overview" })
+
+  await deliver(h, provisioned, info(workspaceId, 0)).promise((e) => new Error(JSON.stringify(e)))
+  await deliver(h, step, info(workspaceId, 1)).promise((e) => new Error(JSON.stringify(e)))
+  // Redelivery of the same (eventId, projection) pair: the handler must not run again.
+  await deliver(h, step, info(workspaceId, 1)).promise((e) => new Error(JSON.stringify(e)))
+
   assert.equal(h.seen.size, 2)
-  // ...
+  assert.equal(h.aiSetups.get(workspaceId.value)?.ai.overviewCompleted, true)
 })
 ```
 
-A predecessor gap (updating before the create has been projected) rejects with `ErrorMustRetry` and leaves the idempotency set untouched — see the same file's `"projection predecessor failure is retryable and is not marked as delivered"` case.
+A predecessor gap (an AI event delivered before its `WorkspaceProvisioned`) rejects with `ErrorMustRetry` and leaves the idempotency set untouched — see the same file's `"an AI event before its WorkspaceProvisioned predecessor is retryable and not marked delivered"` case.
 
 ### Test a reaction with a recording mailer
 
-Once the reaction pipeline exists (`consumers.md`), test a reaction's handler directly. Pass only the services it should call: a `Mailer` that records what it was asked to send, and a fresh `MemoryEventDatabase().withEventStore`. Then assert both the effect and the marker. A missing dependency should fail the test loudly, not be stubbed away. The marker is a transformation of an existing aggregate, so seed that aggregate first through its real command (as `newNote` does, `packages/backend/tests/support/notes.ts:29-44`); an empty database makes the marker emit fail. Build `eventInfo` with an `info(...)` helper like `packages/backend/tests/support/notes.ts:50`, typed for your aggregate's id.
+Once the reaction pipeline exists (`consumers.md`), test a reaction's handler directly. Pass only the services it should call: a `Mailer` that records what it was asked to send, and a fresh `MemoryEventDatabase().withEventStore`. Then assert both the effect and the marker. A missing dependency should fail the test loudly, not be stubbed away. The marker is a transformation of an existing aggregate, so seed that aggregate first through its real command (as `provisionUser` seeds `User`/`Workspace` in `packages/backend/src/domain/auth/provisionUser.ts`); an empty database makes the marker emit fail. Build `eventInfo` with a local `info(...)` helper typed for your aggregate's id, the way `packages/backend/tests/unit/domain/ai-projection.test.ts` does.
 
 ```ts
 const db = new MemoryEventDatabase()
-const aggregateId = await new<Aggregate>(db) // seed the aggregate the marker transforms, like newNote
+const aggregateId = await seed<Aggregate>(db) // seed the aggregate the marker transforms, through its real command
 const event = new <TriggerEvent>({ type: <TriggerEvent>.type, aggregateId /* , ... */ })
 const eventInfo = info(aggregateId, 0)
 
@@ -152,7 +153,7 @@ assert.equal(sent.length, 1)
 assert.equal(db.entries.at(-1)?.event_name, "<Marker>")
 ```
 
-Also cover the failure path. A mailer that rejects must yield `ErrorMustRetry` and leave no marker, so the redelivery sends again. `rejection` (`packages/backend/tests/support/notes.ts:23-27`) is generic over the error type:
+Also cover the failure path. A mailer that rejects must yield `ErrorMustRetry` and leave no marker, so the redelivery sends again. `rejection` (`packages/backend/tests/support/future.ts`) is generic over the error type:
 
 ```ts
 const before = db.entries.length
@@ -164,7 +165,7 @@ assert.ok(error instanceof ErrorMustRetry)
 assert.equal(db.entries.length, before) // the seeded aggregate stays; no marker is appended
 ```
 
-Build the `Mailer` stub with `Future.create`, not `Future.resolve`, so the send defers like the real `Future.attemptP`-backed mailer (the same reason `projectionsHarness` defers its `save`). For duplicate-delivery behavior, wrap the handler in `withIdempotency` the way `delivery` does for projections (`packages/backend/tests/support/notes.ts:105-119`), keyed on the reaction's endpoint path.
+Build the `Mailer` stub with `Future.create`, not `Future.resolve`, so the send defers like the real `Future.attemptP`-backed mailer (the same reason `projectionsHarness` defers its `save`). For duplicate-delivery behavior, wrap the handler in `withIdempotency` the way a projection test's local `deliver(...)` helper does (`packages/backend/tests/unit/domain/ai-projection.test.ts`), keyed on the reaction's endpoint path.
 
 ### Meet the coverage gate
 
@@ -173,7 +174,6 @@ Build the `Mailer` stub with `Future.create`, not `Future.resolve`, so the send 
 ```js
 // packages/backend/tests/quality/sources.mjs
 export const criticalSources = [
-  "src/domain/note/**/*.ts",
   "src/domain/{auth,user,workspace}/**/*.ts",
   "src/app/auth/**/*.ts",
   "src/app/{handleCommand,handleQuery,handleProjection,idempotency,responses,engine,resolveAuth,session}.ts",

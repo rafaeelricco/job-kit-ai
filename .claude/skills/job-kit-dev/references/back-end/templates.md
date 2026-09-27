@@ -1,6 +1,6 @@
 # Templates
 
-Copy-paste skeletons. Replace `<placeholder>` tokens, keep `.api.ts` client-safe, apply the registration checklist for the thing you add. Every skeleton mirrors a real file under `packages/backend/src/domain/note/` unless its comment says otherwise.
+Copy-paste skeletons. Replace `<placeholder>` tokens, keep `.api.ts` client-safe, apply the registration checklist for the thing you add. For a live example of each skeleton, see `packages/backend/src/domain/ai/`.
 
 Auth builders: `auth.md`. Env vars and integrations: `services.md`.
 
@@ -31,7 +31,7 @@ type CommandResponse = s.Infer<typeof endpoint.response>
 
 ### Command controller with event-store write
 
-Bind the endpoint, an `Auth.*` guard, and a handler that resolves domain errors as a `Result` before opening `withEventStore`. Same shape as `packages/backend/src/domain/note/command/updateNote.ts:18-37`, including its no-op guard: a retried update that changes nothing returns success without emitting (`commands.md`, "No-op guard"). The full domain-error pattern (`<Area>Errors`, `respond`, `Failure`) is in `commands.md`.
+Bind the endpoint, an `Auth.*` guard, and a handler that resolves domain errors as a `Result` before opening `withEventStore`. Same shape as `packages/backend/src/domain/ai/command/setPreferences.ts:18-37`, including its no-op guard: a resubmit that changes nothing returns success without emitting (`commands.md`, "No-op guard"). The full domain-error pattern (`<Area>Errors`, `respond`, `Failure`) is in `commands.md`.
 
 ```ts
 export { controller, handler }
@@ -105,7 +105,7 @@ type QueryResponse = s.Infer<typeof endpoint.response>
 
 ### Query controller over projections
 
-Read through `projections[Repo<Plural>.collectionName]`, and map a missing record to a domain `toResponse`, not a generic 500. Same shape as `packages/backend/src/domain/note/query/getNote.ts:14-24`.
+Read through `projections[Repo<Plural>.collectionName]`, and map a missing record to a domain `toResponse`, not a generic 500. Same shape as `packages/backend/src/domain/ai/query/getSetup.ts` (`queries.md` covers the 404 branch this skeleton's `<field>` case doesn't need).
 
 ```ts
 export { controller, handler }
@@ -142,7 +142,7 @@ const controller: QueryController<Query, QueryResponse> = { endpoint, authGuard:
 
 ### Creation event
 
-A creation event builds the first aggregate state for a stream. Same shape as `packages/backend/src/domain/note/events/note/noteCreated.ts`.
+A creation event builds the first aggregate state for a stream. Same shape as `packages/backend/src/domain/workspace/events/workspace/workspaceProvisioned.ts`.
 
 ```ts
 export { <EventName> }
@@ -182,7 +182,7 @@ class <EventName> extends CreationEvent<<Aggregate>> {
 
 ### Transformation event
 
-A transformation event returns a new aggregate with changed fields. Same shape as `packages/backend/src/domain/note/events/note/noteUpdated.ts`.
+A transformation event returns a new aggregate with changed fields. Same shape as `packages/backend/src/domain/workspace/events/workspace/setupStepCompleted.ts`.
 
 ```ts
 export { <EventName> }
@@ -233,7 +233,7 @@ new TSchema(<TransformationEventName>.aggregate, <TransformationEventName>.schem
 
 ### Aggregate
 
-Aggregates are plain value containers rebuilt from events; business logic lives in event classes, not aggregate methods. `readonly values` is assigned in the constructor body, never as a parameter property (`erasableSyntaxOnly`). Same shape as `packages/backend/src/domain/note/aggregate/note.ts:21-36`.
+Aggregates are plain value containers rebuilt from events; business logic lives in event classes, not aggregate methods. `readonly values` is assigned in the constructor body, never as a parameter property (`erasableSyntaxOnly`). Same shape as `packages/backend/src/domain/workspace/aggregate/workspace.ts:19-30`.
 
 ```ts
 export { <Aggregate> }
@@ -288,7 +288,7 @@ if (!((yield* store.try_find(<Aggregate>, <aggregate>Id)) instanceof Just))
 
 ### Projection document, repo, and controller
 
-A projection owns its document type, a reader/writer pair, a decoder over the events it accepts, and the handler that applies them. Mirrors `packages/backend/src/domain/note/projection/notes.ts` end to end.
+A projection owns its document type, a reader/writer pair, a decoder over the events it accepts, and the handler that applies them. Mirrors `packages/backend/src/domain/ai/projection/aiSetups.ts` end to end.
 
 ```ts
 export { controller, Repo<Plural>, type <Singular>Document, type <Plural>Reader, type <Plural>Writer }
@@ -407,7 +407,7 @@ const controller: ProjectionController<Events> = { decoder, handler }
 - [ ] `src/index.ts` `mountProjection`: `app.post(path, EventBusAuthMiddleware, express.json({ limit: "5mb" }), handleProjection(path, ...))`
 - [ ] `packages/backend/development/postie/application.yaml` `data_destinations` entry, `endpoint` set to the projection's path
 - [ ] `packages/backend/development/postie/postie.yaml` `destinations.<Id>: { kind: projection }`
-- [ ] Test fixtures that build a full projection map extended with the new repo: `projectionsHarness` in `packages/backend/tests/support/notes.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/note.test.ts` (`pnpm typecheck` lists any you miss)
+- [ ] Test fixtures that build a full projection map extended with the new repo: `projectionsHarness` in `packages/backend/tests/support/aiSetups.ts`, `packages/backend/tests/unit/app/projection-boundary.test.ts`, the `ReadProjections` stub in `packages/backend/tests/unit/domain/ai-projection.test.ts` (`pnpm typecheck` lists any you miss)
 - [ ] Add a query if clients need to read the projection
 
 ### Reaction controller

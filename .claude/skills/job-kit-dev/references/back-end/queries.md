@@ -19,19 +19,18 @@ export type QueryHandler<Req, Res, Result extends AuthGuardResult = AuthGuardRes
 
 ### Read through the projection reader
 
-Index into `projections` by the repo's `collectionName`, then call one of its reader methods. From `packages/backend/src/domain/note/query/getNote.ts:14-17` and `listNotes.ts:11-14`:
+Index into `projections` by the repo's `collectionName`, then call one of its reader methods. From `packages/backend/src/domain/ai/query/getSetup.ts:22-29`:
 
 ```ts
-// getNote.ts: fetch one, then .chain into the not-found check (see below)
-const handler: QueryHandler<Query, QueryResponse> = ({ payload, projections }) =>
-  projections[RepoNotes.collectionName].getById(payload.noteId).mapRej((): Response => internalServerError)
-
-// listNotes.ts: fetch many, then .map straight to the response
-const handler: QueryHandler<Query, QueryResponse> = ({ projections }) =>
-  projections[RepoNotes.collectionName]
-    .findActive()
+const handler: QueryHandler<Query, QueryResponse, GuardResult<typeof authGuard>> = ({ auth, projections }) => {
+  const workspaceId = Workspace.idForOwner(auth.actor.userId)
+  return projections[RepoAiSetups.collectionName]
+    .get(workspaceId)
     .mapRej((): Response => internalServerError)
-    .map((notes) => ({ notes: notes.map(toNoteDto) }))
+    .map((found) =>
+      toSetupView(found.map((doc) => doc.ai).withDefault(initialAi), routeViews(env.AI_TEST_ADAPTER === "on"))
+    )
+}
 ```
 
 ### Store errors become a generic 500
@@ -40,46 +39,39 @@ Two layers hide store failures from the client, both mapping to the same reply. 
 
 ### DTO mapping drops internal fields
 
-Map the projection document to the wire shape explicitly; don't return the document as-is. From `packages/backend/src/domain/note/query/noteSchema.ts:18-21`:
+Map the projection document to the wire shape explicitly; don't return the document as-is. `getSetup.ts` maps through `toSetupView` (`ai/views.ts`), whose `toConnectionView` drops `credentialRef` and `accountId` — only what the browser is allowed to see (`packages/backend/src/domain/ai/views.ts:93-105`):
 
 ```ts
-/** Project a read-model document onto the wire shape, dropping `status`: queries only return live notes. */
-function toNoteDto(doc: NoteDocument): NoteDto {
-  return { noteId: doc.noteId, title: doc.title, body: doc.body, createdAt: doc.createdAt, updatedAt: doc.updatedAt }
+function toConnectionView(connection: Connection): ConnectionView {
+  return {
+    connectionId: connection.connectionId,
+    provider: connection.provider,
+    method: connection.method,
+    account: connection.capabilities.account, // masked, from Capabilities — never the raw accountId
+    billing: connection.capabilities.billing,
+    status: connection.status,
+    checkedAt: connection.checkedAt,
+    models: connection.capabilities.models,
+    preferences: connection.preferences,
+  }
 }
 ```
 
 ### Missing record: 404 via the domain `toResponse`
 
-`.chain`, not `.mapRej`, turns "not found" into its own reply — `mapRej` would collapse it into the generic 500 alongside real store failures. From `packages/backend/src/domain/note/query/getNote.ts:18-24`:
-
-```ts
-const handler: QueryHandler<Query, QueryResponse> = ({ payload, projections }) =>
-  projections[RepoNotes.collectionName]
-    .getById(payload.noteId)
-    .mapRej((): Response => internalServerError)
-    .chain((found) =>
-      found
-        .chain(activeDocument)
-        .maybe<Future<Response, QueryResponse>>(Future.reject(toResponse({ type: "not_found" })), (note) =>
-          Future.resolve({ note: toNoteDto(note) })
-        )
-    )
-```
-
-Notes aren't owner-scoped yet — any authenticated user can read any note (`listNotes.ts` doesn't filter by `actor`).
+`.chain`, not `.mapRej`, turns "not found" into its own reply — `mapRej` would collapse it into the generic 500 alongside real store failures. No query in this codebase hits this today (`getSetup.ts` always has a value, defaulting to `initialAi` for a not-yet-projected workspace), but the rule still applies to a query whose record is genuinely optional: reject with the domain's own `toResponse({ type: "not_found" })` (`commands.md`, "Model domain errors as a `Result` union") from inside the `.chain`, never from a `.mapRej`.
 
 ### `ReadProjections` has no writer
 
-A query's `projections` argument is typed `ReadProjections`, which only ever holds a `<Plural>Reader` (`getById`, `findActive`, ...); `WriteProjections` — the type projection handlers get — adds `save` and the idempotency repo. A query that calls `.save(...)` fails to typecheck; there's no runtime guard needed. From `packages/backend/src/app/projections.ts:28-36`:
+A query's `projections` argument is typed `ReadProjections`, which only ever holds a `<Plural>Reader` (`get`/`getById`, ...); `WriteProjections` — the type projection handlers get — adds `save` and the idempotency repo. A query that calls `.save(...)` fails to typecheck; there's no runtime guard needed. From `packages/backend/src/app/projections.ts:32-40`:
 
 ```ts
 export type ReadProjections = {
-  readonly [RepoNotes.collectionName]: NotesReader
+  readonly [RepoAiSetups.collectionName]: AiSetupsReader
 }
 
 export type WriteProjections = {
-  readonly [RepoNotes.collectionName]: NotesWriter
+  readonly [RepoAiSetups.collectionName]: AiSetupsWriter
   readonly [RepoProjectionIdempotency.collectionName]: IdempotencyRepo
 }
 ```

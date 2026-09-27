@@ -18,10 +18,9 @@ Own setup progress and navigation after [login](01-login.md). Profile content an
 
 Job Kit login and AI-provider authorization are separate operations. V1 is web-only and runs platform services on the owner's VPS. A provider connection is required before profile creation. Hosted encrypted credential adapters serve profile generation and browser-agent work. Connection state, capabilities, and credential references may be stored; raw provider credentials must not enter progress records, logs, analytics, or model inputs. Follow [provider-connection research](../../research/provider-connections.md), [execution architecture](../../architecture/execution.md), and the accepted [self-hosted platform decision](../../decisions/0008-self-hosted-platform.md).
 
-The initial provider target is the full four-provider set and these methods from the reviewed `commit-tools` implementation at commit `07321aa31a734bbe6e52fa0776666d1df81eaee9`:
+The provider target is OpenAI, Anthropic and xAI (Gemini was dropped on 2026-09-27) with these methods from the reviewed `commit-tools` implementation at commit `07321aa31a734bbe6e52fa0776666d1df81eaee9`:
 
 - **OpenAI:** device login or API key.
-- **Gemini:** OAuth or API key.
 - **Anthropic:** pasted setup token or API key. A user may generate an optional setup token in an external terminal; Job Kit does not install a companion or local executor.
 - **xAI:** device login or API key.
 
@@ -58,7 +57,6 @@ The Connect AI screen offers one card per provider. Each card names the provider
 Choosing a provider opens its authorization page in a new tab where one exists, and Job Kit shows a dialog for that route:
 
 - **OpenAI and xAI:** the dialog shows the device code as selectable text with **Copy**, the time left, a visible waiting state, and a link to reopen the provider tab if it was blocked.
-- **Gemini:** the dialog waits for the OAuth callback and continues on its own when Google redirects back. It offers a link to reopen Google sign-in.
 - **Anthropic:** no tab opens. The dialog shows the `claude setup-token` command with **Copy** and a secure field to paste the token. It does not require a Job Kit installation.
 - **API key:** the dialog asks for the provider and a secure key field, and states that the key bills the provider's API account rather than a chat plan.
 
@@ -90,9 +88,9 @@ Add an **AI** panel to the existing settings dialog, second in the rail after Pr
 
 - A new user can explain what Job Kit produces, why an AI connection is needed, and what V1 does with a match.
 - One visual overview communicates the V1 journey using labeled sample content.
-- Onboarding lists OpenAI, Gemini, Anthropic, and xAI with the target connection methods specified above; the target set is not silently reduced.
+- Onboarding lists OpenAI, Anthropic, and xAI with the target connection methods specified above; the target set is not silently reduced.
 - Each advertised-ready provider method passes both hosted technical verification and the applicable product-authorization check. Unproven methods cannot be represented as ready.
-- A user can complete a proven provider route through guided UI, including device/OAuth handoff or secure key/token entry as applicable.
+- A user can complete a proven provider route through guided UI, including device handoff or secure key/token entry as applicable.
 - No companion installation, device enrollment, local executor, or companion wait is part of onboarding.
 - Denial, expiry, cancellation, failed browser opening or clipboard access, credential rejection, and quota exhaustion have visible recovery actions.
 - Interrupted setup preserves completed milestones without exposing credentials and rechecks connection readiness before continuing.
@@ -104,12 +102,12 @@ Add an **AI** panel to the existing settings dialog, second in the rail after Pr
 
 ## Decisions for this step
 
-The four provider targets, listed methods, hosted encrypted credential adapters, and own-AI prerequisite are selected. The guided-wizard layout, per-provider dialogs, secondary API-key entry, and single active connection with verify-then-confirm switching were selected on 2026-09-23. Technical support and provider authorization are still separate proof gates. Step 02 ends when a selected route is verified and profile creation can begin; profile confirmation remains owned by step 03.
+The three provider targets, listed methods, hosted encrypted credential adapters, and own-AI prerequisite are selected. API keys are the first live routes; the subscription sign-ins stay unproven because the commit-tools flows impersonate each provider's own CLI. The guided-wizard layout, per-provider dialogs, secondary API-key entry, and single active connection with verify-then-confirm switching were selected on 2026-09-23. Technical support and provider authorization are still separate proof gates. Step 02 ends when a selected route is verified and profile creation can begin; profile confirmation remains owned by step 03.
 
 Use [provider-connection research](../../research/provider-connections.md) to resolve compatibility and authorization evidence. Keep unresolved provider proofs and any required measured limits as bounded blocker tickets in the [delivery backlog](../linear-backlog.md); do not turn a research recommendation into a product guarantee.
 
 ## Validation before implementation
 
-Prototype the overview, at least one supported device/OAuth route, API-key entry, the Anthropic external setup-token paste path if that route is authorized, and the settings AI panel's switch and model flows. Test whether first-time job seekers understand the product and can connect without assistance.
+Prototype the overview, at least one supported device route, API-key entry, the Anthropic external setup-token paste path if that route is authorized, and the settings AI panel's switch and model flows. Test whether first-time job seekers understand the product and can connect without assistance.
 
 Exercise successful and denied authorization, blocked browser opening, failed clipboard access, expiry, cancellation followed by retry, refresh during setup, invalid or revoked credentials, quota exhaustion, and an already connected returning user. Verify route/account/billing labels, encrypted credential handling, credential-free logs, keyboard navigation, focus after browser return, screen-reader announcements, and reduced motion. A UI success state is not proof that hosted compatibility or provider authorization has passed.

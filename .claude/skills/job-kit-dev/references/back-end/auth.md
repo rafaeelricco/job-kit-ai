@@ -29,20 +29,20 @@ function guardRequest<R extends AuthGuardResult>(
 `Auth` (`packages/backend/src/app/auth/policy.ts:100`) is the only export controllers use to build `authGuard`.
 
 ```md
-| Builder                          | Allows                                 | Used by                          |
-| -------------------------------- | -------------------------------------- | -------------------------------- |
-| `Auth.public()`                  | anyone, including `Anonymous`          | requestCode, verifyCode, whoAmI  |
-| `Auth.authenticated()`           | any `User` actor                       | note commands/queries, signOut   |
-| `Auth.system(capability)`        | `system:<capability>` in `privileges`  | none yet                         |
-| `Auth.session(capability, msg?)` | `session:<capability>` in `privileges` | none yet                         |
-| `Auth.anyOf(...guards)`          | first allow wins, else last denial     | none yet                         |
+| Builder                          | Allows                                 | Used by                             |
+| -------------------------------- | -------------------------------------- | ----------------------------------- |
+| `Auth.public()`                  | anyone, including `Anonymous`          | requestCode, verifyCode, whoAmI     |
+| `Auth.authenticated()`           | any `User` actor                       | workspace commands/queries, signOut |
+| `Auth.system(capability)`        | `system:<capability>` in `privileges`  | none yet                            |
+| `Auth.session(capability, msg?)` | `session:<capability>` in `privileges` | none yet                            |
+| `Auth.anyOf(...guards)`          | first allow wins, else last denial     | none yet                            |
 ```
 
 Nothing uses `Auth.system`/`Auth.session`/`Auth.anyOf` yet, and nothing in `resolveAuth` grants a privilege yet either (see below) — the builders exist ahead of the first privileged endpoint.
 
 ### Type the handler and controller from the guard
 
-`CommandHandler`/`QueryHandler` and `CommandController`/`QueryController` (`packages/backend/src/app/handlers.ts`) all take the guard's result as their last type parameter, defaulting to the general `AuthGuardResult`. The note controllers leave it at the default (`authGuard: Auth.authenticated()` inline). The auth controllers pass `GuardResult<typeof authGuard>`, either inline:
+`CommandHandler`/`QueryHandler` and `CommandController`/`QueryController` (`packages/backend/src/app/handlers.ts`) all take the guard's result as their last type parameter, defaulting to the general `AuthGuardResult`. Every controller in the codebase pins the narrower type instead, either inline:
 
 ```ts
 // packages/backend/src/domain/auth/command/signOut.ts:10-19

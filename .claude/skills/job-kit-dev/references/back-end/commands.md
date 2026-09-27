@@ -6,32 +6,27 @@ API schema, controller skeleton, and `api.ts` / `index.ts` registration: `templa
 
 ### Validate before opening a transaction
 
-Resolve request-shaped validation to a `Result` first, and `.chain` into `withEventStore` only once it succeeds — a blank title never opens a transaction. From `packages/backend/src/domain/note/command/updateNote.ts:18-20`:
-
-```ts
-const handler: CommandHandler<Command, CommandResponse> = ({ payload, withEventStore }) =>
-  respond(parseTitle(payload.title))
-    .chain((title) =>
-      withEventStore<Response, Result<NoteError, CommandResponse>>(internalError, function* (store) {
-        // ...
-      })
-    )
-    .chain(respond)
-```
+Resolve request-shaped validation to a `Result` first, and `.chain` into `withEventStore` only once it succeeds — invalid input never opens a transaction. The command skeleton in `templates.md` shows the full chain (`respond(parse<Field>(payload.<field>)).chain((<field>) => withEventStore(...)).chain(respond)`).
 
 ### Model domain errors as a `Result` union
 
-One error type per domain, one `toResponse` that switches on it exhaustively, and one `respond` that leaves the `Result` world at the handler's edge. From `packages/backend/src/domain/note/command/noteErrors.ts:7-42`:
+One error type per domain, one `toResponse` that switches on it exhaustively, and one `respond` that leaves the `Result` world at the handler's edge. From `packages/backend/src/domain/ai/command/aiErrors.ts:16-49`:
 
 ```ts
-type NoteError = { type: "not_found" } | { type: "blank_title" }
+type AiError =
+  | { type: "route_not_ready" } // 409: the route isn't offered, or has no adapter behind it yet
+  | { type: "invalid_purpose" } // 409: e.g. "initial" while a connection is already active
+  | { type: "attempt_not_found" } // 404: including another workspace's attempt
+  | { type: "invalid_step" } // 400: a step that doesn't match the attempt's method or state
+  | { type: "connection_not_found" } // 404
+  | { type: "not_ready" } // 409: completing the "connect" setup step without a ready connection
+  | { type: "preference_not_allowed"; reason: PreferenceError } // 422
 
-function toResponse(error: NoteError): Response {
+function toResponse(error: AiError): Response {
   switch (error.type) {
-    case "not_found":
-      return json({ status: 404, content: { error: { message: "Note not found" } } })
-    case "blank_title":
-      return json({ status: 400, content: { error: { message: "Title cannot be empty" } } })
+    case "route_not_ready":
+      return json({ status: 409, content: { error: { message: "This route isn't available yet" } } })
+    // ... one case per AiError variant
     default: {
       const _exhaustiveCheck: never = error
       throw new Error(`Unknown: ${JSON.stringify(_exhaustiveCheck)}`)
@@ -39,7 +34,7 @@ function toResponse(error: NoteError): Response {
   }
 }
 
-function respond<T>(result: Result<NoteError, T>): Future<Response, T> {
+function respondAi<T>(result: Result<AiError, T>): Future<Response, T> {
   return result.either<Future<Response, T>>(
     (error) => Future.reject(toResponse(error)),
     (ok) => Future.resolve(ok)
@@ -51,68 +46,75 @@ Return `Failure(...)` from the generator; never `throw` a domain error (`package
 
 ### Fail from inside the generator, unwrap at the edge
 
-`withEventStore`'s generator can return a `Result<DomainError, Res>` instead of a bare `Res`; a business-rule violation becomes `Failure(...)`, no `throw`. `.chain(respond)` after the store call turns that `Result` into the `Future<Response, Res>` the handler must return. From `packages/backend/src/domain/note/command/deleteNote.ts:18-31`:
+`withEventStore`'s generator can return a `Result<DomainError, Res>` instead of a bare `Res`; a business-rule violation becomes `Failure(...)`, no `throw`. `.chain(respondAi)` after the store call turns that `Result` into the `Future<Response, Res>` the handler must return. From `packages/backend/src/domain/ai/command/completeSetupStep.ts:25-33`:
 
 ```ts
-const handler: CommandHandler<Command, CommandResponse> = ({ payload, withEventStore }) =>
-  withEventStore<Response, Result<NoteError, CommandResponse>>(internalError, function* (store) {
-    const found = yield* store.try_find(Note, payload.noteId)
-    if (found instanceof Nothing) return Failure({ type: "not_found" })
-    // ...
-    return Success({ success: true })
-  }).chain(respond)
+return withEventStore<Response, Result<AiError, CommandResponse>>(aiInternalError, function* (store) {
+  const workspace = yield* store.find(Workspace, workspaceId)
+  const decided = decideStep(workspace.values.ai, workspaceId, payload.step)
+  if (decided instanceof Failure) return Failure(decided.error)
+  if (!(decided.value instanceof Just)) return Success({ setup: toSetupView(workspace.values.ai, ai.routes) })
+  yield* store.emit({ aggregate: Workspace, event: decided.value.value })
+  const updated = yield* store.find(Workspace, workspaceId)
+  return Success({ setup: toSetupView(updated.values.ai, ai.routes) })
+}).chain(respondAi)
 ```
+
+`decideStep` (`ai/decide.ts`) is the pure invariant check; the handler only unwraps its verdict. Splitting the decision out this way — a plain function of the aggregate's current state that returns a `Result`/`Maybe` — keeps `function* (store)` itself free of business logic.
 
 ### Client-chosen id as the idempotency receipt
 
-When the client picks the aggregate id, the stream itself is the command's receipt: a retried create finds the existing stream and replies with the same response instead of emitting a duplicate. From `packages/backend/src/domain/note/command/createNote.ts:16-35`:
-
-```ts
-const handler: CommandHandler<Command, CommandResponse> = ({ payload, withEventStore }) =>
-  respond(parseTitle(payload.title)).chain((title) =>
-    withEventStore(internalError, function* (store) {
-      // The client owns the id, so the stream doubles as the command
-      // receipt: a retried create finds it and gets the original reply.
-      const noteId = payload.noteId
-      const existing = yield* store.try_find(Note, noteId)
-      if (existing instanceof Just) return { noteId }
-      yield* store.emit({
-        aggregate: Note,
-        event: new NoteCreated({ type: NoteCreated.type, aggregateId: noteId, title, body: payload.body }),
-      })
-      return { noteId }
-    })
-  )
-```
+When the client picks the aggregate id, the stream itself is the command's receipt: a retried create finds the existing stream and replies with the same response instead of emitting a duplicate. There's no client-chosen-id example in this codebase today — every aggregate id is derived instead (`Workspace.idForOwner`, `User.idForEmail`) — but the principle is the same one `provisionUser` uses below ("Emit multiple aggregates atomically"): look the stream up before creating it, and a repeat call finds what already exists instead of emitting a duplicate.
 
 ### No-op guard
 
-Compare the requested change against the current state and skip the emit when nothing would change — `sameContent` on the aggregate, not in the handler, so the rule can't drift between commands that use it. From `packages/backend/src/domain/note/command/updateNote.ts:22-24` and `packages/backend/src/domain/note/aggregate/note.ts:47-49`:
+Compare the requested change against the current state and skip the emit when nothing would change — the comparison lives in the pure decide function, not the handler, so the rule can't drift between commands that use it. From `packages/backend/src/domain/ai/decide.ts:274-299` (`decidePreferences`, used by `setPreferences.ts`):
 
 ```ts
-withEventStore<Response, Result<NoteError, CommandResponse>>(internalError, function* (store) {
-  const found = (yield* store.try_find(Note, payload.noteId)).chain(activeNote)
-  if (found instanceof Nothing) return Failure({ type: "not_found" })
-  if (sameContent(found.value, title, payload.body)) return Success({ success: true })
-  // only reached when title or body actually changed
-})
+function decidePreferences(
+  ai: AiState,
+  workspaceId: Id<"Workspace">,
+  id: Id<"AiConnection">,
+  preferences: Preferences
+): Result<AiError, Maybe<AiPreferencesChanged>> {
+  if (!(ai.active instanceof Just) || ai.active.value.connectionId.value !== id.value) {
+    return Failure({ type: "connection_not_found" })
+  }
+  const active = ai.active.value
+  const checked = checkPreferences(active.capabilities, preferences)
+  if (checked instanceof Failure) return Failure({ type: "preference_not_allowed", reason: checked.error })
+  const next = checked.value
+  if (active.preferences.model === next.model && active.preferences.effort === next.effort) return Success(Nothing())
+  // only reached when the model or effort actually changed
+  return Success(Just(new AiPreferencesChanged({/* ... */})))
+}
 ```
 
-### Idempotent delete
+The handler (`setPreferences.ts:31-32`) turns `Nothing` into the same `Success` reply it would give after a real emit, so a resubmit is indistinguishable from the first save.
 
-Deleting an already-deleted note succeeds without emitting a second `NoteDeleted`, so a retried delete is safe. From `packages/backend/src/domain/note/command/deleteNote.ts:19-30`:
+### Idempotent repeat of a terminal action
+
+Disconnecting an already-disconnected connection succeeds without emitting a second `AiConnectionDisconnected`, so a retried disconnect is safe. From `packages/backend/src/domain/ai/decide.ts:250-267` (`decideDisconnect`, used by `disconnect.ts`):
 
 ```ts
-withEventStore<Response, Result<NoteError, CommandResponse>>(internalError, function* (store) {
-  const found = yield* store.try_find(Note, payload.noteId)
-  if (found instanceof Nothing) return Failure({ type: "not_found" })
-  if (found.value.values.status === "Deleted") return Success({ success: true })
-  yield* store.emit({
-    aggregate: Note,
-    event: new NoteDeleted({ type: NoteDeleted.type, aggregateId: payload.noteId }),
-  })
-  return Success({ success: true })
-})
+function decideDisconnect(
+  ai: AiState,
+  workspaceId: Id<"Workspace">,
+  id: Id<"AiConnection">
+): Result<AiError, Maybe<{ event: AiConnectionDisconnected; release: Id<"AiSecret">[] }>> {
+  if (ai.active instanceof Nothing) return Success(Nothing())
+  if (ai.active.value.connectionId.value !== id.value) return Failure({ type: "connection_not_found" })
+  return Success(
+    Just({
+      event: new AiConnectionDisconnected({
+        type: AiConnectionDisconnected.type,
+        aggregateId: workspaceId,
+        connectionId: id,
+      }),
+      release: [ai.active.value.credentialRef],
+    })
+  )
+}
 ```
 
 ### Emit multiple aggregates atomically

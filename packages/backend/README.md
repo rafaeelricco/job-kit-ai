@@ -1,11 +1,10 @@
 # Event Sourcing Scaffold
 
-A tiny notes app that teaches event sourcing. You save a note, the app writes
-down _what happened_ (an event) in PostgreSQL, and a second process turns those
-events into a list you can read from MongoDB.
+The Job Kit API. Commands write _what happened_ (an event) to PostgreSQL, and
+postie delivers those events to projections that keep read models in MongoDB.
 
 ```text
-you → command → PostgreSQL (events) → postie → MongoDB (notes) → query → you
+you → command → PostgreSQL (events) → postie → MongoDB (read models) → query → you
 ```
 
 ## What you need
@@ -25,8 +24,7 @@ pnpm run up
 ```
 
 The first start takes a few minutes. When it finishes, open
-**http://localhost:3010** — that is the API. Create a note with the curl
-examples below, then list it to confirm the projection caught up.
+**http://localhost:3010** — that is the API.
 
 Is it alive?
 
@@ -73,7 +71,7 @@ To turn on Google sign-in:
 pnpm run down
 ```
 
-Your notes are kept. They are there again next time you start.
+Your data is kept. It is there again next time you start.
 
 ## Change the code
 
@@ -86,13 +84,13 @@ anything in the shared `../lib/` (it is not mounted into the container).
 
 Where things are:
 
-| Folder             | What is inside                                                                                                  |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `src/domain/note/` | The notes: commands (create, update, delete), queries (get, list), events, and the projection. **Start here.** |
-| `src/app/`         | The glue that connects notes to the web server and the databases.                                              |
-| `src/lib/`         | Server building blocks: the event store, Postgres, Mongo, the router. Import them as `@be/lib/...`.            |
-| `../lib/`          | Shared with the app: `Maybe`, `Result`, `Future`, schemas, time. Import them as `@lib/...`.                     |
-| `tests/`           | The tests.                                                                                                      |
+| Folder        | What is inside                                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/domain/` | The domains: ai, auth, user, workspace — commands, queries, events, and projections. **Start here:** `src/domain/ai/`. |
+| `src/app/`    | The glue that connects domains to the web server and the databases.                                                    |
+| `src/lib/`    | Server building blocks: the event store, Postgres, Mongo, the router. Import them as `@be/lib/...`.                    |
+| `../lib/`     | Shared with the app: `Maybe`, `Result`, `Future`, schemas, time. Import them as `@lib/...`.                            |
+| `tests/`      | The tests.                                                                                                             |
 
 Before you write code, read [CONVENTIONS.md](CONVENTIONS.md). The short
 version: no `null`, no `throw` for things that can normally go wrong, no `any`.
@@ -118,8 +116,8 @@ and functions, and 70% branches.
 
 ## Call the API
 
-Everything is a `POST` with JSON. Notes need a signed-in session; curl keeps
-the session cookie in `cookies.txt`.
+Everything is a `POST` with JSON. Most endpoints need a signed-in session;
+curl keeps the session cookie in `cookies.txt`.
 
 Sign in with an email code. There is no separate sign-up: the first sign-in
 creates your account. Ask for a code:
@@ -143,51 +141,6 @@ curl -sS -c cookies.txt http://localhost:3010/api/v1/auth/command/verify-code \
   -H 'Content-Type: application/json' -d '{"email":"me@example.com","code":"123456"}'
 ```
 
-Create a note:
-
-```bash
-NOTE_ID=$(node -pe 'crypto.randomUUID()')
-curl -sS -b cookies.txt http://localhost:3010/api/v1/note/command/create-note \
-  -H 'Content-Type: application/json' \
-  -d "{\"noteId\":\"$NOTE_ID\",\"title\":\"Shopping\",\"body\":\"Milk\"}"
-```
-
-You choose the `noteId`, so sending the same request again is safe: it answers
-with the same `noteId` and records nothing new. Use that id below in place of
-`YOUR_NOTE_ID`.
-
-List notes:
-
-```bash
-curl -sS -b cookies.txt http://localhost:3010/api/v1/note/query/list-notes \
-  -H 'Content-Type: application/json' -d '{}'
-```
-
-Read one note:
-
-```bash
-curl -sS -b cookies.txt http://localhost:3010/api/v1/note/query/get-note \
-  -H 'Content-Type: application/json' -d '{"noteId":"YOUR_NOTE_ID"}'
-```
-
-Change a note (send both title and body):
-
-```bash
-curl -sS -b cookies.txt http://localhost:3010/api/v1/note/command/update-note \
-  -H 'Content-Type: application/json' \
-  -d '{"noteId":"YOUR_NOTE_ID","title":"Weekend shopping","body":"Milk and coffee"}'
-```
-
-Delete a note:
-
-```bash
-curl -sS -b cookies.txt http://localhost:3010/api/v1/note/command/delete-note \
-  -H 'Content-Type: application/json' -d '{"noteId":"YOUR_NOTE_ID"}'
-```
-
-A new note can take a second to show up in the list. That is normal: the
-event is saved first, and the list is updated right after.
-
 Sign out:
 
 ```bash
@@ -205,13 +158,13 @@ pnpm compose exec postgres \
   'SELECT id, event_name, aggregate_version, payload FROM event_store ORDER BY id;'
 ```
 
-The notes as the list sees them:
+A read model as a query sees it:
 
 ```bash
 pnpm compose exec mongo \
   mongosh --quiet --username notepad --password local_notepad_mongo \
   --authenticationDatabase admin notepad_projections \
-  --eval 'db.Note_Notes.find().forEach(printjson)'
+  --eval 'db.Workspace_AiSetups.find().forEach(printjson)'
 ```
 
 ## When something goes wrong
@@ -222,12 +175,12 @@ See what the app is saying:
 pnpm compose logs --tail=100 api postie
 ```
 
-| Problem                          | Fix                                                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `pnpm run up` fails right away   | Docker is not running. Open Docker and try again.                                                       |
-| It fails while pulling `postie`  | Docker cannot reach `ghcr.io/rafaeelricco/postie`. Check your connection, then run `pnpm run up` again. |
-| Port 3010 is already used        | Set `API_PORT` in `development/.env` to another number.                                                 |
-| A note never appears in the list | Check postie logs and that the subscription is not paused (`GET /api/dev/engine/subscriptions`).        |
+| Problem                         | Fix                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm run up` fails right away  | Docker is not running. Open Docker and try again.                                                       |
+| It fails while pulling `postie` | Docker cannot reach `ghcr.io/rafaeelricco/postie`. Check your connection, then run `pnpm run up` again. |
+| Port 3010 is already used       | Set `API_PORT` in `development/.env` to another number.                                                 |
+| A read model never catches up   | Check postie logs and that the subscription is not paused (`GET /api/dev/engine/subscriptions`).        |
 
 ## Recover a missing Kafka topic
 
