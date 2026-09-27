@@ -131,7 +131,8 @@
    **If `KIT_ROOT` resolved** — set `{{KIT_INSTALL}}` from the probe. Print
    commands the operator actually needs, never a conditional they must evaluate:
 
-   - Every probed channel installed → `Kit channels already installed from <KIT_ROOT>.
+   - Every probed channel installed and no other bullet below fires →
+     `Kit channels already installed from <KIT_ROOT>.
 Nothing to run.`
    - Aside not installed →
      `Install the Aside skills:
@@ -146,6 +147,10 @@ bash "<KIT_ROOT>/scripts/install.sh" agents`
    - Browser probe matched no complete home → name each partial home as above,
      then `Link job-scout, job-apply, and job-prep into your agent homes:
 bash "<KIT_ROOT>/scripts/install.sh" browser-use`
+   - Browser probe matched some homes but not all, or matched a home only
+     partially → name each home and the browser skills it is missing, then the
+     same absolute command. A partial home is named here, never passed over as
+     installed.
    - Any probe _unknown_ → print its command with the reason it could not be
      checked. Commands are absolute; CWD does not matter.
 
