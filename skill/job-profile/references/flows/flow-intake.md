@@ -63,7 +63,9 @@ root (so scout/apply can resolve it). Enum; **Yes (Recommended)** first. Silence
 is not yes. Create path: ask together with Source mode in one turn (below).
 Register-existing: this is the only remaining question — ask it alone.
 Pointer / dual-home / pure-convention mechanics: `./references/flows/flow-activate.md` only.
-Describe Activate as registering the Profile root through pointer files; its
+Describe Activate as making `<target>` the Profile root skills resolve: by path
+convention at host-default `~/.config/job-kit` (a pointer only when a valid XDG
+profile would otherwise outrank it), through pointer files anywhere else. Its
 session env export never reaches Aside.
 
 Example prompt:
