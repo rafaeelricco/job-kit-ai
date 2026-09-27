@@ -1,6 +1,6 @@
 # Intake
 
-Named stages only — never number the questions or steps. Stages run in order;
+Refer to intake stages by name. Stages run in order;
 every stage before **Approve** is read-only.
 Batch only independent enums (Route modes; on the create path, Activate ask +
 Source mode together). Dependent branches stay sequential. Enumerables:
@@ -62,8 +62,11 @@ Once absolute `<target>` is known, ask whether to make it the machine Profile
 root (so scout/apply can resolve it). Enum; **Yes (Recommended)** first. Silence
 is not yes. Create path: ask together with Source mode in one turn (below).
 Register-existing: this is the only remaining question — ask it alone.
-Pointer / dual-home / pure-convention mechanics: `./references/flows/flow-activate.md` only. Do not
-market Activate as “set env for Aside.”
+Pointer / dual-home / pure-convention mechanics: `./references/flows/flow-activate.md` only.
+Describe Activate as making `<target>` the Profile root skills resolve: by path
+convention at host-default `~/.config/job-kit` (a pointer only when a valid XDG
+profile would otherwise outrank it), through pointer files anywhere else. Its
+session env export never reaches Aside.
 
 Example prompt:
 

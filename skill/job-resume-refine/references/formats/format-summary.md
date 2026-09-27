@@ -8,7 +8,7 @@ Three sentences, each with a job:
 
 | #   | job                                               | drawn from                                                 |
 | --- | ------------------------------------------------- | ---------------------------------------------------------- |
-| 1   | the discipline the ad leads with, and how long    | roles that show it; years floored from their `date` fields |
+| 1   | the discipline the ad leads with, and how long    | roles that show it; years via `job-match/scripts/years.py` |
 | 2   | the standing angle that makes sentence 1 credible | the base's own block, reusable verbatim                    |
 | 3   | one recent proof the ad would care about          | the `claim` or `summary[]` clause whose work the ad raises |
 
@@ -46,5 +46,5 @@ A quoted phrase below is the failure, not a paraphrase of one.
 - `Passionate, results-driven engineer` — adjectives no Fact prints.
 - `It worked`, `the client was happy`, `shipped to production` — not outcomes.
 - `I am confident that`, `I believe I could`, `maybe` — hedges.
-- `{n}+ years` where the `date` fields floor to fewer — years round down.
+- `{n}+ years` above what `job-match/scripts/years.py` returns — years round down.
 - A process count — PRs, lines of code, commits, files touched.

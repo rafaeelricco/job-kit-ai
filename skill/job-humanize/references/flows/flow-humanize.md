@@ -1,8 +1,8 @@
 # Humanize pass
 
 Caller pastes `Surface`, `CONTRACT`, and `DRAFT`. Return only the rewritten
-`DRAFT`: no pattern list, no commentary. Never a Fact path, never `### Fit` /
-`### Left out`, never a caller flow file.
+`DRAFT`: no pattern list, no commentary. Never a Fact path, never a caller
+flow file.
 
 If `Surface`, `CONTRACT`, or `DRAFT` is missing, stop and name the hole.
 
@@ -11,8 +11,9 @@ If `Surface`, `CONTRACT`, or `DRAFT` is missing, stop and name the hole.
 1. `CONTRACT` in the brief is absolute.
 2. This file.
 
-Do not merge or split CONTRACT slots. Do not rewrite a bullet, skill token,
-heading, tech-tag line, or a sentence the CONTRACT marks verbatim.
+Do not merge or split CONTRACT slots. Rewrite only the surface's `In` column
+below; a skill token, heading, tech-tag line, or sentence the CONTRACT marks
+verbatim stays as written.
 
 ## Surfaces
 

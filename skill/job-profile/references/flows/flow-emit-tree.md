@@ -24,7 +24,7 @@ substitute every token in the target tree (all text files):
 | `{{email}}`             | Email             |
 | `{{github_username}}`   | GitHub username   |
 
-## Leak gate (must pass before checklist)
+## Leak gate (must pass before fill)
 
 Always screen for unsubstituted tokens:
 

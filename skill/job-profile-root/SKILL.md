@@ -16,6 +16,6 @@ Print the absolute path before returning. STOP if none. Do not invent a path.
    - `JOB_KIT_CONFIG`: non-empty `$XDG_CONFIG_HOME` → `$XDG_CONFIG_HOME/job-kit`, else `$HOME/.config/job-kit`.
    - **Host-default fallback:** `$HOST_HOME/.config/job-kit` (`HOST_HOME` from step 3 if dual-home, else strip `/.aside/runtime/home` from `$HOME` or use `$HOME`). Probe when that path differs from `JOB_KIT_CONFIG`.
 5. Walk session CWD upward until probe passes.
-6. else STOP. Name each attempt (env, each pointer file + line, each default config path, walk start), then point at `job-profile` (**create new**, or **register existing** with Activate = Yes). Load `./references/formats/format-recover.md` on STOP or step 2–4 fail. Never scaffold a profile from here.
+6. else STOP. Name each attempt (env, each pointer file + line, each default config path, walk start), then point at `job-profile` in a coding agent (**create new**, or **register existing** with Activate = Yes). Load `./references/formats/format-recover.md` on STOP or step 2–4 fail. Never scaffold a profile from here.
 
 Return: `Profile root: {absolute path}`. Caller resolves its own `data/*` / `scout/` against that path.
