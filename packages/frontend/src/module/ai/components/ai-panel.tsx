@@ -280,7 +280,8 @@ function pickModel(models: readonly Model[], id: string): Model | undefined {
 
 /**
  * S1/S2's Model select + Reasoning effort toggle + Save/Reset row, one local draft keyed (by the caller) on the
- * active connection id so a switch or reconnect re-seeds it. Mirrors `useCardSave`/`SaveButton`
+ * active connection id and its saved preferences, so a switch, or a reconnect that keeps the id but resets the
+ * preferences, re-seeds it. Mirrors `useCardSave`/`SaveButton`
  * (`settings-surface.tsx:97-151`): a `RemoteData<FetchError, void>` submit cell, both actions disabled until dirty.
  */
 function ModelAndEffort({
@@ -468,7 +469,12 @@ function AiPanelContent({
 
       {setup.active === null ?
         <DisconnectedModelField />
-      : <ModelAndEffort key={setup.active.connectionId.value} connection={setup.active} replace={replace} />}
+      : <ModelAndEffort
+          key={`${setup.active.connectionId.value}:${setup.active.preferences.model}:${setup.active.preferences.effort}`}
+          connection={setup.active}
+          replace={replace}
+        />
+      }
 
       <div>
         <Link
