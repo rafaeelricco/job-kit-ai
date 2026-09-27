@@ -1,5 +1,6 @@
 import { Future } from "@lib/future"
-import { type Maybe, fromNullable } from "@lib/maybe"
+import { type Maybe, Just, Nothing, fromNullable } from "@lib/maybe"
+import { POSIX, Duration } from "@lib/time"
 import { type Aggregate, Id, type IdOf } from "@be/lib/event-sourcing/event"
 import {
   type DatabaseEntry,
@@ -11,6 +12,14 @@ import {
 import { schemas } from "@be/app/events"
 import { type SessionStore } from "@be/app/session"
 import { type LoginCodes } from "@be/app/loginCodes"
+import { type SecretVault } from "@be/app/ai/vault"
+import { type Attempt, type AttemptState, type Settlement, type Attempts } from "@be/app/ai/attempts"
+import { type AiConnections } from "@be/app/ai/connections"
+import { type Secret } from "@be/domain/ai/adapter"
+import { type VaultKeys, type Sealed, vaultKeys, seal, open } from "@be/app/ai/crypto"
+import { routeViews } from "@be/domain/ai/routes"
+import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
+import { type ProviderAdapter } from "@be/domain/ai/adapter"
 
 /** Exercises the real encoder/hydrator; only persistence is replaced. */
 export class MemoryEventDatabase implements EventStoreDatabase {
@@ -77,4 +86,135 @@ export class MemoryLoginCodes implements LoginCodes {
     })
   readonly consume = (email: string, code: string): Future<Error, boolean> =>
     Future.resolve(this.live.get(email) === code && this.live.delete(email))
+}
+
+const TEST_KEYS: VaultKeys = vaultKeys("", "test").unwrap((e) => e)
+const aad = (workspaceId: Id<"Workspace">, ref: Id<"AiSecret">): string => `${workspaceId.value}\n${ref.value}`
+
+/** Uses the real `seal`/`open` over a `Map`, so the vault's crypto (and its AAD binding) is exercised, only persistence is faked. */
+export class MemoryVault implements SecretVault {
+  private readonly rows = new Map<string, { workspaceId: string; sealed: Sealed }>()
+
+  readonly put = (workspaceId: Id<"Workspace">, secret: Secret): Future<Error, Id<"AiSecret">> =>
+    Future.create((_, resolve) => {
+      const ref = Id.random<"AiSecret">()
+      this.rows.set(ref.value, {
+        workspaceId: workspaceId.value,
+        sealed: seal(TEST_KEYS, aad(workspaceId, ref), secret),
+      })
+      resolve(ref)
+    })
+
+  readonly get = (workspaceId: Id<"Workspace">, ref: Id<"AiSecret">): Future<Error, Maybe<Secret>> =>
+    Future.create((_, resolve) => {
+      const row = this.rows.get(ref.value)
+      resolve(
+        row === undefined || row.workspaceId !== workspaceId.value
+          ? Nothing()
+          : open(TEST_KEYS, aad(workspaceId, ref), row.sealed)
+      )
+    })
+
+  /** Every sealed ref this workspace still holds, so a test can prove nothing was left behind. */
+  refsFor(workspaceId: Id<"Workspace">): string[] {
+    return [...this.rows].filter(([, row]) => row.workspaceId === workspaceId.value).map(([ref]) => ref)
+  }
+
+  readonly remove = (workspaceId: Id<"Workspace">, refs: Id<"AiSecret">[]): Future<Error, void> =>
+    Future.create((_, resolve) => {
+      for (const ref of refs) {
+        const row = this.rows.get(ref.value)
+        if (row !== undefined && row.workspaceId === workspaceId.value) this.rows.delete(ref.value)
+      }
+      resolve(undefined)
+    })
+}
+
+const OPEN_ATTEMPT_STATES: readonly AttemptState[] = ["pending", "authorized", "verification_failed"]
+const LEASE_DURATION = Duration.seconds(30)
+
+type StoredAttempt = Attempt & { leaseUntil: POSIX | null }
+
+/** Mirrors `postgresAttempts`' lease semantics (a 30 s claim, cleared on settle) over a `Map`. */
+export class MemoryAttempts implements Attempts {
+  private readonly rows = new Map<string, StoredAttempt>()
+
+  readonly open = (attempt: Attempt): Future<Error, Id<"AiSecret">[]> =>
+    Future.create((_, resolve) => {
+      const refs: Id<"AiSecret">[] = []
+      for (const row of this.rows.values()) {
+        if (row.workspaceId.value === attempt.workspaceId.value && OPEN_ATTEMPT_STATES.includes(row.state)) {
+          row.state = "superseded"
+          row.leaseUntil = null
+          if (row.secretRef instanceof Just) refs.push(row.secretRef.value)
+          if (row.credentialRef instanceof Just) refs.push(row.credentialRef.value)
+        }
+      }
+      this.rows.set(attempt.attemptId.value, { ...attempt, leaseUntil: null })
+      resolve(refs)
+    })
+
+  readonly find = (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">): Future<Error, Maybe<Attempt>> =>
+    Future.create((_, resolve) => resolve(this.lookup(workspaceId, attemptId)))
+
+  readonly claim = (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">): Future<Error, Maybe<Attempt>> =>
+    Future.create((_, resolve) => {
+      const row = this.rows.get(attemptId.value)
+      const now = POSIX.now()
+      if (
+        row === undefined ||
+        row.workspaceId.value !== workspaceId.value ||
+        !OPEN_ATTEMPT_STATES.includes(row.state) ||
+        (row.leaseUntil !== null && row.leaseUntil.isAfter(now))
+      ) {
+        resolve(Nothing())
+        return
+      }
+      row.leaseUntil = now.addDuration(LEASE_DURATION)
+      resolve(Just(toAttempt(row)))
+    })
+
+  readonly settle = (
+    workspaceId: Id<"Workspace">,
+    attemptId: Id<"AiAttempt">,
+    next: Settlement
+  ): Future<Error, boolean> =>
+    Future.create((_, resolve) => {
+      const row = this.rows.get(attemptId.value)
+      if (
+        row === undefined ||
+        row.workspaceId.value !== workspaceId.value ||
+        !OPEN_ATTEMPT_STATES.includes(row.state)
+      ) {
+        resolve(false)
+        return
+      }
+      row.state = next.state
+      row.failure = next.failure
+      row.credentialRef = next.credentialRef
+      row.leaseUntil = null
+      resolve(true)
+    })
+
+  private lookup(workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">): Maybe<Attempt> {
+    const row = this.rows.get(attemptId.value)
+    return row === undefined || row.workspaceId.value !== workspaceId.value ? Nothing() : Just(toAttempt(row))
+  }
+}
+
+function toAttempt(row: StoredAttempt): Attempt {
+  const { leaseUntil: _leaseUntil, ...attempt } = row
+  return attempt
+}
+
+/** Builds the `AiConnections` a command handler receives in tests: the test adapter over a fresh (or given) `FakeProvider`. */
+export function memoryAi(options?: { fake?: FakeProvider; adapter?: ProviderAdapter }): AiConnections {
+  const fake = options?.fake ?? new FakeProvider("http://localhost:5173/jobs/")
+  return {
+    routes: routeViews("test"),
+    adapter: () => Just(options?.adapter ?? testAdapter(fake)),
+    vault: new MemoryVault(),
+    attempts: new MemoryAttempts(),
+    fakeProvider: Just(fake),
+  }
 }

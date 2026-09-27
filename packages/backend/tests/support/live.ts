@@ -2,9 +2,7 @@ import assert from "node:assert/strict"
 import { randomUUID, randomBytes, createHash } from "node:crypto"
 import { Pool } from "pg"
 import * as s from "@lib/json/schema"
-import { api } from "@be/api"
 import { PlainEndpoint } from "@be/app/endpoint"
-import { type NoteDto } from "@be/domain/note/query/noteSchema"
 import { Id } from "@be/lib/event-sourcing/event"
 import env from "@be/app/environment"
 import { codeDigest, loginCodeSecretFromEnv } from "@be/app/loginCodes"
@@ -71,7 +69,6 @@ export class LiveFixture {
   readonly baseUrl: string
   private readonly pool: Pool
   private currentCaseId: string | undefined
-  private createdIds: Set<Id<"Note">> = new Set()
   private closed = false
   private cookie: string | undefined
 
@@ -94,7 +91,6 @@ export class LiveFixture {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "") || "case"
     this.currentCaseId = `${slug}-${randomUUID()}`
-    this.createdIds = new Set()
     return this.currentCaseId
   }
 
@@ -109,21 +105,7 @@ export class LiveFixture {
   }
 
   async finishCase(): Promise<void> {
-    const ids = [...this.createdIds]
-    const caseId = this.currentCaseId
     this.currentCaseId = undefined
-    this.createdIds = new Set()
-    const failures: unknown[] = []
-    for (const noteId of ids) {
-      try {
-        await this.call(api.command.note_deleteNote, { noteId })
-      } catch (error) {
-        failures.push(error)
-      }
-    }
-    if (failures.length > 0) {
-      throw new AggregateError(failures, `Unable to clean up notes for live case ${caseId ?? "unknown"}`)
-    }
   }
 
   async close(): Promise<void> {
@@ -174,11 +156,6 @@ export class LiveFixture {
       await new Promise((resolve) => setTimeout(resolve, 200))
     }
     throw new Error(`Condition did not converge within ${EVENTUAL_TIMEOUT_MS / 1000} seconds`)
-  }
-
-  async activeNote(noteId: Id<"Note">): Promise<NoteDto | undefined> {
-    const { notes } = await this.call(api.query.note_query_notes, {})
-    return notes.find((note) => note.noteId.value === noteId.value)
   }
 
   async engineRequest(path: string, init: RequestInit = {}): Promise<{ response: Response; body: unknown }> {
@@ -233,13 +210,6 @@ export class LiveFixture {
     )
   }
 
-  async createNote(title: string, body: string): Promise<Id<"Note">> {
-    const noteId = Id.random<"Note">()
-    this.trackNote(noteId)
-    await this.call(api.command.note_createNote, { noteId, title, body })
-    return noteId
-  }
-
   async history<Tag extends string>(aggregateId: Id<Tag>): Promise<EventRow[]> {
     const rows = await this.pool.query<EventRow>(
       "SELECT event_id, event_name, aggregate_id, aggregate_version, recorded_on::text AS recorded_on, causation_id, correlation_id, payload FROM event_store WHERE aggregate_id = $1 ORDER BY aggregate_version",
@@ -283,27 +253,5 @@ export class LiveFixture {
       `UPDATE auth_login_codes SET sent_at = now() - interval '1 minute'${expired ? ", expires_at = now() - interval '1 second'" : ""} WHERE email = $1`,
       [email]
     )
-  }
-
-  async deliver(row: EventRow): Promise<void> {
-    const credentials = Buffer.from(`${env.EVENT_BUS_USERNAME}:${env.EVENT_BUS_PASSWORD}`).toString("base64")
-    const response = await this.post(
-      "/api/v1/note/projection/notes",
-      {
-        data_source_id: "postgres_source",
-        data_source_description: "Notepad events in PostgreSQL",
-        data_destination_id: "Note_Projection_Notes",
-        data_destination_description: "Notes read model",
-        payload: row,
-      },
-      { Authorization: `Basic ${credentials}` }
-    )
-    assert.equal(response.status, 200)
-    assert.deepEqual(await response.json(), { result: { success: {} } })
-  }
-
-  trackNote(noteId: Id<"Note">): void {
-    this.caseId
-    this.createdIds.add(noteId)
   }
 }

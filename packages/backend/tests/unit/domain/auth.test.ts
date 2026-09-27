@@ -1,8 +1,8 @@
 import assert from "node:assert/strict"
 import { describe, test } from "vitest"
 import { Just, Nothing } from "@lib/maybe"
-import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes } from "@tests/support/memory"
-import { result, rejection } from "@tests/support/notes"
+import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, memoryAi } from "@tests/support/memory"
+import { result, rejection } from "@tests/support/future"
 import { controller as requestCode } from "@be/domain/auth/command/requestCode"
 import { controller as verifyCode } from "@be/domain/auth/command/verifyCode"
 import { controller as signOut } from "@be/domain/auth/command/signOut"
@@ -34,6 +34,7 @@ async function askForCode(
       ...anonymousAuth,
       session: anonSession(sessions),
       loginCodes,
+      ai: memoryAi(),
       withEventStore: db.withEventStore,
     })
   )
@@ -51,6 +52,7 @@ function submitCode(
     ...anonymousAuth,
     session,
     loginCodes,
+    ai: memoryAi(),
     withEventStore: db.withEventStore,
   })
 }
@@ -76,6 +78,7 @@ describe("Auth commands and queries", () => {
         ...anonymousAuth,
         session: anonSession(sessions),
         loginCodes,
+        ai: memoryAi(),
         withEventStore: db.withEventStore,
       })
     )
@@ -160,6 +163,7 @@ describe("Auth commands and queries", () => {
         auth: { result: "allow", actor },
         session,
         loginCodes: new MemoryLoginCodes(),
+        ai: memoryAi(),
         withEventStore: db.withEventStore,
       })
     )

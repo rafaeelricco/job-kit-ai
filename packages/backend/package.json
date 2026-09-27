@@ -24,6 +24,7 @@
     "quality:report": "tsx tests/quality/report.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.90.0",
     "@job-kit/lib": "workspace:*",
     "@paralleldrive/cuid2": "3.3.0",
     "express": "4.22.2",
@@ -32,6 +33,7 @@
     "luxon": "3.7.2",
     "mongodb": "5.9.2",
     "nodemailer": "^10.0.10",
+    "openai": "6.34.0",
     "pg": "8.20.0"
   },
   "devDependencies": {

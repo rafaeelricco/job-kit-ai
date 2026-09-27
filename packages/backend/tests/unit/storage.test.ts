@@ -48,12 +48,12 @@ function transaction(rows: Record<string, unknown>[] = []) {
 }
 const entry: DatabaseEntry = {
   event_id: new Id("event-1"),
-  aggregate_id: new Id("note-1"),
+  aggregate_id: new Id("workspace-1"),
   aggregate_version: 0,
   correlation_id: new Id("root-1"),
   causation_id: new Id("cause-1"),
   recorded_on: new POSIX(1000),
-  event_name: "NoteCreated",
+  event_name: "WorkspaceProvisioned",
   schema_version: 2,
   payload: { title: "hello" },
 }
@@ -82,12 +82,12 @@ describe("PostgreSQL value contracts", () => {
     const constraint = ConstraintViolationError.from({
       code: "23505",
       message: "duplicate",
-      constraint: "unique_note",
+      constraint: "unique_workspace",
     }).maybe<unknown>(null, (value) => value)
     expect(constraint).toMatchObject({
       name: "ConstraintViolationError",
       message: "duplicate",
-      constraint: "unique_note",
+      constraint: "unique_workspace",
     })
     expect(
       ConstraintViolationError.from({ code: "23505", message: "duplicate" }).maybe<unknown>(null, (value) => value)
@@ -236,26 +236,26 @@ describe("event-store PostgreSQL adapter", () => {
     expect(h.query.mock.calls[0]?.[0]).toContain("INSERT INTO events")
     expect(h.query.mock.calls[0]?.[1]).toEqual([
       "event-1",
-      "note-1",
+      "workspace-1",
       "cause-1",
       "root-1",
       0,
       '{"title":"hello"}',
       '{"schemaVersion":2}',
       s.encode(schema_TimestampTZ, entry.recorded_on),
-      "NoteCreated",
+      "WorkspaceProvisioned",
     ])
   })
   test.each([{}, { schemaVersion: 2 }])("decodes history and defaults legacy metadata %j", async (metadata) => {
     const h = transaction([
       {
         event_id: "event-1",
-        aggregate_id: "note-1",
+        aggregate_id: "workspace-1",
         aggregate_version: "0",
         causation_id: "cause-1",
         correlation_id: "root-1",
         recorded_on: "1970-01-01 00:00:01+00",
-        event_name: "NoteCreated",
+        event_name: "WorkspaceProvisioned",
         payload: '{"title":"hello"}',
         json_metadata: JSON.stringify(metadata),
       },
@@ -263,7 +263,7 @@ describe("event-store PostgreSQL adapter", () => {
     const rows = await new PostgresEventStoreDb(h.tx, "events").findAll(entry.aggregate_id)
     expect(rows).toEqual([{ ...entry, schema_version: "schemaVersion" in metadata ? 2 : 1 }])
     expect(h.query.mock.calls[0]?.[0]).toContain("ORDER BY aggregate_version ASC")
-    expect(h.query.mock.calls[0]?.[1]).toEqual(["note-1"])
+    expect(h.query.mock.calls[0]?.[1]).toEqual(["workspace-1"])
   })
   test("rejects corrupt database rows", async () => {
     const h = transaction([{ event_id: "bad" }])

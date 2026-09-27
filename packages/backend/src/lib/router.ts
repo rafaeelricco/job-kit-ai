@@ -197,7 +197,7 @@ function streamSSEResponse(res: express.Response, stream: SSEValues["stream"]): 
  * ultimately enriched through middlewares.
  *
  * ```ts
- * app.post("/notes", route((req) => decodeBody(endpoint.request, req.body, "command").chain(handler)))
+ * app.post("/workspace/setup-step", route((req) => decodeBody(endpoint.request, req.body, "command").chain(handler)))
  * ```
  */
 function route(routeHandler: Route<{}>): express.Handler {

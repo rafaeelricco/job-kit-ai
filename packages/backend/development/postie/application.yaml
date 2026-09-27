@@ -1,6 +1,6 @@
 data_sources:
   - id: postgres_source
-    description: Notepad events in PostgreSQL
+    description: Job Kit events in PostgreSQL
     type: postgres
     host: postgres
     port: 5432
@@ -23,10 +23,10 @@ data_sources:
     partitioningColumn: correlation_id
 
 data_destinations:
-  - id: Note_Projection_Notes
-    description: Notes read model
+  - id: Workspace_Projection_AiSetups
+    description: Setup progress and AI connection metadata (no secrets)
     type: http-push
-    endpoint: http://api:8080/api/v1/note/projection/notes
+    endpoint: http://api:8080/api/v1/ai/projection/ai-setups
     username: notepad_event_bus
     password: local_notepad_event_bus
     sources:

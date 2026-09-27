@@ -17,7 +17,7 @@ delivery:
   request_timeout: 60s
   drain_timeout: 30s
 destinations:
-  Note_Projection_Notes:
+  Workspace_Projection_AiSetups:
     kind: projection
 sources:
   postgres_source:

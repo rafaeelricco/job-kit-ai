@@ -21,7 +21,7 @@ function toResponse(error: AuthError): Response {
   }
 }
 
-/** Leave the `Result` world at the edge of a handler, as `noteErrors.respond` does. */
+/** Leave the `Result` world at the edge of a handler, as `aiErrors.respondAi` does. */
 function respond<T>(result: Result<AuthError, T>): Future<Response, T> {
   return result.either<Future<Response, T>>(
     (error) => Future.reject(toResponse(error)),

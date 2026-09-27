@@ -10,6 +10,7 @@ import { type AuthGuardResult } from "@be/app/auth/policy"
 import { guardRequest } from "@be/app/resolveAuth"
 import { type SessionStore, Session, sessionToken } from "@be/app/session"
 import { type LoginCodes } from "@be/app/loginCodes"
+import { type AiConnections } from "@be/app/ai/connections"
 
 /**
  * Turn a `CommandController` into an Express handler: decode the body (400),
@@ -20,13 +21,14 @@ function handleCommand<Command, Res, Result extends AuthGuardResult>(
   withEventStore: WithEventStore,
   sessions: SessionStore,
   loginCodes: LoginCodes,
+  ai: AiConnections,
   { endpoint, authGuard, handler }: CommandController<Command, Res, Result>
 ): express.Handler {
   return route((req) =>
     decodeBody(endpoint.request, req.body, "command").chain((command) =>
       guardRequest(req, sessions, authGuard).chain(({ actor, auth }) => {
         const session = new Session(sessions, sessionToken(req))
-        return handler({ payload: command, actor, auth, session, loginCodes, withEventStore }).map((res) =>
+        return handler({ payload: command, actor, auth, session, loginCodes, ai, withEventStore }).map((res) =>
           toResponse(endpoint, res, session.headers)
         )
       })

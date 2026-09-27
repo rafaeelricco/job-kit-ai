@@ -89,8 +89,8 @@ function createEventStore(db: EventStoreDatabase, schemas: Schemas): EventStore_
  *
  * ```ts
  * withEventStore(internalError, function* (store) {
- *   const found = yield* store.try_find(Note, id)
- *   yield* store.emit({ aggregate: Note, event })
+ *   const found = yield* store.try_find(Workspace, id)
+ *   yield* store.emit({ aggregate: Workspace, event })
  * })
  * ```
  */
@@ -253,7 +253,7 @@ class CachedEventStore implements EventStore_ {
           event_id,
           aggregate_id: found.aggregate.values.aggregateId,
           aggregate_version: new_version,
-          // Correlation defaults to the stream's so a note's events stay in
+          // Correlation defaults to the stream's so an aggregate's events stay in
           // one delivery partition. Causation names the direct trigger: the
           // caller's event, or this event itself when a command caused it.
           correlation_id: correlation_id ?? found.lastEvent.correlation_id,

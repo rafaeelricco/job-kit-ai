@@ -49,7 +49,9 @@ describe("engine operator proxy", () => {
       assert.equal(status.status, 200)
       const logs = await fetch(`${base}/api/dev/engine/logs?after=cursor%2F1`)
       assert.equal(logs.status, 200)
-      const pause = await fetch(`${base}/api/dev/engine/subscriptions/Note_Projection_Notes/pause`, { method: "POST" })
+      const pause = await fetch(`${base}/api/dev/engine/subscriptions/Workspace_Projection_AiSetups/pause`, {
+        method: "POST",
+      })
       assert.equal(pause.status, 200)
     })
     assert.deepEqual(calls, [
@@ -64,7 +66,7 @@ describe("engine operator proxy", () => {
         method: "GET",
       },
       {
-        url: "http://operator.test/v1/subscriptions/Note_Projection_Notes/pause",
+        url: "http://operator.test/v1/subscriptions/Workspace_Projection_AiSetups/pause",
         auth: "Bearer secret",
         method: "POST",
       },
@@ -92,7 +94,7 @@ describe("engine operator proxy", () => {
     }
     await withProxy(fetcher, async (base) => {
       const unknown = await fetch(base + "/api/dev/engine/diagnostics")
-      const unsupportedAction = await fetch(base + "/api/dev/engine/subscriptions/note/delete", { method: "POST" })
+      const unsupportedAction = await fetch(base + "/api/dev/engine/subscriptions/ai-setups/delete", { method: "POST" })
       const unsupportedMethod = await fetch(base + "/api/dev/engine/status", { method: "DELETE" })
 
       assert.equal(unknown.status, 404)

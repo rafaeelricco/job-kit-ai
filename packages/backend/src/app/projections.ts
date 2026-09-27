@@ -8,17 +8,22 @@ import {
   type ProjectionWriter,
   type ProjectionStoreError,
 } from "@be/app/projectionStore"
-import { RepoNotes, type NoteDocument, type NotesReader, type NotesWriter } from "@be/domain/note/projection/notes"
+import {
+  RepoAiSetups,
+  type AiSetupDocument,
+  type AiSetupsReader,
+  type AiSetupsWriter,
+} from "@be/domain/ai/projection/aiSetups"
 
 export type Repositories = {
-  [RepoNotes.collectionName]: Repository<NoteDocument>
+  [RepoAiSetups.collectionName]: Repository<AiSetupDocument>
   [RepoProjectionIdempotency.collectionName]: Repository<ProjectedEvent>
 }
 
 export function initializeRepositories(db: Db): Future<ProjectionStoreError, Repositories> {
-  return createRepository(db, RepoNotes).chain((notes) =>
+  return createRepository(db, RepoAiSetups).chain((aiSetups) =>
     createRepository(db, RepoProjectionIdempotency).map((idempotency) => ({
-      [RepoNotes.collectionName]: notes,
+      [RepoAiSetups.collectionName]: aiSetups,
       [RepoProjectionIdempotency.collectionName]: idempotency,
     }))
   )
@@ -26,22 +31,24 @@ export function initializeRepositories(db: Db): Future<ProjectionStoreError, Rep
 
 /** The read model as a query sees it. No idempotency log, no way to write. */
 export type ReadProjections = {
-  readonly [RepoNotes.collectionName]: NotesReader
+  readonly [RepoAiSetups.collectionName]: AiSetupsReader
 }
 
 /** The read model as a projection sees it. Assignable to `ReadProjections`. */
 export type WriteProjections = {
-  readonly [RepoNotes.collectionName]: NotesWriter
+  readonly [RepoAiSetups.collectionName]: AiSetupsWriter
   readonly [RepoProjectionIdempotency.collectionName]: IdempotencyRepo
 }
 
 export function readProjections(repositories: Repositories, store: ProjectionReader): ReadProjections {
-  return { [RepoNotes.collectionName]: RepoNotes.reader(repositories[RepoNotes.collectionName], store) }
+  return {
+    [RepoAiSetups.collectionName]: RepoAiSetups.reader(repositories[RepoAiSetups.collectionName], store),
+  }
 }
 
 export function writeProjections(repositories: Repositories, store: ProjectionWriter): WriteProjections {
   return {
-    [RepoNotes.collectionName]: RepoNotes.writer(repositories[RepoNotes.collectionName], store),
+    [RepoAiSetups.collectionName]: RepoAiSetups.writer(repositories[RepoAiSetups.collectionName], store),
     [RepoProjectionIdempotency.collectionName]: RepoProjectionIdempotency.writer(
       repositories[RepoProjectionIdempotency.collectionName],
       store

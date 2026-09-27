@@ -2,12 +2,15 @@ export { Workspace }
 
 import { POSIX } from "@lib/time"
 import { type Aggregate, Id } from "@be/lib/event-sourcing/event"
+import { type AiState } from "@be/domain/workspace/aggregate/aiState"
 
 type WorkspaceValues = {
   readonly aggregateId: Id<"Workspace">
   readonly aggregateVersion: number
   readonly ownerId: Id<"User">
   readonly createdAt: POSIX
+  /** Setup progress and the AI connection registry: one active connection, at most one staged by a switch. */
+  readonly ai: AiState
 }
 
 class Workspace implements Aggregate<"Workspace"> {
