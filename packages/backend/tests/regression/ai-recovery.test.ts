@@ -195,6 +195,26 @@ describe("AI recovery", () => {
     assert.deepEqual(sorted(s.vaultRefs()), sorted(refs))
   })
 
+  test("a switch that lands after a disconnect keeps the older staged switch confirmable", async () => {
+    const s = await scenario()
+    const first = (await s.connectKey("sk-first")).setup.active
+    assert.ok(first)
+    const staged = (await s.connectKey("sk-staged", "switch", "xai")).setup.staged
+    assert.ok(staged)
+    const later = await result(s.start("anthropic", "api_key", "switch"))
+    await result(disconnect.handler({ ...s.ctx, payload: { connectionId: first.connectionId } }))
+
+    const landed = await result(s.advance(later.attemptId, { kind: "secret", secret: "sk-ant-later" }))
+    assert.deepEqual(landed.status, { status: "connected", role: "active" })
+    assert.equal(landed.setup.staged?.connectionId.value, staged.connectionId.value)
+    assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()))
+
+    await result(confirmSwitch.handler({ ...s.ctx, payload: { connectionId: staged.connectionId } }))
+    assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()))
+    const checked = await result(testConnection.handler({ ...s.ctx, payload: { connectionId: staged.connectionId } }))
+    assert.equal(checked.setup.active?.status, "ready")
+  })
+
   test("the vault holds exactly the credentials the registry references, through every flow", async () => {
     const s = await scenario()
     const matches = (label: string) => assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()), label)

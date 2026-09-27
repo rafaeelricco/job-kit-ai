@@ -65,8 +65,9 @@ function decideStart(ai: AiState, route: Route, purpose: Purpose): Result<AiErro
  * - The attempt must still be the aggregate's recorded authorization, or the result is `"superseded"` (a late
  *   result from an attempt a newer one, a cancel, or a fresh `start` has since replaced).
  * - `initial`: a connection must not already be active (else `"superseded"`) — emits `AiConnectionVerified(active)`.
- * - `switch`: emits `AiConnectionVerified(staged)`, or `(active)` if the connection this was meant to protect was
- *   disconnected while the switch was in flight. Releases an older staged connection's credential, if any.
+ * - `switch`: emits `AiConnectionVerified(staged)`, releasing the credential of the older staged connection it
+ *   replaces, if any. Emits `(active)` instead if the connection this was meant to protect was disconnected while the
+ *   switch was in flight; that leaves any older staged connection, and its credential, in place.
  * - `reconnect`: the active connection must still be on the same route (else `"superseded"`); a different account
  *   than the one already active is `"different_account"`. Emits `AiConnectionReconnected`, releasing the old
  *   credential. Preferences are kept when they still pass `checkPreferences` against the fresh capabilities, else
@@ -148,7 +149,8 @@ function decideReadySwitch(
   connectionId: Id<"AiConnection">
 ): ReadyResult {
   const role: "active" | "staged" = ai.active instanceof Just ? "staged" : "active"
-  const release = ai.staged instanceof Just ? [ai.staged.value.credentialRef] : []
+  // Only a staged verify replaces `staged`; an active one leaves it (and the credential it still needs) alone.
+  const release = role === "staged" && ai.staged instanceof Just ? [ai.staged.value.credentialRef] : []
   return Success({
     event: new AiConnectionVerified({
       type: AiConnectionVerified.type,

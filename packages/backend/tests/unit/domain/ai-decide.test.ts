@@ -185,6 +185,15 @@ describe("decideReady", () => {
     assert.deepEqual(decided.value.release, [])
   })
 
+  test("switch: activating keeps an older staged connection's credential, since it stays staged", () => {
+    const a = attempt({ purpose: "switch" })
+    const ai: AiState = { ...initialAi, authorization: authorizedFor(a), staged: Just(connection()) }
+    const decided = decideReady(ai, a, Id.random(), ready, connectionId)
+    assert.ok(decided instanceof Success)
+    assert.equal(decided.value.role, "active")
+    assert.deepEqual(decided.value.release, [])
+  })
+
   test("reconnect: superseded once the active connection moved to a different route", () => {
     const a = attempt({ purpose: "reconnect", provider: "openai", method: "device" })
     const ai: AiState = {
