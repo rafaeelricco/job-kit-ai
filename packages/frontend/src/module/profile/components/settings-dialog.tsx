@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@ui/dialog"
 import { ScrollArea, ScrollBar } from "@ui/scroll-area"
 import { cn } from "@components/utils"
+import { AiPanel } from "@module/ai/components/ai-panel"
 import { ProfileGate } from "@module/profile/components/profile-gate"
 import { PANELS, PANEL_ORDER, SettingsPanel, parsePanel } from "@module/profile/components/settings-surface"
 
@@ -86,9 +87,13 @@ function SettingsDialog({
             {meta.file !== null && <span className="font-mono text-xs text-ink-faint">data/{meta.file}</span>}
           </header>
           <ScrollArea className="min-h-0 min-w-0 flex-1" contentProps={{ className: "pt-2 pr-8 pb-8 pl-9" }}>
-            <ProfileGate title="Account settings" Icon={UserIcon} chrome="bare">
-              {(profile, save) => <SettingsPanel panel={active} profile={profile} save={save} />}
-            </ProfileGate>
+            {/* A connection can exist before any profile folder is granted, so AI sits outside the gate. */}
+            {active === "ai" ?
+              <AiPanel />
+            : <ProfileGate title="Account settings" Icon={UserIcon} chrome="bare">
+                {(profile, save) => <SettingsPanel panel={active} profile={profile} save={save} />}
+              </ProfileGate>
+            }
           </ScrollArea>
         </div>
       </DialogContent>

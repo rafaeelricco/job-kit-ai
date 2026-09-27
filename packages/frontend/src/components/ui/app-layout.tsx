@@ -6,6 +6,7 @@ import { AppSidebar } from "@components/ui/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@ui/sidebar"
 import { ScrollArea } from "@ui/scroll-area"
 import { SettingsDialog } from "@module/profile/components/settings-dialog"
+import { ReconnectBanner } from "@module/ai/components/reconnect-banner"
 
 function AppLayout({ children }: { children: ReactNode }) {
   const [params, setParams] = useSearchParams()
@@ -54,6 +55,7 @@ function AppLayout({ children }: { children: ReactNode }) {
           <header className="flex h-12 shrink-0 items-center px-3 md:hidden">
             <SidebarTrigger />
           </header>
+          <ReconnectBanner />
           {children}
         </ScrollArea>
       </SidebarInset>
