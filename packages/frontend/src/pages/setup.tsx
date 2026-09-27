@@ -703,9 +703,10 @@ function ResumeContent({
   const expired = opensTab(method) && !expiresAt.isAfter(POSIX.now())
 
   const resume = (): void => {
-    const route = { provider, method }
+    const request: ConnectRequest =
+      method === "api_key" ? { kind: "apiKey", provider } : { kind: "route", route: { provider, method } }
     // Synchronous with the click, so a device tab isn't blocked as script-timed.
-    onResume({ kind: "route", route }, opensTab(method) ? openProviderTab() : null)
+    onResume(request, opensTab(method) ? openProviderTab() : null)
   }
 
   return (
