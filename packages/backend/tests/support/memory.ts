@@ -196,6 +196,28 @@ export class MemoryAttempts implements Attempts {
       resolve(true)
     })
 
+  readonly cancel = (
+    workspaceId: Id<"Workspace">,
+    attemptId: Id<"AiAttempt">
+  ): Future<Error, Maybe<Id<"AiSecret">[]>> =>
+    Future.create((_, resolve) => {
+      const row = this.rows.get(attemptId.value)
+      if (
+        row === undefined ||
+        row.workspaceId.value !== workspaceId.value ||
+        !OPEN_ATTEMPT_STATES.includes(row.state)
+      ) {
+        resolve(Nothing())
+        return
+      }
+      const held = [row.secretRef, row.credentialRef].flatMap((ref) => (ref instanceof Just ? [ref.value] : []))
+      row.state = "cancelled"
+      row.failure = Just("cancelled")
+      row.credentialRef = Nothing()
+      row.leaseUntil = null
+      resolve(Just(held))
+    })
+
   private lookup(workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">): Maybe<Attempt> {
     const row = this.rows.get(attemptId.value)
     return row === undefined || row.workspaceId.value !== workspaceId.value ? Nothing() : Just(toAttempt(row))

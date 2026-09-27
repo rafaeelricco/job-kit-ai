@@ -322,6 +322,26 @@ describe("AI recovery", () => {
     assert.equal(tested.setup.active?.status, "ready")
   })
 
+  test("a cancel that races a failed verify deletes the credential the verify kept", async () => {
+    const s = await scenario()
+    const started = await result(s.start("openai", "api_key"))
+    const attempts: Attempts = {
+      ...s.ai.attempts,
+      // The verify settles `verification_failed`, keeping its credential, between the cancel's read and its write.
+      find: (workspaceId, attemptId) =>
+        s.ai.attempts.find(workspaceId, attemptId).chain((found) =>
+          s
+            .advance(started.attemptId, { kind: "secret", secret: "sk-quota" })
+            .mapRej((e) => new Error(statusOf(e)))
+            .map(() => found)
+        ),
+    }
+    const racing = { ...s.ctx, ai: { ...s.ai, attempts } }
+
+    await result(cancelAuth.handler({ ...racing, payload: { attemptId: started.attemptId } }))
+    assert.deepEqual(s.vaultRefs(), [])
+  })
+
   test("the vault holds exactly the credentials the registry references, through every flow", async () => {
     const s = await scenario()
     const matches = (label: string) => assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()), label)

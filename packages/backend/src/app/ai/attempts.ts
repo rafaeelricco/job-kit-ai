@@ -3,7 +3,7 @@ export { type AttemptState, type Attempt, type Settlement, type Attempts, postgr
 import * as d from "@lib/json/decoder"
 
 import { Future } from "@lib/future"
-import { type Maybe, fromNullable, fromOptional } from "@lib/maybe"
+import { type Maybe, Just, Nothing, fromNullable, fromOptional } from "@lib/maybe"
 import { Failure } from "@lib/result"
 import { POSIX } from "@lib/time"
 import { Postgres, type PostgresTransaction, schema_TimestampTZ } from "@be/lib/postgres"
@@ -71,6 +71,12 @@ type Attempts = {
     attemptId: Id<"AiAttempt">,
     next: Settlement
   ) => Future<Error, boolean>
+  /**
+   * Cancels the attempt while it is still open, ignoring the lease, and returns the refs the row held at that moment
+   * for deletion; `Nothing` once it is closed. The row is read under the same lock as the write, so a verify that
+   * settled a credential onto it first hands that credential to this cancel rather than leaving it unreferenced.
+   */
+  readonly cancel: (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">) => Future<Error, Maybe<Id<"AiSecret">[]>>
 }
 
 const COLUMNS =
@@ -132,7 +138,7 @@ const refRowDecoder: d.Decoder<{ secret_ref: string | null; credential_ref: stri
   credential_ref: d.nullable(d.string),
 })
 
-/** The refs a batch of just-superseded rows leaves behind, ready for `SecretVault.remove`. */
+/** The refs a batch of just-superseded (or just-cancelled) rows leaves behind, ready for `SecretVault.remove`. */
 function collectRefs(rows: unknown[]): Id<"AiSecret">[] {
   return rows.flatMap((row) => {
     const decoded = d.decode(row, refRowDecoder)
@@ -243,6 +249,23 @@ function postgresAttempts(postgres: Postgres): Attempts {
           ]
         )
         return rows.length === 1
+      }),
+
+    cancel: (workspaceId, attemptId) =>
+      run(async (t): Promise<Maybe<Id<"AiSecret">[]>> => {
+        const { rows } = await t.query(
+          `SELECT secret_ref, credential_ref FROM ${TABLE}
+           WHERE attempt_id = $1 AND workspace_id = $2 AND state = ANY($3)
+           FOR UPDATE`,
+          [attemptId.value, workspaceId.value, [...OPEN_STATES]]
+        )
+        if (rows.length === 0) return Nothing()
+        await t.query(
+          `UPDATE ${TABLE} SET state = 'cancelled', failure = 'cancelled', credential_ref = NULL, lease_until = NULL
+           WHERE attempt_id = $1`,
+          [attemptId.value]
+        )
+        return Just(collectRefs(rows))
       }),
   }
 }
