@@ -941,6 +941,8 @@ function ConnectDialog(props: {
       }
       case "failed":
         stopPolling()
+        // A start that fails (an overlapping start superseded it) never sends its pre-opened tab anywhere.
+        if (origin.kind === "start") origin.tab?.close()
         setPhase({ kind: "failed", attemptId, route, reason: status.reason })
         return
       case "connected": {
@@ -990,6 +992,7 @@ function ConnectDialog(props: {
       purpose,
     }).fork(
       (error) => {
+        openedTab?.close() // nothing will ever be sent to it; a retry opens a fresh one
         if (isGone()) return
         setSubmit({ kind: "error", error })
       },
