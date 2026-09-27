@@ -465,12 +465,12 @@ describe("AI connections", () => {
     const { actor } = await freshWorkspace(db)
     const ai = memoryAi()
     const ctx = ctxFor(actor, ai)
-    const connected = await connectEntry(db, ctx, "api_key", "first-account-key", "openai")
+    const connected = await connectEntry(db, ctx, "setup_token", "first-account-token", "anthropic")
     assert.equal(connected.response.status.status, "connected")
     const activeBefore = connected.response.setup.active
 
-    const started = await start(db, ctx, { provider: "openai", method: "api_key" }, "reconnect")
-    const advanced = await advance(db, ctx, started.attemptId, { kind: "secret", secret: "other-account-key" })
+    const started = await start(db, ctx, { provider: "anthropic", method: "setup_token" }, "reconnect")
+    const advanced = await advance(db, ctx, started.attemptId, { kind: "secret", secret: "other-account-token" })
     assert.equal(advanced.status.status, "failed")
     if (advanced.status.status === "failed") assert.equal(advanced.status.reason, "different_account")
     assert.deepEqual(advanced.setup.active, activeBefore)

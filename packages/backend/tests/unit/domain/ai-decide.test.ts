@@ -212,6 +212,17 @@ describe("decideReady", () => {
     assert.deepEqual(decideReady(ai, a, Id.random(), otherAccount, connectionId), Failure("different_account"))
   })
 
+  test("reconnect: an API key's replacement is accepted though its accountId differs", () => {
+    const a = attempt({ purpose: "reconnect", method: "api_key" })
+    const active = connection({ method: "api_key", accountId: "key-1" })
+    const ai: AiState = { ...initialAi, authorization: authorizedFor(a), active: Just(active) }
+    const replacement = { kind: "ready" as const, accountId: "key-2", capabilities: CAPS }
+    const decided = decideReady(ai, a, Id.random(), replacement, connectionId)
+    assert.ok(decided instanceof Success)
+    assert.ok(decided.value.event instanceof AiConnectionReconnected)
+    assert.equal(decided.value.event.values.connectionId.value, active.connectionId.value)
+  })
+
   test("reconnect: refreshes the same connection, keeping preferences that still pass and releasing the old ref", () => {
     const a = attempt({ purpose: "reconnect" })
     const active = connection({ accountId: "acct-1", preferences: { model: "test-a", effort: "high" } })

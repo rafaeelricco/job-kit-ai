@@ -1,8 +1,11 @@
 import assert from "node:assert/strict"
 import { afterEach, describe, test, vi } from "vitest"
 
+import OpenAI from "openai"
+
 import { Future } from "@lib/future"
 import { Just, Nothing } from "@lib/maybe"
+import { POSIX, Duration } from "@lib/time"
 import { Id } from "@be/lib/event-sourcing/event"
 import { Session } from "@be/app/session"
 import { schemas } from "@be/app/events"
@@ -17,6 +20,8 @@ import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { type Method, type Provider, type Purpose } from "@be/domain/ai/routes"
 import { type ProviderAdapter } from "@be/domain/ai/adapter"
 import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
+import { apiKeyAdapter } from "@be/app/ai/apiKeyAdapter"
+import { type Llm } from "@be/app/ai/llm/router"
 import { type StepRequest } from "@be/domain/ai/command/advanceAuthorization.api"
 
 import { controller as startAuth } from "@be/domain/ai/command/startAuthorization"
@@ -193,6 +198,45 @@ describe("AI recovery", () => {
     const refs = s.referenced()
     assert.equal(refs.length, 2)
     assert.deepEqual(sorted(s.vaultRefs()), sorted(refs))
+  })
+
+  test("an API-key reconnect replaces a revoked key with a new one", async () => {
+    const revoked = new Set<string>()
+    const answer = <T>(key: string, value: T): Future<Error, T> =>
+      revoked.has(key)
+        ? Future.reject(OpenAI.APIError.generate(401, {}, "Incorrect API key provided", new Headers()))
+        : Future.resolve(value)
+    const llm: Llm = {
+      listModels: (_provider, key) =>
+        answer(key, [
+          { id: "model-a", name: "Model A", createdAt: POSIX.now(), structuredOutput: Nothing(), efforts: Nothing() },
+        ]),
+      generate: (provider, key) =>
+        answer(key, {
+          text: "OK",
+          metadata: {
+            provider,
+            model: "model-a",
+            effort: Just("low"),
+            duration: Duration.milliseconds(5),
+            tokens: Nothing(),
+          },
+        }),
+    }
+    vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const s = await scenario({ adapter: apiKeyAdapter(llm, "account-key") })
+    const firstKey = `sk-${"a".repeat(20)}1111`
+    const active = (await s.connectKey(firstKey)).setup.active
+    assert.ok(active)
+    revoked.add(firstKey)
+    const checked = await result(testConnection.handler({ ...s.ctx, payload: { connectionId: active.connectionId } }))
+    assert.notEqual(checked.setup.active?.status, "ready")
+
+    const reconnected = await s.connectKey(`sk-${"b".repeat(20)}2222`, "reconnect")
+    assert.deepEqual(reconnected.status, { status: "connected", role: "active" })
+    assert.equal(reconnected.setup.active?.connectionId.value, active.connectionId.value)
+    assert.equal(reconnected.setup.active?.status, "ready")
+    assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()))
   })
 
   test("a switch that lands after a disconnect keeps the older staged switch confirmable", async () => {

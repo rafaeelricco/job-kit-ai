@@ -69,7 +69,8 @@ function decideStart(ai: AiState, route: Route, purpose: Purpose): Result<AiErro
  *   replaces, if any. Emits `(active)` instead if the connection this was meant to protect was disconnected while the
  *   switch was in flight; that leaves any older staged connection, and its credential, in place.
  * - `reconnect`: the active connection must still be on the same route (else `"superseded"`); a different account
- *   than the one already active is `"different_account"`. Emits `AiConnectionReconnected`, releasing the old
+ *   than the one already active is `"different_account"`, except on `api_key`, whose `accountId` names the key rather
+ *   than the account, so no replacement key could match it. Emits `AiConnectionReconnected`, releasing the old
  *   credential. Preferences are kept when they still pass `checkPreferences` against the fresh capabilities, else
  *   reset to the default.
  */
@@ -164,7 +165,7 @@ function decideReadySwitch(
   })
 }
 
-/** The active connection must still be on the same route and the same account. */
+/** The active connection must still be on the same route and, unless it is an API key, the same account. */
 function decideReadyReconnect(
   ai: AiState,
   attempt: Attempt,
@@ -179,7 +180,7 @@ function decideReadyReconnect(
     return Failure("superseded")
   }
   const active = ai.active.value
-  if (active.accountId !== ready.accountId) return Failure("different_account")
+  if (active.method !== "api_key" && active.accountId !== ready.accountId) return Failure("different_account")
   const preferences =
     checkPreferences(ready.capabilities, active.preferences) instanceof Success
       ? active.preferences
