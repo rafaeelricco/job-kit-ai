@@ -4,7 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "server/**"
+      - "packages/backend/**"
+      - "packages/lib/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - ".node-version"
       - ".github/workflows/deploy-server.yml"
   workflow_dispatch:
 
@@ -26,7 +31,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,10 +41,11 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: pnpm
-          cache-dependency-path: server/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --filter @job-kit/backend...
+        working-directory: .
       - run: pnpm quality
 
   deploy:
@@ -50,7 +56,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: server
+        working-directory: packages/backend
     steps:
       - name: Check out the pushed commit
         uses: actions/checkout@v4
@@ -59,14 +65,14 @@ jobs:
           persist-credentials: false
 
       - name: Build and start the stack
-        # Secrets come from /etc/job-kit/api.env on the VPS (see server/README.md).
+        # Secrets come from /etc/job-kit/api.env on the VPS (see packages/backend/README.md).
         # Volumes belong to project job-kit-api; never run `down -v` on it.
         # --wait blocks until every healthcheck passes, so a broken API fails the run.
         shell: bash
         run: |
           set -euo pipefail
           docker compose -p job-kit-api --env-file /etc/job-kit/api.env \
-            -f development/docker-compose.yml -f deploy/compose.production.yml \
+            -f development/compose.yaml -f development/compose.prod.yaml \
             up --build --detach --wait --wait-timeout 600 --remove-orphans
 
       - name: Remove superseded images
