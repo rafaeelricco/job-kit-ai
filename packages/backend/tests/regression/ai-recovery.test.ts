@@ -342,6 +342,42 @@ describe("AI recovery", () => {
     assert.deepEqual(s.vaultRefs(), [])
   })
 
+  test("an overlapping start that records first leaves its attempt connectable", async () => {
+    // Each case races start A against a complete start B at a different point of A's own start.
+    const race = async (at: "open" | "find") => {
+      const s = await scenario()
+      let later: Id<"AiAttempt"> | null = null
+      const runLater = <T>(value: T) =>
+        s
+          .start("openai", "api_key")
+          .mapRej((e) => new Error(statusOf(e)))
+          .map((started) => {
+            later = started.attemptId
+            return value
+          })
+      const attempts: Attempts = {
+        ...s.ai.attempts,
+        open: (attempt) =>
+          s.ai.attempts.open(attempt).chain((refs) => (at === "open" ? runLater(refs) : Future.resolve(refs))),
+        find: (workspaceId, attemptId) =>
+          s.ai.attempts
+            .find(workspaceId, attemptId)
+            .chain((found) => (at === "find" && later === null ? runLater(found) : Future.resolve(found))),
+      }
+      const racing = { ...s.ctx, ai: { ...s.ai, attempts } }
+
+      const earlier = await result(
+        startAuth.handler({ ...racing, payload: { provider: "openai", method: "api_key", purpose: "initial" } })
+      )
+      assert.deepEqual(earlier.status, { status: "failed", reason: "superseded", retry: "restart" }, at)
+      assert.ok(later !== null)
+      const connected = await result(s.advance(later, { kind: "secret", secret: "sk-later" }))
+      assert.deepEqual(connected.status, { status: "connected", role: "active" }, at)
+    }
+    await race("open")
+    await race("find")
+  })
+
   test("the vault holds exactly the credentials the registry references, through every flow", async () => {
     const s = await scenario()
     const matches = (label: string) => assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()), label)
