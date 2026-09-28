@@ -20,6 +20,9 @@ import {
   postgresLoginCodes,
 } from "@be/app/loginCodes"
 import { mailerFromEnv } from "@be/app/mailer"
+import { type AiConnections, aiConnectionsFromEnv } from "@be/app/ai/connections"
+import { initializeVaultTable } from "@be/app/ai/vault"
+import { initializeAttemptTable } from "@be/app/ai/attempts"
 import { type GoogleOidc, googleOidc } from "@be/lib/google-oidc"
 import { GOOGLE_CALLBACK_PATH } from "@be/lib/google"
 
@@ -36,6 +39,7 @@ export type Dependencies = {
   repositories: Repositories
   sessions: SessionStore
   loginCodes: LoginCodes
+  ai: AiConnections
   google: GoogleOidc
 }
 
@@ -106,6 +110,8 @@ export function configureDependencies(): Future<Error, Dependencies> {
   return initializeEventStore(postgres)
     .chain(() => initializeSessionTable(postgres))
     .chain(() => initializeLoginCodeTable(postgres))
+    .chain(() => initializeVaultTable(postgres))
+    .chain(() => initializeAttemptTable(postgres))
     .chain(() => initializeMongoRepositories(mongo))
     .map((repositories) => ({
       postgres,
@@ -117,6 +123,7 @@ export function configureDependencies(): Future<Error, Dependencies> {
       repositories,
       sessions: postgresSessionStore(postgres),
       loginCodes: postgresLoginCodes(postgres, mailerFromEnv(), loginCodeSecretFromEnv()),
+      ai: aiConnectionsFromEnv(postgres),
       google: googleOidc({
         clientId: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,

@@ -6,32 +6,28 @@ Skeletons for aggregate / creation event / transformation event: `templates.md`.
 
 ### Aggregate value container
 
-Aggregates are state containers rebuilt from events; business mutation lives in event classes, not aggregate methods. `Aggregate<Tag>` is parameterized by the aggregate's own literal tag, never by the class itself, so `Id<"Note">` can't be mixed up with another aggregate's id. `erasableSyntaxOnly` forbids parameter properties, so `values` is assigned in the constructor body instead of declared on the signature.
+Aggregates are state containers rebuilt from events; business mutation lives in event classes, not aggregate methods. `Aggregate<Tag>` is parameterized by the aggregate's own literal tag, never by the class itself, so `Id<"Workspace">` can't be mixed up with another aggregate's id. `erasableSyntaxOnly` forbids parameter properties, so `values` is assigned in the constructor body instead of declared on the signature.
 
 ```ts
-// packages/backend/src/domain/note/aggregate/note.ts:8-36
-const NOTE_STATUSES = ["Active", "Deleted"] as const
-type NoteStatus = (typeof NOTE_STATUSES)[number]
-
-type NoteValues = {
-  readonly aggregateId: Id<"Note">
+// packages/backend/src/domain/workspace/aggregate/workspace.ts
+type WorkspaceValues = {
+  readonly aggregateId: Id<"Workspace">
   readonly aggregateVersion: number
-  readonly title: string
-  readonly body: string
+  readonly ownerId: Id<"User">
   readonly createdAt: POSIX
-  readonly updatedAt: POSIX
-  readonly status: NoteStatus
+  /** Setup progress and the AI connection registry: one active connection, at most one staged by a switch. */
+  readonly ai: AiState
 }
 
-class Note implements Aggregate<"Note"> {
-  static readonly type = "Note"
+class Workspace implements Aggregate<"Workspace"> {
+  static readonly type = "Workspace"
 
-  readonly values: NoteValues
-  constructor(values: NoteValues) {
+  readonly values: WorkspaceValues
+  constructor(values: WorkspaceValues) {
     this.values = values
   }
 
-  get aggregateId(): Id<"Note"> {
+  get aggregateId(): Id<"Workspace"> {
     return this.values.aggregateId
   }
 
@@ -41,24 +37,23 @@ class Note implements Aggregate<"Note"> {
 }
 ```
 
-A status is an `as const` string tuple narrowed to a union, not a boolean or a free-form string — `note.values.status` is `"Active" | "Deleted"`, and adding a third state is a one-line change callers' switches catch. `activeNote(note): Maybe<Note>` (`packages/backend/src/domain/note/aggregate/note.ts:42-44`) is the one place callers check liveness: `Nothing` for a tombstoned note.
+A field that only takes a fixed set of values should be an `as const` string tuple narrowed to a union, not a boolean or a free-form string — `ConnectionStatus` (`packages/backend/src/domain/workspace/aggregate/aiState.ts`) is `"ready" | "revoked" | "expired" | "quota_exhausted" | "unreachable"`, and adding a state is a one-line change callers' switches catch.
 
 ### Creation and transformation events
 
-An event is a `CreationEvent<Agg>` or `TransformationEvent<Agg>`, named PascalCase past tense (`NoteCreated`, `NoteUpdated`), and lives in `src/domain/<area>/events/<aggregate>/<eventName>.ts`. `toSchema` ties the class to its own `args` schema so the schema's decoded type and the class's `values` type can't drift apart.
+An event is a `CreationEvent<Agg>` or `TransformationEvent<Agg>`, named PascalCase past tense (`WorkspaceProvisioned`, `SetupStepCompleted`), and lives in `src/domain/<area>/events/<aggregate>/<eventName>.ts`. `toSchema` ties the class to its own `args` schema so the schema's decoded type and the class's `values` type can't drift apart.
 
 ```ts
-// packages/backend/src/domain/note/events/note/noteCreated.ts
-const type = "NoteCreated" as const
+// packages/backend/src/domain/workspace/events/workspace/workspaceProvisioned.ts
+const type = "WorkspaceProvisioned" as const
 const args = s.object({
   type: s.stringLiteral(type),
-  aggregateId: Id.schema<"Note">(),
-  title: s.string,
-  body: s.string,
+  aggregateId: Id.schema<"Workspace">(),
+  ownerId: Id.schema<"User">(),
 })
 
-class NoteCreated extends CreationEvent<Note> {
-  static readonly aggregate = Note
+class WorkspaceProvisioned extends CreationEvent<Workspace> {
+  static readonly aggregate = Workspace
   static readonly type = type
   static readonly schema = toSchema(this, args)
 
@@ -68,21 +63,19 @@ class NoteCreated extends CreationEvent<Note> {
     this.values = values
   }
 
-  createAggregate(info: EventInfo): Note {
-    return new Note({
+  createAggregate(info: EventInfo): Workspace {
+    return new Workspace({
       aggregateId: this.values.aggregateId,
       aggregateVersion: 0,
-      title: this.values.title,
-      body: this.values.body,
+      ownerId: this.values.ownerId,
       createdAt: info.recorded_on,
-      updatedAt: info.recorded_on,
-      status: "Active",
+      ai: initialAi,
     })
   }
 }
 ```
 
-A `TransformationEvent` implements `transformAggregate(aggregate, info)` instead of `createAggregate(info)`, spreading the prior `values` and overriding only what changed (`packages/backend/src/domain/note/events/note/noteUpdated.ts:27-34`, `noteDeleted.ts:26-32`). `NoteDeleted` carries no payload beyond `aggregateId` — it tombstones the aggregate by setting `status: "Deleted"` rather than removing the stream.
+A `TransformationEvent` implements `transformAggregate(aggregate, info)` instead of `createAggregate(info)`, spreading the prior `values` and overriding only what changed (`packages/backend/src/domain/workspace/events/workspace/setupStepCompleted.ts:27-29`). `SetupStepCompleted` carries only `step`; it doesn't remove or replace the connection registry, only marks a setup step done in `AiState`.
 
 ### Register events
 
@@ -91,12 +84,11 @@ Every new event class is registered in `packages/backend/src/app/events.ts` with
 ```ts
 // packages/backend/src/app/events.ts
 export const schemas = new Schemas([
-  new CSchema(NoteCreated.aggregate, NoteCreated.schema, NoteCreated.type),
-  new TSchema(NoteUpdated.aggregate, NoteUpdated.schema, NoteUpdated.type),
-  new TSchema(NoteDeleted.aggregate, NoteDeleted.schema, NoteDeleted.type),
   new CSchema(UserRegistered.aggregate, UserRegistered.schema, UserRegistered.type),
   new CSchema(UserJoined.aggregate, UserJoined.schema, UserJoined.type),
   new CSchema(WorkspaceProvisioned.aggregate, WorkspaceProvisioned.schema, WorkspaceProvisioned.type),
+  new TSchema(SetupStepCompleted.aggregate, SetupStepCompleted.schema, SetupStepCompleted.type),
+  // ... one CSchema/TSchema pair per registered event class
 ])
 ```
 
@@ -123,9 +115,9 @@ static idForEmail(email: string): Id<"User"> {
 
 ```ts
 withEventStore(internalError, function* (store) {
-  const required = yield* store.find(Note, noteId) // throws if missing
-  const optional = yield* store.try_find(Note, noteId) // Maybe<Note>
-  yield* store.emit({ aggregate: Note, event }) // persists and updates the cache
+  const required = yield* store.find(Workspace, workspaceId) // throws if missing
+  const optional = yield* store.try_find(Workspace, workspaceId) // Maybe<Workspace>
+  yield* store.emit({ aggregate: Workspace, event }) // persists and updates the cache
   const seen = yield* store.doesEventAlreadyExist(eventId) // by event id
   // ...
 })
@@ -140,10 +132,10 @@ Command error-mapping and emit examples: `commands.md`.
 ```ts
 withEventStore(internalError, function* (store) {
   yield* store.emit({
-    aggregate: Note,
-    event: new NoteCreated({ type: NoteCreated.type, aggregateId: noteId, title, body }),
+    aggregate: Workspace,
+    event: new WorkspaceProvisioned({ type: WorkspaceProvisioned.type, aggregateId: workspaceId, ownerId }),
   })
-  const justCreated = yield* store.find(Note, noteId)
+  const justCreated = yield* store.find(Workspace, workspaceId)
   // ...
 })
 ```

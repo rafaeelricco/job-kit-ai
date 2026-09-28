@@ -6,12 +6,13 @@ import { RepoProjectionIdempotency } from "@be/app/idempotency"
 import { withIdempotency } from "@be/app/handleProjection"
 import { ErrorMustRetry, type AmbarResponse } from "@be/lib/event-delivery"
 import { Id } from "@be/lib/event-sourcing/event"
-import { projectionsHarness, rejection } from "@tests/support/notes"
+import { rejection } from "@tests/support/future"
+import { projectionsHarness } from "@tests/support/aiSetups"
 
 describe("projection idempotency failures", () => {
   test("an idempotency lookup failure becomes retryable without running the projection", async () => {
     const h = projectionsHarness()
-    const projected = { eventId: new Id<"Event">("check-failed"), projection: "/notes" }
+    const projected = { eventId: new Id<"Event">("check-failed"), projection: "/ai-setups" }
     const idempotency = h.projections[RepoProjectionIdempotency.collectionName]
     const projections: WriteProjections = {
       ...h.projections,
@@ -35,7 +36,7 @@ describe("projection idempotency failures", () => {
 
   test("a marker save failure is retryable after the projection runs", async () => {
     const h = projectionsHarness()
-    const projected = { eventId: new Id<"Event">("save-failed"), projection: "/notes" }
+    const projected = { eventId: new Id<"Event">("save-failed"), projection: "/ai-setups" }
     const idempotency = h.projections[RepoProjectionIdempotency.collectionName]
     const projections: WriteProjections = {
       ...h.projections,
@@ -60,8 +61,8 @@ describe("projection idempotency failures", () => {
 
   test("an existing marker skips the handler", async () => {
     const h = projectionsHarness()
-    const projected = { eventId: new Id<"Event">("already-seen"), projection: "/notes" }
-    h.seen.add("already-seen//notes")
+    const projected = { eventId: new Id<"Event">("already-seen"), projection: "/ai-setups" }
+    h.seen.add("already-seen//ai-setups")
     let handled = false
     const handle = Future.create<AmbarResponse, void>((_reject, resolve) => {
       handled = true

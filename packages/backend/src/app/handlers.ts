@@ -7,6 +7,7 @@ import { type Actor } from "@be/app/actor"
 import { type AuthGuard, type AuthGuardResult } from "@be/app/auth/policy"
 import { type Session } from "@be/app/session"
 import { type LoginCodes } from "@be/app/loginCodes"
+import { type AiConnections } from "@be/app/ai/connections"
 
 /** What the guard's allow branch proved — the handler's `auth`. */
 type Allowed<Result extends AuthGuardResult> = Extract<Result, { result: "allow" }>
@@ -27,6 +28,7 @@ export type CommandHandler<Req, Res, Result extends AuthGuardResult = AuthGuardR
   auth: Allowed<Result>
   session: Session
   loginCodes: LoginCodes
+  ai: AiConnections
   withEventStore: WithEventStore
 }) => Future<Response, Res>
 

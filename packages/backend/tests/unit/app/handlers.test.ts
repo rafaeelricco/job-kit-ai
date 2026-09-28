@@ -13,7 +13,7 @@ import { type ProjectionReader, type WithProjectionReader } from "@be/app/projec
 import { internalServerError } from "@be/app/responses"
 import { Auth, type GuardResult } from "@be/app/auth/policy"
 import { Id } from "@be/lib/event-sourcing/event"
-import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes } from "@tests/support/memory"
+import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, memoryAi } from "@tests/support/memory"
 
 type Captured = { status: number; body: unknown; headers: Record<string, string> }
 
@@ -62,6 +62,7 @@ describe("HTTP command and query adapters", () => {
       new MemoryEventDatabase().withEventStore,
       new MemorySessionStore(),
       new MemoryLoginCodes(),
+      memoryAi(),
       controller
     )
 
@@ -97,13 +98,13 @@ describe("HTTP command and query adapters", () => {
     assert.equal(decoded.status, 400)
     assert.match(JSON.stringify(decoded.body), /Unable to decode request/)
 
-    const success = await invoke(handler, { term: "notes" })
+    const success = await invoke(handler, { term: "setup" })
     assert.equal(success.status, 200)
-    assert.deepEqual(success.body, { term: "notes" })
+    assert.deepEqual(success.body, { term: "setup" })
 
     const unavailableReader: WithProjectionReader = (onError) => Future.reject(onError(new Error("private detail")))
     const unavailable = await invoke(handleQuery(unavailableReader, {} as Repositories, sessions, controller), {
-      term: "notes",
+      term: "setup",
     })
     assert.equal(unavailable.status, 500)
     assert.deepEqual(unavailable.body, { error: { message: "Internal Server Error" } })
@@ -154,6 +155,7 @@ describe("HTTP command and query adapters", () => {
       new MemoryEventDatabase().withEventStore,
       sessions,
       new MemoryLoginCodes(),
+      memoryAi(),
       startController
     )
     const started = await invoke(startHandler, {})
@@ -174,6 +176,7 @@ describe("HTTP command and query adapters", () => {
       new MemoryEventDatabase().withEventStore,
       sessions,
       new MemoryLoginCodes(),
+      memoryAi(),
       endController
     )
     const ended = await invoke(endHandler, {}, { cookie: "sid=token-1" })

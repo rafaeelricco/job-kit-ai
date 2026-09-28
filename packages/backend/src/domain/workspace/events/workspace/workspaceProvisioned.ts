@@ -4,6 +4,7 @@ import * as s from "@lib/json/schema"
 
 import { type EventInfo, CreationEvent, Id, toSchema } from "@be/lib/event-sourcing/event"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
+import { initialAi } from "@be/domain/workspace/aggregate/aiState"
 
 const type = "WorkspaceProvisioned" as const
 const args = s.object({
@@ -29,6 +30,7 @@ class WorkspaceProvisioned extends CreationEvent<Workspace> {
       aggregateVersion: 0,
       ownerId: this.values.ownerId,
       createdAt: info.recorded_on,
+      ai: initialAi,
     })
   }
 }

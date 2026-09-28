@@ -39,7 +39,7 @@ These are the backend failures TypeScript may not catch.
 
 - Register new event classes in `packages/backend/src/app/events.ts` (`new CSchema(...)` / `new TSchema(...)`).
 - Wire a new projection in `packages/backend/src/app/projections.ts` (6 places), `mountProjection` in `src/index.ts`, and both `development/postie/application.yaml` + `development/postie/postie.yaml` destinations.
-- Add a command/query to `src/api.ts` and to `implementation` in `src/index.ts`; `Implementation<typeof api>` fails the build on a mismatch. Tests that hand-build `impl` or a full projection map (`packages/backend/tests/unit/event-server.test.ts`, `packages/backend/tests/support/notes.ts`) need the new key too; `pnpm typecheck` lists them.
+- Add a command/query to `src/api.ts` and to `implementation` in `src/index.ts`; `Implementation<typeof api>` fails the build on a mismatch. Tests that hand-build `impl` or a full projection map (`packages/backend/tests/unit/event-server.test.ts`, `packages/backend/tests/support/aiSetups.ts`) need the new key too; `pnpm typecheck` lists them.
 - Projection and reaction routes need their own `express.json({ limit: "5mb" })` mounted before the global parser.
 - Wire a reaction with `mountReaction`, an `application.yaml` destination, and `kind: reaction` in `postie.yaml`.
 - Add semantic retry safety for reaction side effects when a duplicate external call would matter; per-endpoint idempotency covers only a successful replay.

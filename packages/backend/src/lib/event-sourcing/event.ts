@@ -25,7 +25,7 @@ const ID_LENGTH = 50
 
 /**
  * A reusable, nominally-tagged entity id. `Tag` is a phantom string literal
- * (e.g. "Note", "Event") — never assigned, only used to keep `Id<"Note">`
+ * (e.g. "Workspace", "Event") — never assigned, only used to keep `Id<"Workspace">`
  * and `Id<"Event">` from being assignable to one another.
  */
 class Id<Tag extends string> {
@@ -84,9 +84,9 @@ function deterministic<Tag extends string>(seed: string): Result<string, Id<Tag>
 
 /**
  * Interface which all aggregates implement. Used for type constraints.
- * Parameterized only by the aggregate's literal tag (e.g. "Note") — never by
- * the aggregate class itself, which would make `Id<Note>` structurally equal
- * to `Id<AnyOtherClassShapedLikeNote>`.
+ * Parameterized only by the aggregate's literal tag (e.g. "Workspace") — never by
+ * the aggregate class itself, which would make `Id<Workspace>` structurally equal
+ * to `Id<AnyOtherClassShapedLikeWorkspace>`.
  */
 interface Aggregate<Tag extends string> {
   readonly values: {
@@ -97,8 +97,8 @@ interface Aggregate<Tag extends string> {
 
 /**
  * The id type of a concrete aggregate, derived from its own `values` shape
- * rather than tagged with the aggregate class (e.g. `IdOf<Note>` is
- * `Id<"Note">`, not the disallowed `Id<Note>`).
+ * rather than tagged with the aggregate class (e.g. `IdOf<Workspace>` is
+ * `Id<"Workspace">`, not the disallowed `Id<Workspace>`).
  */
 type IdOf<T extends Aggregate<string>> = T["values"]["aggregateId"]
 

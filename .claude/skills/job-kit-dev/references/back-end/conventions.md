@@ -30,6 +30,7 @@ packages/backend/src/
 │   ├── handleProjection.ts    # decode → withIdempotency → handler
 │   ├── handleReaction.ts      # (to add) decode → withIdempotency → handler with withEventStore + services
 │   ├── auth/                  # policy.ts (Auth), grants.ts, README.md
+│   ├── ai/                    # connections.ts, vault.ts, attempts.ts, authorize.ts, crypto.ts, testAdapter.ts, testProvider.ts
 │   ├── events.ts  projections.ts  projectionStore.ts  idempotency.ts
 │   ├── integrations.ts        # configureDependencies(): Dependencies
 │   ├── environment.ts  mailer.ts  session.ts  loginCodes.ts  engine.ts  responses.ts
@@ -42,20 +43,20 @@ packages/backend/src/
 URLs use kebab-case; `api.ts` registry keys use a snake-case area prefix plus a camel-case suffix. `PlainEndpoint` is always POST (`endpoint.ts:14`); the GET routes all live outside `defineAPI` in `index.ts`: Google sign-in, the dev `/api/dev/engine` proxy, and `/docker_healthcheck`.
 
 ```md
-| Concept            | File path                                                   | URL / key                                                         |
-| ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------ |
-| Command API        | `src/domain/<area>/command/<verbAndNoun>.api.ts`            | `/api/v1/<area>/command/<kebab-name>`, key `<area>_<verbAndNoun>` |
-| Command controller | `src/domain/<area>/command/<verbAndNoun>.ts`                | same command key                                                  |
-| Query API          | `src/domain/<area>/query/<verbAndNoun>.api.ts`              | `/api/v1/<area>/query/<kebab-name>`, key `<area>_query_<noun>`    |
-| Query controller   | `src/domain/<area>/query/<verbAndNoun>.ts`                  | same query key                                                    |
-| Aggregate          | `src/domain/<area>/aggregate/<name>.ts`                     | `static readonly type = "<PascalName>"`                           |
-| Event              | `src/domain/<area>/events/<aggregate>/<verbedPastTense>.ts` | globally unique past-tense event type (e.g. `NoteCreated`)        |
-| Projection         | `src/domain/<area>/projection/<plural>.ts`                  | `/api/v1/<area>/projection/<plural>`, `Repo<Plural>`              |
-| Reaction           | `src/domain/<area>/reaction/<name>.ts`                      | `/api/v1/<area>/reaction/<kebab-name>`, postie `kind: reaction`   |
-| Env var            | `packages/backend/src/app/environment.ts`                   | `process.env.MY_VAR` decoded to `env.MY_VAR`                      |
+| Concept            | File path                                                   | URL / key                                                           |
+| ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Command API        | `src/domain/<area>/command/<verbAndNoun>.api.ts`            | `/api/v1/<area>/command/<kebab-name>`, key `<area>_<verbAndNoun>`   |
+| Command controller | `src/domain/<area>/command/<verbAndNoun>.ts`                | same command key                                                    |
+| Query API          | `src/domain/<area>/query/<verbAndNoun>.api.ts`              | `/api/v1/<area>/query/<kebab-name>`, key `<area>_query_<noun>`      |
+| Query controller   | `src/domain/<area>/query/<verbAndNoun>.ts`                  | same query key                                                      |
+| Aggregate          | `src/domain/<area>/aggregate/<name>.ts`                     | `static readonly type = "<PascalName>"`                             |
+| Event              | `src/domain/<area>/events/<aggregate>/<verbedPastTense>.ts` | globally unique past-tense event type (e.g. `WorkspaceProvisioned`) |
+| Projection         | `src/domain/<area>/projection/<plural>.ts`                  | `/api/v1/<area>/projection/<plural>`, `Repo<Plural>`                |
+| Reaction           | `src/domain/<area>/reaction/<name>.ts`                      | `/api/v1/<area>/reaction/<kebab-name>`, postie `kind: reaction`     |
+| Env var            | `packages/backend/src/app/environment.ts`                   | `process.env.MY_VAR` decoded to `env.MY_VAR`                        |
 ```
 
-The verb prefix drops in a query key: `getNote.api.ts` registers as `note_query_note`, `listNotes.api.ts` as `note_query_notes` (`src/api.ts`).
+The verb prefix drops in a query key: `getSetup.api.ts` registers as `ai_query_setup` (`src/api.ts`).
 
 ### Command handler shape
 
@@ -73,7 +74,7 @@ const handler: CommandHandler<Command, CommandResponse> = ({
 }) => ...
 ```
 
-See commands.md for a full worked example (`updateNote.ts`).
+See commands.md for a full worked example (`setPreferences.ts`).
 
 ### Query handler shape
 
@@ -81,8 +82,8 @@ Queries get a read-only projection view and nothing else — no `withEventStore`
 
 ```ts
 // packages/backend/src/app/handlers.ts:37-42 — no event store, no session
-const handler: QueryHandler<Query, QueryResponse> = ({ payload, projections }) =>
-  projections[RepoNotes.collectionName].getById(payload.noteId).mapRej((): Response => internalServerError)
+const handler: QueryHandler<Query, QueryResponse> = ({ projections }) =>
+  projections[RepoAiSetups.collectionName].get(workspaceId).mapRej((): Response => internalServerError)
 ```
 
 ### Projection handler shape
@@ -97,9 +98,9 @@ type ProjectionHandler<E> = (v: {
   projections: WriteProjections
 }) => Future<AmbarResponse, void>
 
-// packages/backend/src/domain/note/projection/notes.ts:194-195
+// packages/backend/src/domain/ai/projection/aiSetups.ts:144-145
 const handler: ProjectionHandler<Events> = ({ event, info, projections }): Future<AmbarResponse, void> =>
-  apply(projections[RepoNotes.collectionName], event, info).mapRej((message) => new ErrorMustRetry(message))
+  apply(projections[RepoAiSetups.collectionName], event, info).mapRej((message) => new ErrorMustRetry(message))
 ```
 
 ### Reaction handler shape
@@ -133,21 +134,18 @@ const handler: ReactionHandler<Events> = ({ event, mailer, withEventStore }) =>
 The generator is synchronous; every event-store operation is `yield*`ed (never `await`ed), and all writes in one generator share one `RepeatableRead` Postgres transaction, retried on version conflicts (domain.md).
 
 ```ts
-// packages/backend/src/domain/note/command/updateNote.ts:21-35
-withEventStore<Response, Result<NoteError, CommandResponse>>(internalError, function* (store) {
-  const found = (yield* store.try_find(Note, payload.noteId)).chain(activeNote)
-  if (found instanceof Nothing) return Failure({ type: "not_found" })
-  if (sameContent(found.value, title, payload.body)) return Success({ success: true })
-  yield* store.emit({
-    aggregate: Note,
-    event: new NoteUpdated({
-      type: NoteUpdated.type,
-      aggregateId: payload.noteId,
-      title,
-      body: payload.body,
-    }),
+// packages/backend/src/domain/ai/command/setPreferences.ts:25-35
+withEventStore<Response, Result<AiError, CommandResponse>>(aiInternalError, function* (store) {
+  const workspace = yield* store.find(Workspace, workspaceId)
+  const decided = decidePreferences(workspace.values.ai, workspaceId, payload.connectionId, {
+    model: payload.model,
+    effort: payload.effort,
   })
-  return Success({ success: true })
+  if (decided instanceof Failure) return Failure(decided.error)
+  if (!(decided.value instanceof Just)) return Success({ setup: toSetupView(workspace.values.ai, ai.routes) })
+  yield* store.emit({ aggregate: Workspace, event: decided.value.value })
+  const updated = yield* store.find(Workspace, workspaceId)
+  return Success({ setup: toSetupView(updated.values.ai, ai.routes) })
 })
 ```
 
@@ -185,7 +183,7 @@ Unsafe in `.api.ts` (server-only: pulls Express, Mongo, or Postgres into the cli
 - controller files (`handler`/`controller` exports) — only the co-located `.api.ts` is client-safe
 ```
 
-A query's DTO mapper can smuggle this in: `note/query/noteSchema.ts` imports `@be/domain/note/projection/notes` for `NoteDocument`, so anything importing `noteSchema.ts` inherits `projectionStore.ts` and `handleProjection.ts`. This is why `packages/frontend/src/api/endpoints.ts` imports each `.api.ts` file individually instead of the whole `@be/api` bucket.
+A query's DTO mapper can smuggle this in if it's colocated with server-only projection types: a `.api.ts` importing `@be/domain/<area>/projection/<plural>` for its document type would inherit `projectionStore.ts` and `handleProjection.ts`. `getSetup.api.ts` avoids the trap by importing its response schema from the client-safe `ai/views.ts` instead of from `projection/aiSetups.ts`. `packages/frontend/src/api/endpoints.ts` imports each `.api.ts` file individually instead of the whole `@be/api` bucket, so one such leak can't reach every page.
 
 ### Runtime pitfalls checklist
 

@@ -13,7 +13,7 @@ const coverage = {
 const mutation = {
   schemaVersion: "1.0",
   files: {
-    "src/domain/note/note.ts": {
+    "src/domain/workspace/aggregate/workspace.ts": {
       mutants: [
         { id: "1", mutatorName: "BooleanLiteral", status: "Killed" },
         { id: "2", mutatorName: "EqualityOperator", status: "Survived" },

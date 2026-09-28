@@ -3,7 +3,7 @@
 #   CI    docker compose -f compose.yaml -f compose.dev.yaml -f compose.ci.yaml ...
 #   prod  docker compose -f compose.yaml -f compose.prod.yaml ...   (deploy-server.yml)
 # Overlays only add settings. On its own, this file behaves like production:
-# the built image, no source mount.
+# the built image, no source mount, the AI test adapter off.
 services:
   api:
     build:
@@ -32,6 +32,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       MAIL_FROM: ${MAIL_FROM:-Job Kit <login@localhost>}
+      AI_CREDENTIAL_KEYS: ${AI_CREDENTIAL_KEYS:-}
+      AI_ACCOUNT_KEY: ${AI_ACCOUNT_KEY:-}
+      AI_TEST_ADAPTER: "off"
     ports:
       - "127.0.0.1:${API_PORT:-3010}:8080"
     depends_on:

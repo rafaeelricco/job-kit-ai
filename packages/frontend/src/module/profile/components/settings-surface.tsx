@@ -2,6 +2,7 @@
 export { PANELS, PANEL_ORDER, SettingsPanel, parsePanel, type PanelId }
 
 import {
+  AiBrain01Icon,
   ComputerIcon,
   Copy01Icon,
   FilterIcon,
@@ -36,9 +37,9 @@ import type { Edit, SaveError } from "@module/profile/helpers/write-profile"
 import type { Basics, JobSearch, Language, Profile, SearchPack, SocialProfile, Toggle } from "@module/profile/types"
 import { assertNever } from "@module/scout/result"
 
-type PanelId = "profile" | "basics" | "profiles" | "languages" | "search" | "filters" | "packs"
+type PanelId = "profile" | "ai" | "basics" | "profiles" | "languages" | "search" | "filters" | "packs"
 
-// One section per YAML file, except basics.yaml (identity facts vs. contact
+// One section per YAML file, plus AI (server-held, so no file caption), except basics.yaml (identity facts vs. contact
 // facts) and job_search.yaml (what scout looks for vs. what it drops). Both
 // halves write disjoint keys and only one panel is ever mounted, so two forms
 // on one file never race. `file` is the caption the dialog header prints.
@@ -46,6 +47,7 @@ const PANELS: Readonly<
   Record<PanelId, { readonly label: string; readonly file: string | null; readonly Icon: IconSvgElement }>
 > = {
   profile: { label: "Profile", file: "basics.yaml", Icon: UserIcon },
+  ai: { label: "AI", file: null, Icon: AiBrain01Icon },
   basics: { label: "Basics", file: "basics.yaml", Icon: Location01Icon },
   profiles: { label: "Profiles", file: "profiles.yaml", Icon: Link02Icon },
   languages: { label: "Languages", file: "languages.yaml", Icon: TranslateIcon },
@@ -54,7 +56,16 @@ const PANELS: Readonly<
   packs: { label: "Packs", file: "search_packs.yaml", Icon: Layers01Icon },
 }
 
-const PANEL_ORDER: readonly PanelId[] = ["profile", "basics", "profiles", "languages", "search", "filters", "packs"]
+const PANEL_ORDER: readonly PanelId[] = [
+  "profile",
+  "ai",
+  "basics",
+  "profiles",
+  "languages",
+  "search",
+  "filters",
+  "packs",
+]
 
 const isPanelId = (value: string): value is PanelId => Object.hasOwn(PANELS, value)
 
@@ -723,7 +734,8 @@ function SettingsPanel({
   profile,
   save,
 }: {
-  readonly panel: PanelId
+  /** The AI panel renders outside ProfileGate, in the dialog, so it never reaches this switch. */
+  readonly panel: Exclude<PanelId, "ai">
   readonly profile: Profile
   readonly save: Save
 }) {

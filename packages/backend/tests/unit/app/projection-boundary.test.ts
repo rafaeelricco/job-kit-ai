@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { describe, test } from "vitest"
 import type * as express from "express"
 import { Future } from "@lib/future"
-import { controller as notesProjection, RepoNotes } from "@be/domain/note/projection/notes"
+import { controller as aiSetupsProjection, RepoAiSetups } from "@be/domain/ai/projection/aiSetups"
 import { RepoProjectionIdempotency, type ProjectedEvent } from "@be/app/idempotency"
 import { type Repositories } from "@be/app/projections"
 import { handleProjection } from "@be/app/handleProjection"
@@ -63,7 +63,7 @@ describe("projection and event-bus HTTP boundaries", () => {
       writerOpened = true
       return procedure({} as ProjectionWriter)
     }
-    const handler = handleProjection("/notes", withWriter, {} as Repositories, notesProjection)
+    const handler = handleProjection("/ai-setups", withWriter, {} as Repositories, aiSetupsProjection)
 
     const response = await invoke(handler, { payload: { event_id: "missing-envelope-fields" } })
     const body = response.body as { result: { error: { policy: string; description: string } } }
@@ -79,7 +79,7 @@ describe("projection and event-bus HTTP boundaries", () => {
       writerOpened = true
       return procedure({} as ProjectionWriter)
     }
-    const handler = handleProjection("/notes", withWriter, {} as Repositories, notesProjection)
+    const handler = handleProjection("/ai-setups", withWriter, {} as Repositories, aiSetupsProjection)
     const envelope = {
       data_source_id: "source",
       data_source_description: "source description",
@@ -87,7 +87,7 @@ describe("projection and event-bus HTTP boundaries", () => {
       data_destination_description: "destination description",
       payload: {
         event_id: "event-1",
-        aggregate_id: "note-1",
+        aggregate_id: "workspace-1",
         aggregate_version: 0,
         correlation_id: "event-1",
         causation_id: "event-1",
@@ -116,11 +116,11 @@ describe("projection and event-bus HTTP boundaries", () => {
       },
     } as unknown as ProjectionWriter
     const repositories: Repositories = {
-      [RepoNotes.collectionName]: { values: RepoNotes },
+      [RepoAiSetups.collectionName]: { values: RepoAiSetups },
       [RepoProjectionIdempotency.collectionName]: { values: RepoProjectionIdempotency },
     }
     const withWriter: WithProjectionWriter = (_onError, procedure) => procedure(store)
-    const handler = handleProjection("/notes", withWriter, repositories, notesProjection)
+    const handler = handleProjection("/ai-setups", withWriter, repositories, aiSetupsProjection)
     const envelope = {
       data_source_id: "source",
       data_source_description: "source description",
@@ -128,12 +128,12 @@ describe("projection and event-bus HTTP boundaries", () => {
       data_destination_description: "destination description",
       payload: {
         event_id: "event-2",
-        aggregate_id: "note-2",
+        aggregate_id: "workspace-2",
         aggregate_version: 0,
         correlation_id: "event-2",
         causation_id: "event-2",
         recorded_on: "2026-01-02 03:04:05+00",
-        payload: JSON.stringify({ type: "NoteCreated", aggregateId: "note-2", title: "Created", body: "" }),
+        payload: JSON.stringify({ type: "WorkspaceProvisioned", aggregateId: "workspace-2", ownerId: "user-2" }),
       },
     }
 
@@ -142,11 +142,11 @@ describe("projection and event-bus HTTP boundaries", () => {
     assert.deepEqual(response.body, { result: { success: {} } })
     assert.equal(writes.length, 2)
     assert.equal(writes[0]?.kind, "upsert")
-    assert.equal((writes[0]?.value as { title: string }).title, "Created")
+    assert.equal((writes[0]?.value as { workspaceId: { value: string } }).workspaceId.value, "workspace-2")
     assert.equal(writes[1]?.kind, "insert")
     const marker = writes[1]?.value as ProjectedEvent
     assert.equal(marker.eventId.value, "event-2")
-    assert.equal(marker.projection, "/notes")
+    assert.equal(marker.projection, "/ai-setups")
   })
 
   test("event-bus authentication rejects missing and invalid credentials and accepts the configured pair", async () => {

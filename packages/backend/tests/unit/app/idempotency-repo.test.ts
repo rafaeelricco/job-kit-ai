@@ -28,13 +28,13 @@ describe("idempotency repository", () => {
       name: "EventId_ProjectionName_unique",
     })
 
-    const projected = { eventId: new Id<"Event">("event-1"), projection: "/notes" }
+    const projected = { eventId: new Id<"Event">("event-1"), projection: "/ai-setups" }
     assert.ok(RepoProjectionIdempotency.toId(projected).length > 0)
   })
 
   test("uses event and projection as the lookup key and inserts the delivery marker", async () => {
     const repository = { values: RepoProjectionIdempotency } as Repository<ProjectedEvent>
-    const projected = { eventId: new Id<"Event">("event-2"), projection: "/notes" }
+    const projected = { eventId: new Id<"Event">("event-2"), projection: "/ai-setups" }
     const calls: Array<{ operation: string; value: unknown }> = []
     const store = {
       find: (_repo: unknown, filter: unknown, options: unknown) => {
@@ -55,7 +55,7 @@ describe("idempotency repository", () => {
     assert.deepEqual(calls, [
       {
         operation: "find",
-        value: { filter: { eventId: "event-2", projection: "/notes" }, options: { limit: 1 } },
+        value: { filter: { eventId: "event-2", projection: "/ai-setups" }, options: { limit: 1 } },
       },
       { operation: "insert", value: projected },
     ])

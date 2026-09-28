@@ -70,7 +70,7 @@ type ProjectionWriter = ProjectionReader & Pick<MongoProjectionStore, "insert" |
  * Run `f` with read access inside one Mongo transaction.
  *
  * ```ts
- * withProjectionReader(hideStoreError, (store) => RepoNotes.reader(repo, store).findActive())
+ * withProjectionReader(hideStoreError, (store) => RepoAiSetups.reader(repo, store).get(workspaceId))
  * ```
  */
 type WithProjectionReader = <E, T>(onError: (e: Error) => E, f: (s: ProjectionReader) => Future<E, T>) => Future<E, T>

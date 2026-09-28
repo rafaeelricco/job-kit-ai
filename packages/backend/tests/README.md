@@ -28,37 +28,7 @@ pnpm test:unit
 pnpm test:regression
 ```
 
-## CRUD and validation procedure
-
-The integration suite creates notes with a unique test id and checks each
-state through the HTTP API and PostgreSQL history:
-
-1. Send a valid create request and wait for its projection. The note appears in
-   list and get queries, and PostgreSQL has one `NoteCreated` event.
-2. Send the same create request twice, including concurrent retries. Both
-   responses return the same id and the event history still has one event.
-3. Send malformed JSON, missing fields, the wrong field type, an empty title,
-   and an oversized body. The API returns 400 for invalid requests and 413 for
-   an oversized body. A missing note returns 404 from get, update, and delete.
-4. Update the note. The title and body change while its creation time remains
-   the same. Repeating an update with the same values does not append an event.
-5. Delete the note twice. The projection removes it, get returns 404, and a
-   later update still returns 404. History contains one create, one update, and
-   one delete event.
-
-## Projection recovery and pause/resume procedure
-
-The integration suite also checks delivery recovery against the real databases.
-It delivers the same projection event concurrently and again after delete;
-duplicate delivery is harmless. It then injects a failure while saving the
-delivery marker. Both the note change and marker must roll back so the event can
-be retried.
-
-For engine recovery, the suite pauses `Note_Projection_Notes`, creates a note,
-and confirms that the event is saved in PostgreSQL while get returns 404. It
-resumes the subscription, waits for the note to appear, then checks the engine
-log for the delivered event. Cleanup attempts to resume the subscription even
-if an assertion fails.
+## Integration suite
 
 Run integration tests inside the running API container:
 

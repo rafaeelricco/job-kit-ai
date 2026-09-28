@@ -3,19 +3,26 @@ import { api } from "@be/api"
 import { configureDependencies, type Dependencies } from "@be/app/integrations"
 import { handleCommand } from "@be/app/handleCommand"
 import { handleQuery } from "@be/app/handleQuery"
-import { handleProjection } from "@be/app/handleProjection"
+import { handleProjection, type ProjectionController } from "@be/app/handleProjection"
 import { defineAPI, type Implementation } from "@be/lib/event-sourcing/server"
+import { type Aggregate, type Event } from "@be/lib/event-sourcing/event"
 import { EventBusAuthMiddleware } from "@be/lib/event-delivery"
 import { controller as auth_requestCode } from "@be/domain/auth/command/requestCode"
 import { controller as auth_verifyCode } from "@be/domain/auth/command/verifyCode"
 import { controller as auth_signOut } from "@be/domain/auth/command/signOut"
 import { controller as auth_query_whoAmI } from "@be/domain/auth/query/whoAmI"
-import { controller as note_createNote } from "@be/domain/note/command/createNote"
-import { controller as note_updateNote } from "@be/domain/note/command/updateNote"
-import { controller as note_deleteNote } from "@be/domain/note/command/deleteNote"
-import { controller as note_query_note } from "@be/domain/note/query/getNote"
-import { controller as note_query_notes } from "@be/domain/note/query/listNotes"
-import { controller as notesProjection } from "@be/domain/note/projection/notes"
+import { controller as ai_completeSetupStep } from "@be/domain/ai/command/completeSetupStep"
+import { controller as ai_startAuthorization } from "@be/domain/ai/command/startAuthorization"
+import { controller as ai_advanceAuthorization } from "@be/domain/ai/command/advanceAuthorization"
+import { controller as ai_cancelAuthorization } from "@be/domain/ai/command/cancelAuthorization"
+import { controller as ai_confirmSwitch } from "@be/domain/ai/command/confirmSwitch"
+import { controller as ai_discardSwitch } from "@be/domain/ai/command/discardSwitch"
+import { controller as ai_testConnection } from "@be/domain/ai/command/testConnection"
+import { controller as ai_disconnect } from "@be/domain/ai/command/disconnect"
+import { controller as ai_setPreferences } from "@be/domain/ai/command/setPreferences"
+import { controller as ai_query_setup } from "@be/domain/ai/query/getSetup"
+import { controller as aiSetupsProjection } from "@be/domain/ai/projection/aiSetups"
+import { testProviderRouter } from "@be/app/ai/testProvider"
 import { createEngineProxy } from "@be/app/engine"
 import {
   GOOGLE_START_PATH,
@@ -31,8 +38,21 @@ import express from "express"
 import env from "@be/app/environment"
 
 const implementation: Implementation<typeof api> = {
-  command: { auth_requestCode, auth_verifyCode, auth_signOut, note_createNote, note_updateNote, note_deleteNote },
-  query: { auth_query_whoAmI, note_query_note, note_query_notes },
+  command: {
+    auth_requestCode,
+    auth_verifyCode,
+    auth_signOut,
+    ai_completeSetupStep,
+    ai_startAuthorization,
+    ai_advanceAuthorization,
+    ai_cancelAuthorization,
+    ai_confirmSwitch,
+    ai_discardSwitch,
+    ai_testConnection,
+    ai_disconnect,
+    ai_setPreferences,
+  },
+  query: { auth_query_whoAmI, ai_query_setup },
 }
 
 // Status and message live in one table, so a status can never be sent with another status's message.
@@ -61,15 +81,17 @@ function notFound(_req: express.Request, res: express.Response): void {
   res.status(404).json({ error: { message: "Endpoint not found" } })
 }
 
-/** Mount the event-projection endpoint: its own auth middleware and a 5mb JSON limit, ahead of the global parser. */
+/** Mount the event-projection endpoints: each with its own auth middleware and a 5mb JSON limit, ahead of the global parser. */
 function mountProjection(app: express.Express, dependencies: Dependencies): void {
-  const projectionPath = "/api/v1/note/projection/notes"
-  app.post(
-    projectionPath,
-    EventBusAuthMiddleware,
-    express.json({ limit: "5mb" }),
-    handleProjection(projectionPath, dependencies.withProjectionWriter, dependencies.repositories, notesProjection)
-  )
+  const mount = <E extends Event<Aggregate<string>>>(path: string, controller: ProjectionController<E>): void => {
+    app.post(
+      path,
+      EventBusAuthMiddleware,
+      express.json({ limit: "5mb" }),
+      handleProjection(path, dependencies.withProjectionWriter, dependencies.repositories, controller)
+    )
+  }
+  mount("/api/v1/ai/projection/ai-setups", aiSetupsProjection)
 }
 
 function mountApi(app: express.Express, dependencies: Dependencies): void {
@@ -79,7 +101,13 @@ function mountApi(app: express.Express, dependencies: Dependencies): void {
     (endpoint, controller) =>
       app.post(
         endpoint.path,
-        handleCommand(dependencies.withEventStore, dependencies.sessions, dependencies.loginCodes, controller)
+        handleCommand(
+          dependencies.withEventStore,
+          dependencies.sessions,
+          dependencies.loginCodes,
+          dependencies.ai,
+          controller
+        )
       ),
     (endpoint, controller) =>
       app.post(
@@ -130,6 +158,8 @@ function createApp(dependencies: Dependencies): express.Express {
   app.set("etag", false)
   app.use(noStore)
   app.use("/api/dev/engine", createEngineProxy())
+  // Only with AI_TEST_ADAPTER=on (refused in production): the fake provider the test adapter's routes open in a new tab.
+  dependencies.ai.fakeProvider.map((fake) => app.use("/api/dev/test-provider", testProviderRouter(fake, env.APP_URL)))
   mountProjection(app, dependencies)
   app.use(express.json())
   mountApi(app, dependencies)

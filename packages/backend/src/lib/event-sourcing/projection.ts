@@ -13,7 +13,7 @@ type Schema<T> = s.Schema<T>
  * bound (see its definition) — `s.Infer<T[number]["schema"]>` below needs
  * `T[number]["schema"]` to satisfy that exact constraint. `T` itself is
  * still inferred from the concrete array of event classes at each call site
- * (e.g. `accept([NoteCreated, NoteUpdated, NoteDeleted])`), so no precision
+ * (e.g. `accept([WorkspaceProvisioned, SetupStepCompleted])`), so no precision
  * is lost there; only the abstract bound checked inside this function's
  * body needs the `any`.
  */
@@ -27,7 +27,7 @@ type EventConstructor = { type: string; schema: Schema<any> }
  * To be used in decoding events for projections and reactions.
  *
  * ```ts
- * accept([NoteCreated, NoteUpdated, NoteDeleted])
+ * accept([WorkspaceProvisioned, SetupStepCompleted])
  * ```
  */
 function accept<T extends [...EventConstructor[]]>(ts: T): Decoder<Maybe<s.Infer<T[number]["schema"]>>> {

@@ -2,8 +2,8 @@ import assert from "node:assert/strict"
 import { describe, test } from "vitest"
 import { Just, Nothing } from "@lib/maybe"
 import { Future } from "@lib/future"
-import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes } from "@tests/support/memory"
-import { result } from "@tests/support/notes"
+import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, memoryAi } from "@tests/support/memory"
+import { result } from "@tests/support/future"
 import { Session } from "@be/app/session"
 import { User } from "@be/domain/user/aggregate/user"
 import { type GoogleOidc, type TokenPayload } from "@be/lib/google-oidc"
@@ -104,6 +104,7 @@ describe("Google sign-in", () => {
         ...anonymousAuth,
         session: new Session(sessions, Nothing()),
         loginCodes,
+        ai: memoryAi(),
         withEventStore: db.withEventStore,
       })
     )
@@ -115,6 +116,7 @@ describe("Google sign-in", () => {
         ...anonymousAuth,
         session: new Session(sessions, Nothing()),
         loginCodes,
+        ai: memoryAi(),
         withEventStore: db.withEventStore,
       })
     )
