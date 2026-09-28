@@ -117,7 +117,7 @@ raised it. It shows the bug fires on the PR head, or that it does not.
   When it must change source (fault injection, a fix check), work in its own
   clone, never in the shared review tree: step 2's commands with
   `"$SCRATCH/pr-review-N"` as the source and `"$SCRATCH/pr-review-N-<cluster>"`
-  as the target, then the same install in the packages it runs.
+  as the target, then step 2's install at the clone's root.
 - **CLAUDE.md violations**: confirm the rule's CLAUDE.md covers the file and quote
   the violating line. No run needed.
 - Before returning, delete every file, container, and clone it created.
@@ -156,7 +156,8 @@ terminal form. Instead, write what would be posted, in posting order, to
 ## Output template
 
 Terminal. `file` is an absolute path when run locally (rooted at the checkout
-the review was started from, not a temporary worktree) and repo-relative in CI:
+the review was started from, not the review tree in `$SCRATCH`, which step 7
+removes) and repo-relative in CI:
 
 ```
 Found {N} actionable issues.
@@ -212,5 +213,5 @@ check it ran; then its `NOT RUN` lines as prose, dropping any stage a proof
 ran; then `{N} candidates could not be reproduced and were not posted.` when
 N > 0.
 Examples: "All 107 server tests, lint, typecheck, and build passed. Docker
-integration tests were not run." and "`scripts/test.sh --fast` and
+integration and mutation tests were not run." and "`scripts/test.sh --fast` and
 `pnpm typecheck:release` passed. The mutation stage was not run."
