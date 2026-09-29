@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="packages/frontend/public/brand/lockup-horizontal-dark.svg">
-    <img src="packages/frontend/public/brand/lockup-horizontal.svg" alt="Job Kit AI — your job search, made simpler" width="700">
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/lockup-horizontal-dark.svg">
+    <img src=".github/assets/lockup-horizontal.svg" alt="Job Kit AI — your job search, made simpler" width="700">
   </picture>
 </h1>
 
@@ -135,17 +135,4 @@ On Windows, use `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`.
 Coding-agent installs link to the checkout, so edits take effect there.
 Re-run the installer to refresh Aside copies.
 
-To develop the dashboard, install Node.js and pnpm, then run from the repository root:
-
-```bash
-pnpm install
-pnpm --dir packages/frontend dev
-```
-
-Check dashboard changes with:
-
-```bash
-pnpm --dir packages/frontend typecheck
-pnpm --dir packages/frontend lint
-pnpm --dir packages/frontend build
-```
+The dashboard and its API live in the separate job-kit-platform repository.

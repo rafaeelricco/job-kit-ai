@@ -144,7 +144,6 @@ if wanted lint; then
   discover 'test_release.py' || status=1
   discover 'test_auto_release.py' || status=1
   discover 'test_prose.py' || status=1
-  discover 'test_design_system.py' || status=1
   record lint "${status}"
 fi
 

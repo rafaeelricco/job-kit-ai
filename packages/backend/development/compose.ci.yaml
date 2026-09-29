@@ -1,5 +1,0 @@
-services:
-  api:
-    # CI runs tests with `docker compose exec` inside the API container.
-    # Keep the API private to the Compose network and avoid host port conflicts.
-    ports: !reset []

@@ -66,8 +66,8 @@ jobs:
           ref: refs/pull/${{ env.PR_NUMBER }}/head
           fetch-depth: 1
 
-      # Provers run the repo's checks and throwaway tests with the toolchain from
-      # server-ci.yml, on the Node version in .node-version. pr-review installs
+      # Provers run the repo's checks and throwaway tests with pnpm, on the Node
+      # version in .node-version. pr-review installs
       # dependencies into its own review tree, so none are installed here.
       - uses: pnpm/action-setup@v4
         with:

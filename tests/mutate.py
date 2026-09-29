@@ -277,19 +277,23 @@ FUZZ_PATTERN: str = "test_fuzz.py"
 # score, and never lower one to make a red run green. --min-score overrides them.
 #
 #   module                measured   floor
-#   models.py               72.4%     70%
-#   score.py                77.4%     75%
+#   models.py               73.5%     70%
+#   score.py                78.7%     75%
 #   scaffold_guidance.py    90.9%     90%
-#   validate_guidance.py    71.9%     70%
+#   validate_guidance.py    72.2%     70%
 #   check_parse.py          54.5%     50%
-#   typesafe_match.py      100.0%    100%
+#   typesafe_match.py       63.1%     60%
+#
+# typesafe_match.py was first recorded at 100%, but that run was vacuous: the
+# invariants stage read a file outside the sandbox trees, failed on every mutant,
+# and so killed them all. Its floor was reset to the score the suite really earns.
 FLOORS: Dict[str, float] = {
     "models": 0.70,
     "score": 0.75,
     "scaffold_guidance": 0.90,
     "validate_guidance": 0.70,
     "check_parse": 0.50,
-    "typesafe_match": 1.00,
+    "typesafe_match": 0.60,
 }
 
 
