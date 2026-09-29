@@ -103,7 +103,7 @@ function NotConnected({ onConnect }: { readonly onConnect: () => void }) {
     <div className="flex flex-col items-start gap-2.5 border border-dashed border-divider-emphasis p-6">
       <div className="font-medium text-ink-strong">No AI connected</div>
       <p className="text-[13px] leading-relaxed text-ink-soft">
-        Profile drafts and new matches are paused. Connect OpenAI, Anthropic or xAI to continue.
+        Profile drafts and new matches are paused. Connect Anthropic or xAI to continue.
       </p>
       <Button type="button" size="sm" className="h-8 px-3" onClick={onConnect}>
         Connect an AI
@@ -136,6 +136,9 @@ function ConnectionCard({
       ({ setup }) => {
         setTest(NotAsked())
         replace(setup)
+        // A failed check already shows as the attention alert; a passing one only moves "checked", so say so.
+        if (setup.active?.status === "ready")
+          toast.success(`${PROVIDER_COPY[connection.provider].name} answered a test request`)
       }
     )
   }
@@ -265,13 +268,16 @@ function DisconnectedModelField() {
   )
 }
 
-const EFFORT_OPTIONS: readonly { readonly value: Effort; readonly label: string }[] = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-]
+/** Every level the wire enum carries; a model offers the subset its provider's SDK takes (`PROVIDER_EFFORTS`). */
+const EFFORT_LABEL: Record<Effort, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "Extra high",
+  max: "Max",
+}
 
-const isEffort = (value: string): value is Effort => EFFORT_OPTIONS.some((option) => option.value === value)
+const isEffort = (value: string): value is Effort => Object.hasOwn(EFFORT_LABEL, value)
 
 /** The current model, falling back to the recommended one, then the first — the same rule `defaultPreferences` uses. */
 function pickModel(models: readonly Model[], id: string): Model | undefined {
@@ -376,13 +382,9 @@ function ModelAndEffort({
           aria-label="Reasoning effort"
           className="self-start"
         >
-          {EFFORT_OPTIONS.map((option) => (
-            <ToggleGroupItem
-              key={option.value}
-              value={option.value}
-              disabled={selected !== undefined && !selected.efforts.includes(option.value)}
-            >
-              {option.label}
+          {(selected?.efforts ?? []).map((value) => (
+            <ToggleGroupItem key={value} value={value}>
+              {EFFORT_LABEL[value]}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>

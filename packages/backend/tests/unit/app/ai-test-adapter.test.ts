@@ -5,11 +5,11 @@ import { Future } from "@lib/future"
 import { Just } from "@lib/maybe"
 import { Success, Failure } from "@lib/result"
 import { Id } from "@be/lib/event-sourcing/event"
-import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
+import { FakeProvider, testAdapter } from "@tests/support/test-provider/adapter"
 import type { Route } from "@be/domain/ai/routes"
 
 const APP_URL = "http://localhost:5173/jobs/"
-const deviceRoute: Route = { provider: "openai", method: "device" }
+const deviceRoute: Route = { provider: "xai", method: "device" }
 const apiKeyRoute: Route = { provider: "anthropic", method: "api_key" }
 
 const run = <T>(f: Future<Error, T>): Promise<T> => f.promise((e) => e)

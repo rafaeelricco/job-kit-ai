@@ -15,9 +15,9 @@ import {
 import { type AiSetupView, type Method, type Provider } from "@module/ai/types"
 
 /**
- * A2's two-column grid: one card per provider, using each provider's `CARD_METHOD` (the API key route is never a
- * card — `setup.tsx` offers it as the secondary link below the grid). The grid opens the provider tab itself for
- * a device card, synchronously inside the click handler, so a popup blocker doesn't see it as script-timed.
+ * A2's two-column grid: one card per provider, using each provider's `CARD_METHOD` (`setup.tsx` also offers the API
+ * key as the secondary link below the grid). The grid opens the provider tab itself for a device card,
+ * synchronously inside the click handler, so a popup blocker doesn't see it as script-timed.
  */
 function ProviderGrid({
   setup,

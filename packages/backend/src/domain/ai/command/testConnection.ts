@@ -11,7 +11,7 @@ import { Auth, type GuardResult } from "@be/app/auth/policy"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { type AiState, type Connection, type ConnectionStatus } from "@be/domain/workspace/aggregate/aiState"
 import { type Readiness } from "@be/domain/ai/adapter"
-import { boundedVerify, VERIFY_TIMEOUT } from "@be/app/ai/authorize"
+import { boundedVerify, resolveCredential, toResolved, VERIFY_TIMEOUT } from "@be/app/ai/credential"
 import { toSetupView } from "@be/domain/ai/views"
 import { AiConnectionChecked } from "@be/domain/workspace/events/workspace/aiConnectionChecked"
 import { type AiConnections } from "@be/app/ai/connections"
@@ -44,24 +44,28 @@ function toConnectionStatus(readiness: Readiness): ConnectionStatus {
   }
 }
 
-/** Outside `withEventStore`: a missing secret or adapter is reported directly, a live one goes through the same bounded `verify` `advance` uses. */
+/**
+ * Outside `withEventStore`: a missing secret or adapter is reported directly. A live one first lets the adapter
+ * refresh an expiring sign-in (re-sealed under the same ref); a verdict that refresh already reached (a revoked or
+ * lapsed sign-in) is reported as is, else it goes through the same bounded `verify` `advance` uses.
+ */
 function checkStatus(
   ai: AiConnections,
   workspaceId: Id<"Workspace">,
   connection: Connection
 ): Future<Response, ConnectionStatus> {
-  return ai.vault
-    .get(workspaceId, connection.credentialRef)
-    .mapRej(aiInternalError)
-    .chain((secret): Future<Response, ConnectionStatus> => {
-      if (secret instanceof Nothing) return Future.resolve("revoked")
-      const route = { provider: connection.provider, method: connection.method }
-      const adapter = ai.adapter(route)
-      if (adapter instanceof Nothing) return Future.resolve("unreachable")
-      return boundedVerify(adapter.value, route, secret.value, VERIFY_TIMEOUT)
-        .mapRej(aiInternalError)
-        .map(toConnectionStatus)
-    })
+  const route = { provider: connection.provider, method: connection.method }
+  const adapter = ai.adapter(route)
+  const resolved =
+    adapter instanceof Just
+      ? resolveCredential(ai, workspaceId, adapter.value, route, connection.credentialRef)
+      : ai.vault.get(workspaceId, connection.credentialRef).map(toResolved)
+  return resolved.mapRej(aiInternalError).chain((r): Future<Response, ConnectionStatus> => {
+    if (r.kind === "missing") return Future.resolve("revoked")
+    if (r.kind === "settled") return Future.resolve(toConnectionStatus({ kind: "failed", reason: r.reason }))
+    if (adapter instanceof Nothing) return Future.resolve("unreachable")
+    return boundedVerify(adapter.value, route, r.secret, VERIFY_TIMEOUT).mapRej(aiInternalError).map(toConnectionStatus)
+  })
 }
 
 /**

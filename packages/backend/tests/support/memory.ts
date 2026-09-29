@@ -12,13 +12,13 @@ import {
 import { schemas } from "@be/app/events"
 import { type SessionStore } from "@be/app/session"
 import { type LoginCodes } from "@be/app/loginCodes"
-import { type SecretVault } from "@be/app/ai/vault"
-import { type Attempt, type AttemptState, type Settlement, type Attempts } from "@be/app/ai/attempts"
+import { type SecretVault } from "@be/app/ai/store/vault"
+import { type Attempt, type AttemptState, type Settlement, type Attempts } from "@be/app/ai/store/attempts"
 import { type AiConnections } from "@be/app/ai/connections"
 import { type Secret } from "@be/domain/ai/adapter"
-import { type VaultKeys, type Sealed, vaultKeys, seal, open } from "@be/app/ai/crypto"
+import { type VaultKeys, type Sealed, vaultKeys, seal, open } from "@be/app/ai/store/crypto"
 import { routeViews } from "@be/domain/ai/routes"
-import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
+import { FakeProvider, testAdapter } from "@tests/support/test-provider/adapter"
 import { type ProviderAdapter } from "@be/domain/ai/adapter"
 
 /** Exercises the real encoder/hydrator; only persistence is replaced. */
@@ -94,6 +94,7 @@ const aad = (workspaceId: Id<"Workspace">, ref: Id<"AiSecret">): string => `${wo
 /** Uses the real `seal`/`open` over a `Map`, so the vault's crypto (and its AAD binding) is exercised, only persistence is faked. */
 export class MemoryVault implements SecretVault {
   private readonly rows = new Map<string, { workspaceId: string; sealed: Sealed }>()
+  private readonly locks = new Map<string, Promise<void>>()
 
   readonly put = (workspaceId: Id<"Workspace">, secret: Secret): Future<Error, Id<"AiSecret">> =>
     Future.create((_, resolve) => {
@@ -115,6 +116,44 @@ export class MemoryVault implements SecretVault {
       )
     })
 
+  /**
+   * As the Postgres vault: `get`, run `f`, re-seal its `Just` under the same ref and AAD, return what is stored now.
+   * Calls on one ref queue on `locks`, the in-memory stand-in for `FOR UPDATE`, so overlapping updates run one after the other.
+   */
+  readonly update = (
+    workspaceId: Id<"Workspace">,
+    ref: Id<"AiSecret">,
+    f: (secret: Secret) => Future<Error, Maybe<Secret>>
+  ): Future<Error, Maybe<Secret>> => Future.attemptP(() => this.locked(ref, () => this.replace(workspaceId, ref, f)))
+
+  private locked<T>(ref: Id<"AiSecret">, run: () => Promise<T>): Promise<T> {
+    const result = (this.locks.get(ref.value) ?? Promise.resolve()).then(run)
+    this.locks.set(
+      ref.value,
+      result.then(
+        () => undefined,
+        () => undefined
+      )
+    )
+    return result
+  }
+
+  private async replace(
+    workspaceId: Id<"Workspace">,
+    ref: Id<"AiSecret">,
+    f: (secret: Secret) => Future<Error, Maybe<Secret>>
+  ): Promise<Maybe<Secret>> {
+    const current = await this.get(workspaceId, ref).promise((e) => e)
+    if (current instanceof Nothing) return current
+    const changed = await f(current.value).promise((e) => e)
+    if (changed instanceof Nothing) return current
+    this.rows.set(ref.value, {
+      workspaceId: workspaceId.value,
+      sealed: seal(TEST_KEYS, aad(workspaceId, ref), changed.value),
+    })
+    return changed
+  }
+
   /** Every sealed ref this workspace still holds, so a test can prove nothing was left behind. */
   refsFor(workspaceId: Id<"Workspace">): string[] {
     return [...this.rows].filter(([, row]) => row.workspaceId === workspaceId.value).map(([ref]) => ref)
@@ -130,7 +169,7 @@ export class MemoryVault implements SecretVault {
     })
 }
 
-const OPEN_ATTEMPT_STATES: readonly AttemptState[] = ["pending", "authorized", "verification_failed"]
+const OPEN_ATTEMPT_STATES: readonly AttemptState[] = ["pending", "verification_failed"]
 const LEASE_DURATION = Duration.seconds(30)
 
 type StoredAttempt = Attempt & { leaseUntil: POSIX | null }

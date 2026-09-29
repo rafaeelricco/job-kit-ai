@@ -3,7 +3,6 @@ export { type AiError, toResponse, respondAi, aiInternalError, toAiRejection, re
 import { Future } from "@lib/future"
 import { type Result } from "@lib/result"
 import { json, type Response } from "@be/lib/router"
-
 import { Id } from "@be/lib/event-sourcing/event"
 import { internalServerError } from "@be/app/responses"
 import { type AiConnections } from "@be/app/ai/connections"

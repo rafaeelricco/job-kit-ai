@@ -8,7 +8,6 @@ import { Failure } from "@lib/result"
 import { POSIX } from "@lib/time"
 import { Postgres, type PostgresTransaction, schema_TimestampTZ } from "@be/lib/postgres"
 import { Id } from "@be/lib/event-sourcing/event"
-
 import {
   schema_Provider,
   schema_Method,
@@ -19,12 +18,10 @@ import {
 } from "@be/domain/ai/routes"
 import { schema_Challenge, schema_FailureReason, type Challenge, type FailureReason } from "@be/domain/ai/views"
 
-/** Outside the replication publication, like `auth_login_codes`: an authorization attempt is operational state, not a domain event. */
 const TABLE = "ai_attempts"
 
 const ATTEMPT_STATES = [
   "pending",
-  "authorized",
   "verification_failed",
   "connected",
   "denied",
@@ -34,8 +31,7 @@ const ATTEMPT_STATES = [
 ] as const
 type AttemptState = (typeof ATTEMPT_STATES)[number]
 
-/** Live attempts: a device poll, an entry form, or a just-authorized credential still pending its verify. */
-const OPEN_STATES: readonly AttemptState[] = ["pending", "authorized", "verification_failed"]
+const OPEN_STATES: readonly AttemptState[] = ["pending", "verification_failed"]
 
 const LEASE_SECONDS = 30
 
@@ -53,29 +49,17 @@ type Attempt = {
   expiresAt: POSIX
 }
 
-/** What a `claim`ed attempt settles into: a terminal state, its failure reason (if any), and the credential ref to keep (if any). */
 type Settlement = { state: AttemptState; failure: Maybe<FailureReason>; credentialRef: Maybe<Id<"AiSecret">> }
 
 type Attempts = {
-  /** Insert and supersede the workspace's other open attempts in one transaction; returns their refs for deletion. */
   readonly open: (attempt: Attempt) => Future<Error, Id<"AiSecret">[]>
   readonly find: (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">) => Future<Error, Maybe<Attempt>>
-  /** A 30 s lease. `Nothing` when another request holds it, or the attempt is unknown, foreign, or no longer open. */
   readonly claim: (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">) => Future<Error, Maybe<Attempt>>
-  /**
-   * Writes the outcome and clears the lease, but only while the attempt is still open: false when a cancel or a
-   * newer attempt closed it first, so a late adapter result can never overwrite that decision.
-   */
   readonly settle: (
     workspaceId: Id<"Workspace">,
     attemptId: Id<"AiAttempt">,
     next: Settlement
   ) => Future<Error, boolean>
-  /**
-   * Cancels the attempt while it is still open, ignoring the lease, and returns the refs the row held at that moment
-   * for deletion; `Nothing` once it is closed. The row is read under the same lock as the write, so a verify that
-   * settled a credential onto it first hands that credential to this cancel rather than leaving it unreferenced.
-   */
   readonly cancel: (workspaceId: Id<"Workspace">, attemptId: Id<"AiAttempt">) => Future<Error, Maybe<Id<"AiSecret">[]>>
 }
 
@@ -126,7 +110,6 @@ function toAttempt(row: AttemptRow): Attempt {
   }
 }
 
-/** A row that doesn't match the shape this module wrote is a programmer error, not a business outcome — so this throws rather than returning `Nothing`. */
 function decodeAttemptRow(row: unknown): Attempt {
   const decoded = d.decode(row, attemptRowDecoder)
   if (decoded instanceof Failure) throw new Error(`ai_attempts row failed to decode: ${decoded.error}`)
@@ -138,7 +121,6 @@ const refRowDecoder: d.Decoder<{ secret_ref: string | null; credential_ref: stri
   credential_ref: d.nullable(d.string),
 })
 
-/** The refs a batch of just-superseded (or just-cancelled) rows leaves behind, ready for `SecretVault.remove`. */
 function collectRefs(rows: unknown[]): Id<"AiSecret">[] {
   return rows.flatMap((row) => {
     const decoded = d.decode(row, refRowDecoder)
@@ -186,8 +168,6 @@ function postgresAttempts(postgres: Postgres): Attempts {
   return {
     open: (attempt) =>
       run(async (t) => {
-        // Superseding first, in the same transaction as the insert, means a crash between the two steps leaves the
-        // old attempts merely `superseded`, never silently resurrected as still-open.
         const superseded = await t.query(
           `UPDATE ${TABLE} SET state = 'superseded', lease_until = NULL
            WHERE workspace_id = $1 AND state = ANY($2)

@@ -1,4 +1,4 @@
-# Local development: live-reloading source, the AI test adapter, and local-only credentials.
+# Local development: live-reloading source, the real AI routes (AI_TEST_ADAPTER=on swaps in the test adapter), and local-only credentials.
 name: job-kit-server
 services:
   api:
@@ -10,7 +10,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:5173/jobs/}
       SMTP_URL: ${SMTP_URL:-}
       LOGIN_CODE_SECRET: ${LOGIN_CODE_SECRET:-}
-      AI_TEST_ADAPTER: ${AI_TEST_ADAPTER:-on}
+      AI_TEST_ADAPTER: ${AI_TEST_ADAPTER:-off}
     volumes:
       - ../src:/app/packages/backend/src:ro
   postgres:

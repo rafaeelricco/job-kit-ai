@@ -9,7 +9,6 @@ const type = "UserJoined" as const
 const args = s.object({
   type: s.stringLiteral(type),
   aggregateId: Id.schema<"User">(),
-  /** Already normalized by `parseEmail`; the stream id is derived from it. */
   email: s.string,
 })
 

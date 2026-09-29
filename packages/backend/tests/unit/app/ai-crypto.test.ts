@@ -3,7 +3,8 @@ import { describe, test } from "vitest"
 
 import { Just, Nothing } from "@lib/maybe"
 import { type Result, Success, Failure } from "@lib/result"
-import { parseVaultKeys, vaultKeys, seal, open, type VaultKeys } from "@be/app/ai/crypto"
+import { POSIX } from "@lib/time"
+import { parseVaultKeys, vaultKeys, seal, open, type VaultKeys } from "@be/app/ai/store/crypto"
 
 const KEY_1 = Buffer.alloc(32, 1).toString("base64")
 const KEY_2 = Buffer.alloc(32, 2).toString("base64")
@@ -33,6 +34,21 @@ describe("ai crypto", () => {
       assert.equal(opened instanceof Just, true)
       assert.deepEqual(opened.withDefault(secret), secret)
     }
+  })
+
+  test("an oauth secret round-trips with its expiry", () => {
+    const keys = keysOf(`1:${KEY_1}`)
+    const aad = "workspace-1\nref-1"
+    const secret = {
+      kind: "oauth" as const,
+      accessToken: "at_abc",
+      refreshToken: "rt_abc",
+      expiresAt: POSIX.fromDate(new Date("2026-09-28T12:00:00.000Z")),
+    }
+
+    const opened = open(keys, aad, seal(keys, aad, secret))
+    assert.equal(opened instanceof Just, true)
+    assert.deepEqual(opened.withDefault({ kind: "device", deviceCode: "" }), secret)
   })
 
   test("a wrong workspace or ref in the AAD fails to open", () => {

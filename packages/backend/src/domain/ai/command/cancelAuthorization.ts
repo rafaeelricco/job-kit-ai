@@ -9,7 +9,7 @@ import { type CommandController, type CommandHandler } from "@be/app/handlers"
 import { Auth, type GuardResult } from "@be/app/auth/policy"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { toSetupView } from "@be/domain/ai/views"
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { aiInternalError, toResponse, releaseSecrets } from "@be/domain/ai/command/aiErrors"
 
 const authGuard = Auth.authenticated()

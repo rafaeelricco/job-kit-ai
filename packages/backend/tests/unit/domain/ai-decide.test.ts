@@ -18,7 +18,7 @@ import {
 import { initialAi, type AiState, type Connection } from "@be/domain/workspace/aggregate/aiState"
 import { type Route } from "@be/domain/ai/routes"
 import { type Capabilities } from "@be/domain/ai/capabilities"
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { AiConnectionVerified } from "@be/domain/workspace/events/workspace/aiConnectionVerified"
 import { AiConnectionReconnected } from "@be/domain/workspace/events/workspace/aiConnectionReconnected"
 import { AiSwitchConfirmed } from "@be/domain/workspace/events/workspace/aiSwitchConfirmed"
@@ -32,7 +32,7 @@ const at = new POSIX(1_700_000_000_000)
 
 const CAPS: Capabilities = {
   account: "t•••@example.test",
-  billing: "Your OpenAI API account",
+  billing: "Your xAI API account",
   models: [
     {
       id: "test-a",
@@ -48,7 +48,7 @@ const CAPS: Capabilities = {
 function connection(over: Partial<Connection> = {}): Connection {
   return {
     connectionId: Id.random<"AiConnection">(),
-    provider: "openai",
+    provider: "xai",
     method: "device",
     accountId: "acct-1",
     credentialRef: Id.random<"AiSecret">(),
@@ -64,10 +64,10 @@ function attempt(over: Partial<Attempt> = {}): Attempt {
   return {
     attemptId: Id.random<"AiAttempt">(),
     workspaceId,
-    provider: "openai",
+    provider: "xai",
     method: "device",
     purpose: "initial",
-    state: "authorized",
+    state: "pending",
     failure: Nothing(),
     challenge: { kind: "device", userCode: "ABCD-EFGH", verificationUrl: "http://x/device" },
     secretRef: Nothing(),
@@ -94,7 +94,7 @@ function unwrap<T>(m: Maybe<T>): T {
 }
 
 describe("decideStart", () => {
-  const route: Route = { provider: "openai", method: "device" }
+  const route: Route = { provider: "xai", method: "device" }
 
   test("initial: allowed with no active connection", () => {
     assert.deepEqual(decideStart(initialAi, route, "initial"), Success(undefined))
@@ -106,10 +106,10 @@ describe("decideStart", () => {
   })
 
   test("reconnect: allowed only for the active connection's own route", () => {
-    const ai: AiState = { ...initialAi, active: Just(connection({ provider: "openai", method: "device" })) }
+    const ai: AiState = { ...initialAi, active: Just(connection({ provider: "xai", method: "device" })) }
     assert.deepEqual(decideStart(ai, route, "reconnect"), Success(undefined))
     assert.deepEqual(
-      decideStart(ai, { provider: "openai", method: "api_key" }, "reconnect"),
+      decideStart(ai, { provider: "xai", method: "api_key" }, "reconnect"),
       Failure({ type: "invalid_purpose" })
     )
   })
@@ -195,11 +195,11 @@ describe("decideReady", () => {
   })
 
   test("reconnect: superseded once the active connection moved to a different route", () => {
-    const a = attempt({ purpose: "reconnect", provider: "openai", method: "device" })
+    const a = attempt({ purpose: "reconnect", provider: "xai", method: "device" })
     const ai: AiState = {
       ...initialAi,
       authorization: authorizedFor(a),
-      active: Just(connection({ provider: "openai", method: "api_key" })),
+      active: Just(connection({ provider: "xai", method: "api_key" })),
     }
     assert.deepEqual(decideReady(ai, a, Id.random(), ready, connectionId), Failure("superseded"))
   })

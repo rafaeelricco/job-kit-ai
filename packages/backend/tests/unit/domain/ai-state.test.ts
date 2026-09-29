@@ -23,7 +23,7 @@ const at = new POSIX(1_700_000_000_000)
 
 function record(over: Partial<ConnectionRecord> & { connectionId: Id<"AiConnection"> }): ConnectionRecord {
   return {
-    provider: "openai",
+    provider: "xai",
     method: "device",
     accountId: "hash-1",
     credentialRef: new Id<"AiSecret">("secret-1"),
@@ -70,7 +70,7 @@ describe("ai state", () => {
         type: "AiAuthorizationStarted",
         aggregateId: workspaceId,
         attemptId,
-        provider: "openai",
+        provider: "xai",
         method: "device",
         purpose: "initial",
         expiresAt,
@@ -80,7 +80,7 @@ describe("ai state", () => {
     assert.equal(next.authorization instanceof Just, true)
     assert.deepEqual(unwrap(next.authorization), {
       attemptId,
-      provider: "openai",
+      provider: "xai",
       method: "device",
       purpose: "initial",
       expiresAt,
@@ -335,7 +335,7 @@ describe("ai state", () => {
       ...initialAi,
       authorization: Just({
         attemptId: new Id("attempt-1"),
-        provider: "openai",
+        provider: "xai",
         method: "device",
         purpose: "initial",
         expiresAt: at,
@@ -343,12 +343,24 @@ describe("ai state", () => {
     }
     const view = toSetupView(state, routeViews("off"))
     assert.deepEqual(view.lastAuthorization, {
-      provider: "openai",
+      provider: "xai",
       method: "device",
       purpose: "initial",
       expiresAt: at,
     })
     assert.equal(JSON.stringify(view).includes("attempt-1"), false)
+  })
+
+  test("routeViews live marks the API keys and xAI's device sign-in live, and the CLI-posing sign-ins unproven", () => {
+    const availability = Object.fromEntries(
+      routeViews("live").map(({ provider, method, availability }) => [`${provider}/${method}`, availability])
+    )
+    assert.deepEqual(availability, {
+      "anthropic/setup_token": "unproven",
+      "anthropic/api_key": "live",
+      "xai/device": "live",
+      "xai/api_key": "live",
+    })
   })
 
   test("schema_AiState round-trips the initial state", () => {
@@ -363,7 +375,7 @@ describe("ai state", () => {
       setupCompleted: false,
       authorization: Just({
         attemptId: new Id("attempt-1"),
-        provider: "openai",
+        provider: "xai",
         method: "device",
         purpose: "initial",
         expiresAt: at,

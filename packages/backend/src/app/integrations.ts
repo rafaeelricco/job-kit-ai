@@ -21,8 +21,8 @@ import {
 } from "@be/app/loginCodes"
 import { mailerFromEnv } from "@be/app/mailer"
 import { type AiConnections, aiConnectionsFromEnv } from "@be/app/ai/connections"
-import { initializeVaultTable } from "@be/app/ai/vault"
-import { initializeAttemptTable } from "@be/app/ai/attempts"
+import { initializeVaultTable } from "@be/app/ai/store/vault"
+import { initializeAttemptTable } from "@be/app/ai/store/attempts"
 import { type GoogleOidc, googleOidc } from "@be/lib/google-oidc"
 import { GOOGLE_CALLBACK_PATH } from "@be/lib/google"
 

@@ -5,6 +5,7 @@ import { type Result, Success } from "@lib/result"
 import {
   defaultPreferences,
   checkPreferences,
+  billingLabel,
   type Capabilities,
   type Model,
   type Preferences,
@@ -22,7 +23,7 @@ function failureReason(result: Result<PreferenceError, Preferences>): Preference
 
 const CAPS: Capabilities = {
   account: "t•••@example.test",
-  billing: "Your ChatGPT plan",
+  billing: "Your xAI account",
   models: [
     model({ id: "test-a", recommended: true, efforts: ["low", "medium", "high"] }),
     model({ id: "test-b", efforts: ["low", "medium"] }),
@@ -74,5 +75,17 @@ describe("ai capabilities", () => {
     const result = checkPreferences(CAPS, preferences)
     assert.equal(result instanceof Success, true)
     if (result instanceof Success) assert.deepEqual(result.value, preferences)
+  })
+})
+
+describe("billingLabel", () => {
+  test("an API key bills the provider's API account", () => {
+    assert.equal(billingLabel({ provider: "anthropic", method: "api_key" }), "Your Anthropic API account")
+    assert.equal(billingLabel({ provider: "xai", method: "api_key" }), "Your xAI API account")
+  })
+
+  test("a sign-in bills the subscription", () => {
+    assert.equal(billingLabel({ provider: "anthropic", method: "setup_token" }), "Your Claude subscription")
+    assert.equal(billingLabel({ provider: "xai", method: "device" }), "Your xAI account")
   })
 })

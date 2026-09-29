@@ -7,26 +7,25 @@ import { checkApiKey } from "@be/domain/ai/keys"
 import { type Provider } from "@be/domain/ai/routes"
 
 const VALID: Record<Provider, string> = {
-  openai: `sk-${"a".repeat(20)}`,
   anthropic: `sk-ant-api${"a".repeat(20)}`,
   xai: `xai-${"a".repeat(20)}`,
 }
 
 describe("checkApiKey", () => {
   test("a wrong prefix names the expected one", () => {
-    const result = checkApiKey("openai", VALID.xai)
+    const result = checkApiKey("xai", VALID.anthropic)
     assert.ok(result instanceof Just)
-    assert.equal(result.value, "Expected a key starting with sk-")
+    assert.equal(result.value, "Expected a key starting with xai-")
   })
 
   test("a key that's too short is rejected even with the right prefix", () => {
-    const result = checkApiKey("openai", "sk-short")
+    const result = checkApiKey("xai", "xai-short")
     assert.ok(result instanceof Just)
     assert.equal(result.value, "That key looks too short. Paste the whole key.")
   })
 
   test("surrounding whitespace is ignored", () => {
-    assert.ok(checkApiKey("openai", `  ${VALID.openai}  `) instanceof Nothing)
+    assert.ok(checkApiKey("xai", `  ${VALID.xai}  `) instanceof Nothing)
   })
 
   test("each provider's valid shape passes", () => {

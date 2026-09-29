@@ -1,6 +1,6 @@
 export { retryFor, pendingStatus, failedStatus, connectedStatus }
 
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { type AuthorizationStatus, type FailureReason } from "@be/domain/ai/views"
 
 /**

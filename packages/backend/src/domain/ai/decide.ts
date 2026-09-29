@@ -16,7 +16,7 @@ import { type Route, type Purpose } from "@be/domain/ai/routes"
 import { type Preferences, defaultPreferences, checkPreferences } from "@be/domain/ai/capabilities"
 import { type Readiness } from "@be/domain/ai/adapter"
 import { type AiState, type ConnectionRecord } from "@be/domain/workspace/aggregate/aiState"
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { type AiError } from "@be/domain/ai/command/aiErrors"
 
 import { AiConnectionVerified } from "@be/domain/workspace/events/workspace/aiConnectionVerified"

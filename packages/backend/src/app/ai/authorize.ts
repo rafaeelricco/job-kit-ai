@@ -1,49 +1,41 @@
-export { begin, advance, boundedVerify, VERIFY_TIMEOUT, type Step, type Advanced }
+export { begin, advance, type Step, type Advanced }
 
 import { Future } from "@lib/future"
 import { type Maybe, Just, Nothing } from "@lib/maybe"
-import { POSIX, Duration } from "@lib/time"
+import { POSIX, type Duration } from "@lib/time"
 import { Id } from "@be/lib/event-sourcing/event"
-
 import { type Route, type Purpose } from "@be/domain/ai/routes"
 import { type Secret, type Readiness, type Authorization, type ProviderAdapter } from "@be/domain/ai/adapter"
 import { type FailureReason } from "@be/domain/ai/views"
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { type AiConnections } from "@be/app/ai/connections"
+import { boundedVerify, resolveCredential, logAdapterFailure, VERIFY_TIMEOUT } from "@be/app/ai/credential"
 import { type AiError } from "@be/domain/ai/command/aiErrors"
 
-/** The `{ kind: "ready" }` half of `Readiness`: the only variant that can ever produce a connection. */
 type ReadyReadiness = Extract<Readiness, { kind: "ready" }>
 
 type Step = { kind: "poll" } | { kind: "secret"; secret: string } | { kind: "retry" }
 
-/** `connected` is an already-connected attempt: a repeat request converges here instead of re-verifying. */
 type Advanced =
   | { kind: "pending"; attempt: Attempt }
   | { kind: "failed"; attempt: Attempt; reason: FailureReason }
   | { kind: "ready"; attempt: Attempt; credentialRef: Id<"AiSecret">; readiness: ReadyReadiness }
   | { kind: "connected"; attempt: Attempt }
 
-/** Bounds one real request through a provider's `verify`. A provider that never answers becomes `unreachable`. */
-const VERIFY_TIMEOUT = Duration.seconds(20)
+/** What every step of one claimed attempt needs; the adapter is looked up once the attempt is known to be live. */
+type Ctx = {
+  readonly ai: AiConnections
+  readonly workspaceId: Id<"Workspace">
+  readonly attempt: Attempt
+  readonly timeout: Duration
+}
 
 const route = (attempt: Attempt): Route => ({ provider: attempt.provider, method: attempt.method })
 
-/**
- * Every helper below but `begin`/`advance`/`converge`/`handleClaimed`/`invalidStep` stays purely `Future<Error, _>`
- * internally — none of them ever construct an `AiError` themselves. `widen` lifts one of those `Error`-only Futures
- * into the wider `AiError | Error` channel at the one point each caller needs to return it alongside a real
- * `AiError` rejection (`Future`'s error type is fixed by its receiver through `chain`, so this can't happen lazily).
- */
 function widen<T>(f: Future<Error, T>): Future<AiError | Error, T> {
   return f.mapRej((e): AiError | Error => e)
 }
 
-/**
- * Start an authorization attempt. The route must be offered (not `unproven`) and have an adapter behind it, else
- * `route_not_ready`. Runs outside `withEventStore`: the command emits `AiAuthorizationStarted` afterward, once this
- * has actually reserved the attempt.
- */
 function begin(
   ai: AiConnections,
   workspaceId: Id<"Workspace">,
@@ -91,11 +83,6 @@ function putIfPresent(
     : Future.resolve(Nothing())
 }
 
-/**
- * Advance an attempt by one step. Claims a 30 s lease first, so two concurrent requests for the same attempt
- * converge on a single adapter call — the loser sees `Nothing` from `claim` and reports the attempt's current state
- * instead of repeating the work.
- */
 function advance(
   ai: AiConnections,
   workspaceId: Id<"Workspace">,
@@ -110,7 +97,6 @@ function advance(
   )
 }
 
-/** No lease was granted: either another request holds it (mid-verify), or the attempt is no longer open. Either way, report its current state rather than doing anything. */
 function converge(
   ai: AiConnections,
   workspaceId: Id<"Workspace">,
@@ -121,7 +107,6 @@ function converge(
     const attempt = found.value
     switch (attempt.state) {
       case "pending":
-      case "authorized":
         return Future.resolve<AiError | Error, Advanced>({ kind: "pending", attempt })
       case "verification_failed":
         return Future.resolve<AiError | Error, Advanced>({
@@ -142,7 +127,6 @@ function converge(
   })
 }
 
-/** The lease is held for the rest of this function: settling (or explicitly releasing) it is every branch's job. */
 function handleClaimed(
   ai: AiConnections,
   workspaceId: Id<"Workspace">,
@@ -150,14 +134,13 @@ function handleClaimed(
   step: Step,
   timeout: Duration
 ): Future<AiError | Error, Advanced> {
+  const ctx: Ctx = { ai, workspaceId, attempt, timeout }
   if (attempt.state === "pending" && !attempt.expiresAt.isAfter(POSIX.now())) {
-    return widen(settleTerminal(ai, workspaceId, attempt, "expired"))
+    return widen(settleTerminal(ctx, "expired"))
   }
 
   if (attempt.state === "verification_failed" && step.kind !== "retry") {
-    // A failed verify stays reported until the user retries it: repeated advances must not reset it to pending or
-    // store a second copy of the credential.
-    return widen(releaseLease(ai, workspaceId, attempt)).map((): Advanced => ({
+    return widen(releaseLease(ctx)).map((): Advanced => ({
       kind: "failed",
       attempt,
       reason: attempt.failure.withDefault("unreachable"),
@@ -166,226 +149,127 @@ function handleClaimed(
 
   const adapter = ai.adapter(route(attempt))
   if (adapter instanceof Nothing) {
-    return widen(releaseLease(ai, workspaceId, attempt)).chain(() =>
-      Future.reject<AiError | Error, Advanced>({ type: "route_not_ready" })
-    )
+    return widen(releaseLease(ctx)).chain(() => Future.reject<AiError | Error, Advanced>({ type: "route_not_ready" }))
   }
 
-  return dispatchStep(ai, workspaceId, attempt, adapter.value, step, timeout)
+  return dispatchStep(ctx, adapter.value, step)
 }
 
-/** Matches the claimed attempt's method against the step it was sent, and runs the one pairing that applies. */
-function dispatchStep(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  step: Step,
-  timeout: Duration
-): Future<AiError | Error, Advanced> {
+function dispatchStep(ctx: Ctx, adapter: ProviderAdapter, step: Step): Future<AiError | Error, Advanced> {
+  const { attempt } = ctx
   switch (step.kind) {
     case "retry":
-      return dispatchRetry(ai, workspaceId, attempt, adapter, timeout)
+      return attempt.state === "verification_failed" && attempt.credentialRef instanceof Just
+        ? widen(verifyCredential(ctx, adapter, attempt.credentialRef.value))
+        : invalidStep(ctx)
     case "poll":
-      return dispatchPoll(ai, workspaceId, attempt, adapter, timeout)
+      return attempt.method === "device" ? widen(pollDevice(ctx, adapter)) : invalidStep(ctx)
     case "secret":
-      return dispatchSecret(ai, workspaceId, attempt, adapter, step, timeout)
+      return dispatchSecret(ctx, adapter, step)
     default:
       return step satisfies never
   }
 }
 
-/** Only a `verification_failed` attempt with a kept credential can retry — anything else is a bad pairing. */
-function dispatchRetry(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  timeout: Duration
-): Future<AiError | Error, Advanced> {
-  return attempt.state === "verification_failed" && attempt.credentialRef instanceof Just
-    ? widen(verifyCredential(ai, workspaceId, attempt, adapter, attempt.credentialRef.value, timeout))
-    : invalidStep(ai, workspaceId, attempt)
-}
-
-/** Only a device attempt has anything to poll. */
-function dispatchPoll(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  timeout: Duration
-): Future<AiError | Error, Advanced> {
-  if (attempt.method === "device") return widen(pollDevice(ai, workspaceId, attempt, adapter, timeout))
-  return invalidStep(ai, workspaceId, attempt)
-}
-
 function dispatchSecret(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
+  ctx: Ctx,
   adapter: ProviderAdapter,
-  step: Extract<Step, { kind: "secret" }>,
-  timeout: Duration
+  step: Extract<Step, { kind: "secret" }>
 ): Future<AiError | Error, Advanced> {
-  if (attempt.method !== "setup_token" && attempt.method !== "api_key") return invalidStep(ai, workspaceId, attempt)
+  const { attempt } = ctx
+  if (attempt.method !== "setup_token" && attempt.method !== "api_key") return invalidStep(ctx)
   return widen(
-    releasingOnFailure(ai, workspaceId, attempt, (r) => adapter.accept(r, step.secret)).chain((credential) =>
-      afterAuthorized(ai, workspaceId, attempt, adapter, credential, timeout)
+    releasingOnFailure(ctx, (r) => adapter.accept(r, step.secret)).chain((credential) =>
+      afterAuthorized(ctx, adapter, credential)
     )
   )
 }
 
-function pollDevice(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  timeout: Duration
-): Future<Error, Advanced> {
-  if (attempt.secretRef instanceof Nothing)
-    return handleAuthorization(ai, workspaceId, attempt, adapter, { kind: "expired" }, timeout)
+function pollDevice(ctx: Ctx, adapter: ProviderAdapter): Future<Error, Advanced> {
+  const { ai, workspaceId, attempt } = ctx
+  if (attempt.secretRef instanceof Nothing) return handleAuthorization(ctx, adapter, { kind: "expired" })
   return ai.vault
     .get(workspaceId, attempt.secretRef.value)
     .chain((secret) =>
       secret instanceof Nothing
-        ? handleAuthorization(ai, workspaceId, attempt, adapter, { kind: "expired" }, timeout)
-        : releasingOnFailure(ai, workspaceId, attempt, (r) => adapter.poll(r, secret.value)).chain((auth) =>
-            handleAuthorization(ai, workspaceId, attempt, adapter, auth, timeout)
+        ? handleAuthorization(ctx, adapter, { kind: "expired" })
+        : releasingOnFailure(ctx, (r) => adapter.poll(r, secret.value)).chain((auth) =>
+            handleAuthorization(ctx, adapter, auth)
           )
     )
 }
 
-function handleAuthorization(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  auth: Authorization,
-  timeout: Duration
-): Future<Error, Advanced> {
+function handleAuthorization(ctx: Ctx, adapter: ProviderAdapter, auth: Authorization): Future<Error, Advanced> {
   switch (auth.kind) {
     case "pending":
-      return releaseToPending(ai, workspaceId, attempt)
+      return releaseToPending(ctx)
     case "denied":
-      return settleTerminal(ai, workspaceId, attempt, "denied")
+      return settleTerminal(ctx, "denied")
     case "expired":
-      return settleTerminal(ai, workspaceId, attempt, "expired")
+      return settleTerminal(ctx, "expired")
     case "authorized":
-      return afterAuthorized(ai, workspaceId, attempt, adapter, auth.credential, timeout)
+      return afterAuthorized(ctx, adapter, auth.credential)
     default:
       return auth satisfies never
   }
 }
 
-/** A credential was just obtained (poll or accept): put it in the vault, drop the device secret, verify. */
-function afterAuthorized(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  credential: Secret,
-  timeout: Duration
-): Future<Error, Advanced> {
+function afterAuthorized(ctx: Ctx, adapter: ProviderAdapter, credential: Secret): Future<Error, Advanced> {
+  const { ai, workspaceId } = ctx
   return ai.vault
     .put(workspaceId, credential)
-    .chain((ref) =>
-      removeDeviceSecret(ai, workspaceId, attempt).chain(() =>
-        verifyCredential(ai, workspaceId, attempt, adapter, ref, timeout)
-      )
-    )
+    .chain((ref) => removeDeviceSecret(ctx).chain(() => verifyCredential(ctx, adapter, ref)))
 }
 
-function removeDeviceSecret(ai: AiConnections, workspaceId: Id<"Workspace">, attempt: Attempt): Future<Error, void> {
+function removeDeviceSecret(ctx: Ctx): Future<Error, void> {
+  const { ai, workspaceId, attempt } = ctx
   return attempt.secretRef instanceof Just
     ? ai.vault.remove(workspaceId, [attempt.secretRef.value])
     : Future.resolve(undefined)
 }
 
-/**
- * The readiness proof. A ref the vault can no longer open is treated as `revoked` without calling the adapter.
- * `ready` is reported WITHOUT settling the attempt — the command settles it, after deciding whether this credential
- * still wins (see `advanceAuthorization.ts`). A failure settles `verification_failed` here and keeps the ref, so
- * `retry` can re-verify the same credential later.
- */
-function verifyCredential(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  adapter: ProviderAdapter,
-  ref: Id<"AiSecret">,
-  timeout: Duration
-): Future<Error, Advanced> {
-  return ai.vault
-    .get(workspaceId, ref)
-    .chain((secret) =>
-      secret instanceof Nothing
-        ? settleVerificationFailed(ai, workspaceId, attempt, ref, "revoked")
-        : boundedVerify(adapter, route(attempt), secret.value, timeout).chain((readiness) =>
-            readiness.kind === "ready"
-              ? Future.resolve<Error, Advanced>({ kind: "ready", attempt, credentialRef: ref, readiness })
-              : settleVerificationFailed(ai, workspaceId, attempt, ref, readiness.reason)
-          )
-    )
+function verifyCredential(ctx: Ctx, adapter: ProviderAdapter, ref: Id<"AiSecret">): Future<Error, Advanced> {
+  const { ai, workspaceId, attempt, timeout } = ctx
+  return resolveCredential(ai, workspaceId, adapter, route(attempt), ref).chain((resolved) => {
+    switch (resolved.kind) {
+      case "missing":
+        return settleVerificationFailed(ctx, ref, "revoked")
+      case "settled":
+        return settleVerificationFailed(ctx, ref, resolved.reason)
+      case "stored":
+        return boundedVerify(adapter, route(attempt), resolved.secret, timeout).chain((readiness) =>
+          readiness.kind === "ready"
+            ? Future.resolve<Error, Advanced>({ kind: "ready", attempt, credentialRef: ref, readiness })
+            : settleVerificationFailed(ctx, ref, readiness.reason)
+        )
+      default:
+        return resolved satisfies never
+    }
+  })
 }
 
-/**
- * `Future.race` against a timer that resolves (never rejects) `unreachable`, so a provider that never answers
- * settles instead of hanging forever. Shared with `command/testConnection.ts`, the one other caller of `verify`.
- */
-function boundedVerify(
-  adapter: ProviderAdapter,
-  r: Route,
-  secret: Secret,
-  timeout: Duration
-): Future<Error, Readiness> {
-  const timedOut = Future.create<Error, Readiness>((_, resolve) => {
-    const timer = setTimeout(() => resolve({ kind: "failed", reason: "unreachable" }), timeout.asMilliseconds())
-    return () => clearTimeout(timer)
-  })
-  // A rejected verify (a network error in a real adapter) is the same outcome as no answer: retryable, not a 500.
-  const verified = adapter.verify(r, secret).chainRej((error) => {
-    logAdapterFailure("verify", r, error)
-    return Future.resolve<Error, Readiness>({ kind: "failed", reason: "unreachable" })
-  })
-  return Future.race(verified, timedOut)
-}
-
-function settleVerificationFailed(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  ref: Id<"AiSecret">,
-  reason: FailureReason
-): Future<Error, Advanced> {
+function settleVerificationFailed(ctx: Ctx, ref: Id<"AiSecret">, reason: FailureReason): Future<Error, Advanced> {
+  const { ai, workspaceId, attempt } = ctx
   return ai.attempts
     .settle(workspaceId, attempt.attemptId, {
       state: "verification_failed",
       failure: Just(reason),
       credentialRef: Just(ref),
     })
-    .chain((kept) =>
-      // A cancel or a newer attempt closed this one mid-verify: nothing will ever retry this credential, so drop it.
-      kept ? Future.resolve<Error, void>(undefined) : ai.vault.remove(workspaceId, [ref])
-    )
+    .chain((kept) => (kept ? Future.resolve<Error, void>(undefined) : ai.vault.remove(workspaceId, [ref])))
     .map((): Advanced => ({ kind: "failed", attempt, reason }))
 }
 
-/** `denied`/`expired` share their `AttemptState` and `FailureReason` spelling, so one helper settles either. */
-function settleTerminal(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  reason: "denied" | "expired"
-): Future<Error, Advanced> {
+function settleTerminal(ctx: Ctx, reason: "denied" | "expired"): Future<Error, Advanced> {
+  const { ai, workspaceId, attempt } = ctx
   return ai.attempts
     .settle(workspaceId, attempt.attemptId, { state: reason, failure: Just(reason), credentialRef: Nothing() })
-    .chain((closed) => (closed ? removeDeviceSecret(ai, workspaceId, attempt) : Future.resolve<Error, void>(undefined)))
+    .chain((closed) => (closed ? removeDeviceSecret(ctx) : Future.resolve<Error, void>(undefined)))
     .map((): Advanced => ({ kind: "failed", attempt, reason }))
 }
 
-/** Clears the lease without changing the recorded outcome, then reports `pending`. */
-function releaseToPending(ai: AiConnections, workspaceId: Id<"Workspace">, attempt: Attempt): Future<Error, Advanced> {
+function releaseToPending(ctx: Ctx): Future<Error, Advanced> {
+  const { ai, workspaceId, attempt } = ctx
   return ai.attempts
     .settle(workspaceId, attempt.attemptId, {
       state: "pending",
@@ -395,8 +279,8 @@ function releaseToPending(ai: AiConnections, workspaceId: Id<"Workspace">, attem
     .map((): Advanced => ({ kind: "pending", attempt }))
 }
 
-/** Clears the lease, changing nothing else. */
-function releaseLease(ai: AiConnections, workspaceId: Id<"Workspace">, attempt: Attempt): Future<Error, boolean> {
+function releaseLease(ctx: Ctx): Future<Error, boolean> {
+  const { ai, workspaceId, attempt } = ctx
   return ai.attempts.settle(workspaceId, attempt.attemptId, {
     state: attempt.state,
     failure: attempt.failure,
@@ -404,34 +288,15 @@ function releaseLease(ai: AiConnections, workspaceId: Id<"Workspace">, attempt: 
   })
 }
 
-function invalidStep(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt
-): Future<AiError | Error, Advanced> {
-  return widen(releaseLease(ai, workspaceId, attempt)).chain(() =>
-    Future.reject<AiError | Error, Advanced>({ type: "invalid_step" })
-  )
+function invalidStep(ctx: Ctx): Future<AiError | Error, Advanced> {
+  return widen(releaseLease(ctx)).chain(() => Future.reject<AiError | Error, Advanced>({ type: "invalid_step" }))
 }
 
-/**
- * Run one adapter call on a claimed attempt; if it rejects, release the lease first so the user can try again at
- * once instead of being answered `pending` for 30 s.
- */
-function releasingOnFailure<T>(
-  ai: AiConnections,
-  workspaceId: Id<"Workspace">,
-  attempt: Attempt,
-  call: (r: Route) => Future<Error, T>
-): Future<Error, T> {
+function releasingOnFailure<T>(ctx: Ctx, call: (r: Route) => Future<Error, T>): Future<Error, T> {
+  const { attempt } = ctx
   const r = route(attempt)
   return call(r).chainRej((error) => {
     logAdapterFailure(attempt.method, r, error)
-    return releaseLease(ai, workspaceId, attempt).chain(() => Future.reject<Error, T>(error))
+    return releaseLease(ctx).chain(() => Future.reject<Error, T>(error))
   })
-}
-
-/** Only the error's class: an adapter message may quote a provider response, and a response may echo a secret. */
-function logAdapterFailure(call: string, r: Route, error: Error): void {
-  console.error(`AI adapter ${call} failed for ${r.provider}/${r.method}: ${error.name}`)
 }

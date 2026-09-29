@@ -12,7 +12,7 @@ Resolve the internal user and workspace from authenticated server context. Neith
 
 Platform sign-in, user AI provider authorization, browser-site identity, and future mail authorization are separate connections. Signing out does not silently revoke an AI connection; disconnecting a provider blocks future use and begins recoverable credential cleanup. Gmail and recurring automation are post-V1. Website credentials and personal browser sessions are outside V1 public discovery.
 
-Provider adapters own credential exchange, refresh, revocation, and encryption. Persist provider secrets encrypted with a server-held encryption key and key version; keep encryption keys outside the database and private file volumes. Restrict decryption to the adapter that needs the credential, redact secrets from logs and traces, and never put raw credentials in events, queue payloads, browser storage, or client responses. OpenAI/Gemini/Anthropic/xAI hosted compatibility and permissions remain unproven gates in [provider research](../research/provider-connections.md); configuration support does not claim successful authorization.
+Provider adapters own credential exchange, refresh, revocation, and encryption. Persist provider secrets encrypted with a server-held encryption key and key version; keep encryption keys outside the database and private file volumes. Restrict decryption to the adapter that needs the credential, redact secrets from logs and traces, and never put raw credentials in events, queue payloads, browser storage, or client responses. Anthropic/xAI hosted compatibility and permissions remain unproven gates in [provider research](../research/provider-connections.md); configuration support does not claim successful authorization.
 
 ## Content and deletion
 

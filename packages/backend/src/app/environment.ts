@@ -42,8 +42,9 @@ const envDecoder = D.object({
    *  Empty uses a fixed key outside production; in production the vault then rejects every operation (fail closed at use,
    *  so today's deploy keeps booting — set it in /etc/job-kit/api.env before any real route ships). */
   AI_CREDENTIAL_KEYS: optionalDefault("", string),
-  /** Key for the HMAC that turns an API key into a stable `accountId`. Empty uses a fixed key outside production; in
-   *  production the API-key routes then stay `unproven`. Keep it out of the database. */
+  /** Key for the HMAC that turns an API key, or an xAI sign-in's OIDC `sub`, into a stable `accountId`. Empty uses a
+   *  fixed key outside production; in production the live routes (API keys and xAI sign-in) then stay `unproven`.
+   *  Keep it out of the database. */
   AI_ACCOUNT_KEY: optionalDefault("", string),
   /** `on` serves every AI route through the test adapter and mounts its fake provider at /api/dev/test-provider. Refused in production. */
   AI_TEST_ADAPTER: optionalDefault("off", string),

@@ -9,13 +9,13 @@ import { POSIX, Duration } from "@lib/time"
 import { Id } from "@be/lib/event-sourcing/event"
 
 import { type Route } from "@be/domain/ai/routes"
-import { apiKeyAdapter, API_KEY_BILLING } from "@be/app/ai/apiKeyAdapter"
-import { type Llm, type ModelListing, type Generated } from "@be/app/ai/llm/router"
+import { apiKeyAdapter } from "@be/app/ai/adapters/api-key"
+import { type Llm, type ModelListing, type Generated } from "@be/app/ai/llm/types"
 
 const run = <T>(f: Future<Error, T>): Promise<T> => f.promise((e) => e)
 
-const route: Route = { provider: "openai", method: "api_key" }
-const VALID_KEY = `sk-${"a".repeat(20)}wxyz`
+const route: Route = { provider: "xai", method: "api_key" }
+const VALID_KEY = `xai-${"a".repeat(20)}wxyz`
 
 const listing = (overrides: Partial<ModelListing> = {}): ModelListing => ({
   id: "model-a",
@@ -29,7 +29,7 @@ const listing = (overrides: Partial<ModelListing> = {}): ModelListing => ({
 const okGeneration: Generated = {
   text: "OK",
   metadata: {
-    provider: "openai",
+    provider: "xai",
     model: "model-a",
     effort: Just("low"),
     duration: Duration.milliseconds(5),
@@ -83,7 +83,7 @@ describe("apiKeyAdapter verify", () => {
     const generated: Generated = {
       text: "OK",
       metadata: {
-        provider: "openai",
+        provider: "xai",
         model: "model-new",
         effort: Just("low"),
         duration: Duration.milliseconds(5),
@@ -97,10 +97,20 @@ describe("apiKeyAdapter verify", () => {
     const outcome = await run(apiKeyAdapter(llm, "account-key").verify(route, { kind: "key", key: VALID_KEY }))
     if (outcome.kind !== "ready") throw new Error("expected the key to verify ready")
     assert.equal(outcome.capabilities.account, `API key …${VALID_KEY.slice(-4)}`)
-    assert.equal(outcome.capabilities.billing, API_KEY_BILLING.openai)
+    assert.equal(outcome.capabilities.billing, "Your xAI API account")
     const recommended = outcome.capabilities.models.find((m) => m.recommended)
     assert.equal(recommended?.id, "model-new")
     assert.equal(calls.generate, 1)
+  })
+
+  test("a model its provider reports no efforts for is offered every level that provider's SDK takes", async () => {
+    const { llm } = fakeLlm({
+      listModels: () => Future.resolve([listing()]),
+      generate: () => Future.resolve(okGeneration),
+    })
+    const outcome = await run(apiKeyAdapter(llm, "account-key").verify(route, { kind: "key", key: VALID_KEY }))
+    if (outcome.kind !== "ready") throw new Error("expected the key to verify ready")
+    assert.deepEqual(outcome.capabilities.models[0]?.efforts, ["low", "medium", "high", "xhigh"])
   })
 
   test("accountId is stable for the same key and account key, and differs otherwise", async () => {
@@ -111,7 +121,7 @@ describe("apiKeyAdapter verify", () => {
       })
       return run(apiKeyAdapter(llm, accountKey).verify(route, { kind: "key", key }))
     }
-    const otherKey = `sk-${"b".repeat(20)}zzzz`
+    const otherKey = `xai-${"b".repeat(20)}zzzz`
     const a = await build(VALID_KEY, "account-key-1")
     const b = await build(VALID_KEY, "account-key-1")
     const c = await build(otherKey, "account-key-1")
