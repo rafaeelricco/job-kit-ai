@@ -1,9 +1,0 @@
-packages:
-  - packages/*
-
-onlyBuiltDependencies:
-  - esbuild
-
-allowBuilds:
-  esbuild: true
-  msw: false
