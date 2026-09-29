@@ -17,7 +17,7 @@ import { provisionUser } from "@be/domain/auth/provisionUser"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { type Provider, type Method, type Purpose } from "@be/domain/ai/routes"
 import { type Secret, type ProviderAdapter } from "@be/domain/ai/adapter"
-import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
+import { FakeProvider, testAdapter } from "@tests/support/test-provider/adapter"
 
 import { controller as startAuth } from "@be/domain/ai/command/startAuthorization"
 import { controller as advanceAuth } from "@be/domain/ai/command/advanceAuthorization"
@@ -90,7 +90,7 @@ async function connectDevice(
   ai: AiConnections,
   opts: { outcome?: "approve" | "approve_quota" | "deny" | "expire"; account?: string; purpose?: Purpose } = {}
 ) {
-  const started = await start(db, ctx, { provider: "openai", method: "device" }, opts.purpose ?? "initial")
+  const started = await start(db, ctx, { provider: "xai", method: "device" }, opts.purpose ?? "initial")
   if (started.status.status !== "pending") throw new Error("expected a pending device challenge")
   const challenge = started.status.challenge
   if (challenge.kind !== "device") throw new Error("expected a device challenge")
@@ -104,7 +104,7 @@ async function connectDevice(
   return { attemptId: started.attemptId, response }
 }
 
-/** Drives a full setup_token/api_key flow: `entered` becomes the credential itself (see `testAdapter.ts#accept`). */
+/** Drives a full setup_token/api_key flow: `entered` becomes the credential itself (see `FakeProvider.accept` in `tests/support/test-provider/adapter.ts`). */
 async function connectEntry(
   db: MemoryEventDatabase,
   ctx: Ctx,
@@ -131,6 +131,8 @@ function secretString(secret: Secret): string {
       return secret.key
     case "device":
       return secret.deviceCode
+    case "oauth":
+      return secret.accessToken
   }
 }
 
@@ -174,7 +176,7 @@ describe("AI connections", () => {
       const { actor, workspaceId } = await freshWorkspace(db)
       const ai = memoryAi()
       const ctx = ctxFor(actor, ai)
-      const started = await start(db, ctx, { provider: "openai", method: "device" })
+      const started = await start(db, ctx, { provider: "xai", method: "device" })
       responses.push(started)
       capture(await secretsOf(ai, workspaceId, started.attemptId))
       const { response } = await connectDeviceFrom(db, ctx, ai, started)
@@ -186,7 +188,7 @@ describe("AI connections", () => {
     // setup_token / api_key: a literal we chose ourselves.
     for (const [method, provider, secretValue] of [
       ["setup_token", "anthropic", "shh-setup-token-value"],
-      ["api_key", "openai", "shh-api-key-value"],
+      ["api_key", "xai", "shh-api-key-value"],
     ] as const) {
       const { actor, workspaceId } = await freshWorkspace(db)
       const ai = memoryAi()
@@ -215,7 +217,7 @@ describe("AI connections", () => {
     const ai = memoryAi()
     const ctx = ctxFor(actor, ai)
 
-    const invalid = await connectEntry(db, ctx, "api_key", "invalid-key", "openai")
+    const invalid = await connectEntry(db, ctx, "api_key", "invalid-key", "xai")
     assert.equal(invalid.response.status.status, "failed")
     if (invalid.response.status.status === "failed") assert.equal(invalid.response.status.reason, "invalid")
     assert.equal(invalid.response.setup.active, null)
@@ -227,7 +229,7 @@ describe("AI connections", () => {
 
     vi.useFakeTimers()
     try {
-      const started = await start(db, ctx, { provider: "openai", method: "api_key" })
+      const started = await start(db, ctx, { provider: "xai", method: "api_key" })
       const advancing = advance(db, ctx, started.attemptId, { kind: "secret", secret: "slow-key" })
       await vi.advanceTimersByTimeAsync(20_000)
       const advanced = await advancing
@@ -249,7 +251,7 @@ describe("AI connections", () => {
     const activeBefore = first.response.setup.active
     assert.ok(activeBefore)
 
-    const staged = await connectEntry(db, ctx, "api_key", "staged-key-one", "openai", "switch")
+    const staged = await connectEntry(db, ctx, "api_key", "staged-key-one", "xai", "switch")
     assert.equal(staged.response.status.status, "connected")
     if (staged.response.status.status === "connected") assert.equal(staged.response.status.role, "staged")
     assert.deepEqual(staged.response.setup.active, activeBefore)
@@ -271,7 +273,7 @@ describe("AI connections", () => {
     assert.equal(discarded.setup.staged, null)
     assert.ok((await ai.vault.get(workspaceId, stagedRef).promise((e) => e)) instanceof Nothing)
 
-    const staged2 = await connectEntry(db, ctx, "api_key", "staged-key-two", "openai", "switch")
+    const staged2 = await connectEntry(db, ctx, "api_key", "staged-key-two", "xai", "switch")
     const stagedView2 = staged2.response.setup.staged
     assert.ok(stagedView2)
 
@@ -301,11 +303,11 @@ describe("AI connections", () => {
     const activeBefore = first.response.setup.active
     assert.ok(activeBefore)
 
-    const beforeAuth = await start(db, ctx, { provider: "openai", method: "device" }, "switch")
+    const beforeAuth = await start(db, ctx, { provider: "xai", method: "device" }, "switch")
     const cancelledBeforeAuth = await cancel(db, ctx, beforeAuth.attemptId)
     assert.deepEqual(cancelledBeforeAuth.setup.active, activeBefore)
 
-    const failedAuth = await start(db, ctx, { provider: "openai", method: "api_key" }, "switch")
+    const failedAuth = await start(db, ctx, { provider: "xai", method: "api_key" }, "switch")
     const failedAdvance = await advance(db, ctx, failedAuth.attemptId, { kind: "secret", secret: "invalid-key" })
     assert.equal(failedAdvance.status.status, "failed")
     const cancelledAfterFailure = await cancel(db, ctx, failedAuth.attemptId)
@@ -334,10 +336,10 @@ describe("AI connections", () => {
     const delayedAi: AiConnections = { ...ai, adapter: () => Just(withDelay(testAdapter(fake), "verify")) }
     const ctxDelayed = ctxFor(actor, delayedAi)
 
-    const first = await start(db, ctxDelayed, { provider: "openai", method: "api_key" })
+    const first = await start(db, ctxDelayed, { provider: "xai", method: "api_key" })
     const advancing = advance(db, ctxDelayed, first.attemptId, { kind: "secret", secret: "late-key" })
 
-    const restarted = await start(db, ctx, { provider: "openai", method: "device" })
+    const restarted = await start(db, ctx, { provider: "xai", method: "device" })
 
     const late = await advancing
     assert.equal(late.status.status, "failed")
@@ -356,7 +358,7 @@ describe("AI connections", () => {
     const delayedAi: AiConnections = { ...ai, adapter: () => Just(withDelay(testAdapter(fake), "poll")) }
     const ctx = ctxFor(actor, delayedAi)
 
-    const started = await start(db, ctx, { provider: "openai", method: "device" })
+    const started = await start(db, ctx, { provider: "xai", method: "device" })
     if (started.status.status !== "pending" || started.status.challenge.kind !== "device") {
       throw new Error("expected a device challenge")
     }
@@ -380,7 +382,7 @@ describe("AI connections", () => {
     const ctxA = ctxFor(actorA, ai)
     const ctxB = ctxFor(actorB, ai)
 
-    const started = await start(db, ctxA, { provider: "openai", method: "device" })
+    const started = await start(db, ctxA, { provider: "xai", method: "device" })
 
     const advanceRejection = await rejection(
       advanceAuth.handler({

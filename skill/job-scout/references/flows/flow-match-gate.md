@@ -15,8 +15,9 @@ once per its `references/schemas/schema-state.md`. Load `references/workers/work
 `references/contracts/contract-match.md`, and `references/workers/worker-match.md`. Require a readable
 `scripts/score.py`, and resolve the Python 3 launcher using job-match's order:
 `python3`, Windows `py -3`, then a `python` command verified as major version 3.
-Fan-out batch ~10. Per row, paste that row's Verified extract as the posting body
-— never fetch, never open Profile root.
+Fan-out batch ~10, handed off per job-match `references/flows/flow-match.md`. Per
+row, that row's Verified extract is the posting body — never fetch, never open
+Profile root.
 
 extract → JobProfile. Malformed → Gaps, drop.
 HF8 (`contract-match.md` hard filter 8, language) → Gaps `match blocked`, drop. Do not re-run Gate 1–7.

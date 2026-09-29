@@ -318,6 +318,9 @@ uninstall_agents() {
       fi
       echo "== ${label} (${dest_root}) =="
       uninstall_skills_from "${dest_root}" "${repo}" "$(agents_names_for_root "${dest_root}" "${repo}")" || exit 1
+      if [ "${target}" = claude ]; then
+        unlink_worker_agent || exit 1
+      fi
     done
 
     remove_legacy_codex_skills_dir "${repo}" || exit 1
@@ -721,6 +724,20 @@ plan_row() {
   fi
 }
 
+# plan_row_worker_agent_removal — the Claude worker agent copy row.
+# Rows: I remove copy | N not kit-owned | N not installed. Needs agents/lib.sh sourced.
+plan_row_worker_agent_removal() {
+  local dest
+  dest="$(worker_agent_dest)"
+  if [ -f "${dest}" ] && [ ! -L "${dest}" ] && grep -qF -- "${WORKER_AGENT_MARKER}" "${dest}"; then
+    printf 'I%sremove copy%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
+  elif [ -e "${dest}" ] || [ -L "${dest}" ]; then
+    printf 'N%snot kit-owned%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
+  else
+    printf 'N%snot installed%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
+  fi
+}
+
 # plan_rows_aside — rows for the aside target. No mutation.
 # Mirrors uninstall_aside (below): LEGACY_SKILL_NAMES then SKILL_NAMES at the
 # resolved root, then the legacy user root. That second root is re-derived here
@@ -789,6 +806,9 @@ plan_rows_agents() {
       for name in $(agents_names_for_root "${root}" "${repo}"); do
         plan_row "$(skill_dest "${root}" "${name}")" "${name}" current 1
       done
+      if [ "${target}" = claude ]; then
+        plan_row_worker_agent_removal
+      fi
     done
     root="${HOME}/.codex/skills"
     [ -d "${root}" ] || [ -L "${root}" ] || exit 0

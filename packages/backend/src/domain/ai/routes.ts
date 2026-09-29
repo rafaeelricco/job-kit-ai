@@ -2,6 +2,7 @@ export {
   PROVIDERS,
   METHODS,
   EFFORTS,
+  PROVIDER_EFFORTS,
   PURPOSES,
   AVAILABILITIES,
   ROUTES,
@@ -26,9 +27,12 @@ export {
 
 import * as s from "@lib/json/schema"
 
-/** Client-safe: this file (and everything it imports) never reaches pg, mongo, express, node:crypto, or `@be/app/*`. */
+import type Anthropic from "@anthropic-ai/sdk"
+import type OpenAI from "openai"
 
-const PROVIDERS = ["openai", "anthropic", "xai"] as const
+/** Client-safe: this file (and everything it imports) never reaches pg, mongo, express, node:crypto, or `@be/app/*`. The SDK imports are type-only. */
+
+const PROVIDERS = ["anthropic", "xai"] as const
 type Provider = (typeof PROVIDERS)[number]
 const schema_Provider = s.stringEnum([...PROVIDERS])
 
@@ -36,9 +40,22 @@ const METHODS = ["device", "setup_token", "api_key"] as const
 type Method = (typeof METHODS)[number]
 const schema_Method = s.stringEnum([...METHODS])
 
-const EFFORTS = ["low", "medium", "high"] as const
+/** Every level any provider takes, lowest first: the wire enum. */
+const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const
 type Effort = (typeof EFFORTS)[number]
 const schema_Effort = s.stringEnum([...EFFORTS])
+
+/**
+ * Each provider's levels, checked against its official SDK's own union (commit-tools `config.ts`): a level the SDK
+ * drops, or `EFFORTS` lacks, fails the build. xAI speaks the OpenAI chat API, so its levels are that SDK's
+ * `reasoning_effort`; Grok rejects it on some models, and `llm/xai.ts` retries without it.
+ */
+const PROVIDER_EFFORTS = {
+  anthropic: ["low", "medium", "high", "xhigh", "max"] as const satisfies readonly (Effort &
+    NonNullable<Anthropic.OutputConfig["effort"]>)[],
+  xai: ["low", "medium", "high", "xhigh"] as const satisfies readonly (Effort &
+    NonNullable<OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"]>)[],
+} satisfies Record<Provider, readonly Effort[]>
 
 const PURPOSES = ["initial", "reconnect", "switch"] as const
 type Purpose = (typeof PURPOSES)[number]
@@ -59,10 +76,8 @@ const schema_RouteView = s.object({
   availability: schema_Availability,
 })
 
-/** The V1 target set from docs/delivery/steps/02-onboarding.md. Listing a route claims nothing about whether it works. */
+/** The V1 target set from docs/delivery/steps/02-onboarding.md (OpenAI dropped 2026-09-28). Listing a route claims nothing about whether it works. */
 const ROUTES: readonly Route[] = [
-  { provider: "openai", method: "device" },
-  { provider: "openai", method: "api_key" },
   { provider: "anthropic", method: "setup_token" },
   { provider: "anthropic", method: "api_key" },
   { provider: "xai", method: "device" },
@@ -70,10 +85,11 @@ const ROUTES: readonly Route[] = [
 ]
 
 /**
- * Only API keys have a real adapter. commit-tools' subscription sign-ins work by posing as the provider's own CLI
- * (docs/research/provider-connections.md:9), so those routes stay `unproven`.
+ * API keys, plus xAI's device sign-in (commit-tools `infra/auth/xai.ts`, served by the owner's call on 2026-09-28 though
+ * it signs in as xAI's CLI client). Anthropic's setup token stays `unproven`: it poses as Claude Code
+ * (docs/research/provider-connections.md:9).
  */
-const isLiveRoute = (r: Route): boolean => r.method === "api_key"
+const isLiveRoute = (r: Route): boolean => r.method === "api_key" || (r.provider === "xai" && r.method === "device")
 
 /** How `connections.ts` serves routes: all through the test adapter, API keys for real, or none. */
 type RouteMode = "test" | "live" | "off"

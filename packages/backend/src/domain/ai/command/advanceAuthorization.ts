@@ -6,7 +6,6 @@ import { type Result, Success, Failure } from "@lib/result"
 import { type Response } from "@be/lib/router"
 import { Id } from "@be/lib/event-sourcing/event"
 import { type WithEventStore } from "@be/lib/event-sourcing/store"
-
 import {
   type Command,
   type CommandResponse,
@@ -20,7 +19,7 @@ import { type AiState } from "@be/domain/workspace/aggregate/aiState"
 import { type AuthorizationStatus, type FailureReason, toSetupView } from "@be/domain/ai/views"
 import { decideReady } from "@be/domain/ai/decide"
 import { advance, type Step, type Advanced } from "@be/app/ai/authorize"
-import { type Attempt } from "@be/app/ai/attempts"
+import { type Attempt } from "@be/app/ai/store/attempts"
 import { type AiConnections } from "@be/app/ai/connections"
 import { pendingStatus, failedStatus, connectedStatus } from "@be/domain/ai/command/aiStatus"
 import { type AiError, aiInternalError, toAiRejection, releaseSecrets } from "@be/domain/ai/command/aiErrors"

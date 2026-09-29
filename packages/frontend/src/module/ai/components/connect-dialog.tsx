@@ -478,6 +478,18 @@ function EntryView({
             <FieldDescription>{copy.keyHint}</FieldDescription>
           : null}
         </Field>
+        {isApiKey ?
+          <a
+            href={copy.keyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit")}
+          >
+            Open {copy.name} Console
+            <HugeiconsIcon icon={LinkSquare02Icon} data-icon="inline-end" aria-hidden="true" />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        : null}
         {submit.kind === "verifying" ?
           <CheckingLine provider={submit.provider} />
         : null}

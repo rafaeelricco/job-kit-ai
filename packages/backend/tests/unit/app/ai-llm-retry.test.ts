@@ -7,7 +7,7 @@ import OpenAI from "openai"
 import { Future } from "@lib/future"
 import { rejection } from "@tests/support/future"
 
-import { classifyLlmError, withTransientRetry } from "@be/app/ai/llm/router"
+import { classifyLlmError, withTransientRetry } from "@be/app/ai/llm/retry"
 
 const run = <T>(f: Future<Error, T>): Promise<T> => f.promise((e) => e)
 
@@ -118,6 +118,33 @@ describe("withTransientRetry", () => {
     )
     assert.equal(value, "ok")
     assert.equal(attempts, 2)
+  })
+
+  test("retries a stream cut mid-answer, which carries no SDK status", async () => {
+    let attempts = 0
+    const value = await run(
+      withTransientRetry(() => {
+        attempts++
+        return attempts < 2
+          ? Future.reject<Error, string>(new Error("terminated"))
+          : Future.resolve<Error, string>("ok")
+      })
+    )
+    assert.equal(value, "ok")
+    assert.equal(attempts, 2)
+  })
+
+  test("reads one level of cause for a socket error", async () => {
+    let attempts = 0
+    const error = new Error("Request failed", { cause: new Error("read ECONNRESET") })
+    const rejected = await rejection(
+      withTransientRetry(() => {
+        attempts++
+        return Future.reject<Error, string>(error)
+      })
+    )
+    assert.equal(rejected, error)
+    assert.equal(attempts, 3)
   })
 
   test("resolves on a later success", async () => {

@@ -14,20 +14,22 @@ import {
   CARD_METHOD,
   PROVIDER_COPY,
   PROVIDERS,
+  methodLabel,
   openProviderTab,
   opensTab,
   routeAvailability,
 } from "@module/ai/providers"
 import { type AiSetupView, type Method, type Provider } from "@module/ai/types"
 
-/** The card's sign-in line, past-tense-free (unlike `methodLabel`): "ChatGPT sign-in", "Setup token", ... */
+/** The card's sign-in line, past-tense-free (unlike `methodLabel`'s "Signed in with xAI"): "xAI sign-in", "API key". */
 function cardSignInLabel(provider: Provider): string {
   const method = CARD_METHOD[provider]
-  if (method === "setup_token") return "Setup token"
-  return `${PROVIDER_COPY[provider].signIn.replace(/^Sign in with /, "")} sign-in`
+  return method === "device" ?
+      `${PROVIDER_COPY[provider].signIn.replace(/^Sign in with /, "")} sign-in`
+    : methodLabel(provider, method)
 }
 
-/** "Uses your ChatGPT plan" -> "ChatGPT plan": the row's second half, after the sign-in method. */
+/** "Uses your xAI account" -> "xAI account": the row's second half, after the sign-in method. */
 function billingBasis(provider: Provider): string {
   return PROVIDER_COPY[provider].billing.replace(/^Uses your /, "")
 }
@@ -54,7 +56,7 @@ function ProviderPicker({
     // Synchronous, inside the click handler: a `window.open` reached through an `await` loses the user-gesture
     // context and is blocked by every popup blocker.
     const tab = opensTab(method) ? openProviderTab() : null
-    onPick({ kind: "route", route: { provider, method } }, tab)
+    onPick(method === "api_key" ? { kind: "apiKey", provider } : { kind: "route", route: { provider, method } }, tab)
   }
 
   const pickApiKey = (): void => {

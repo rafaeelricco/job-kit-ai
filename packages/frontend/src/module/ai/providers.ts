@@ -8,25 +8,20 @@ type ProviderCopy = {
   readonly signIn: string
   readonly billing: string
   readonly keyHint: string
+  /** The provider console's API-key page, opened from the API-key dialog. */
+  readonly keyUrl: string
   readonly keyPlaceholder: string
 }
 
 /** Artboard copy per provider (A2 cards, A5/A6 entry forms). */
 const PROVIDER_COPY: Record<Provider, ProviderCopy> = {
-  openai: {
-    name: "OpenAI",
-    mark: "OA",
-    signIn: "Sign in with ChatGPT",
-    billing: "Uses your ChatGPT plan",
-    keyHint: "Create one in your OpenAI API dashboard.",
-    keyPlaceholder: "sk-…",
-  },
   anthropic: {
     name: "Anthropic",
     mark: "AN",
-    signIn: "Paste a Claude setup token",
-    billing: "Uses your Claude subscription",
+    signIn: "Use an Anthropic API key",
+    billing: "Uses your Anthropic API account",
     keyHint: "Create one in the Anthropic Console.",
+    keyUrl: "https://platform.claude.com/settings/keys",
     keyPlaceholder: "sk-ant-…",
   },
   xai: {
@@ -35,19 +30,22 @@ const PROVIDER_COPY: Record<Provider, ProviderCopy> = {
     signIn: "Sign in with xAI",
     billing: "Uses your xAI account",
     keyHint: "Create one in the xAI console.",
+    keyUrl: "https://console.x.ai",
     keyPlaceholder: "xai-…",
   },
 }
 
-/** The one card each provider gets in A2. An API key is always the secondary link, never a card of its own. */
+/**
+ * The one card each provider gets in A2. Anthropic's is its API key: its setup token signs in as Claude Code, which
+ * stays unproven (02-onboarding.md). xAI's API key is the secondary link below the cards.
+ */
 const CARD_METHOD: Record<Provider, Method> = {
-  openai: "device",
-  anthropic: "setup_token",
+  anthropic: "api_key",
   xai: "device",
 }
 
 /** Card order, left to right / top to bottom in A2 and the provider toggle. */
-const PROVIDERS = ["openai", "anthropic", "xai"] as const satisfies readonly Provider[]
+const PROVIDERS = ["anthropic", "xai"] as const satisfies readonly Provider[]
 
 /** A settled connection's sign-in method, past tense, for the settings panel and switch-confirm copy. */
 function methodLabel(provider: Provider, method: Method): string {

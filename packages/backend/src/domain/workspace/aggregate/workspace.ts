@@ -9,7 +9,6 @@ type WorkspaceValues = {
   readonly aggregateVersion: number
   readonly ownerId: Id<"User">
   readonly createdAt: POSIX
-  /** Setup progress and the AI connection registry: one active connection, at most one staged by a switch. */
   readonly ai: AiState
 }
 
@@ -29,7 +28,6 @@ class Workspace implements Aggregate<"Workspace"> {
     return this.values.aggregateVersion
   }
 
-  /** Derived from the owner, so the event stream itself allows one workspace per user, as `User.idForEmail` does per email. */
   static idForOwner(ownerId: Id<"User">): Id<"Workspace"> {
     return Id.deterministicForAggregate<"Workspace", Workspace>(Workspace, ownerId.value).unwrap((message) => message)
   }

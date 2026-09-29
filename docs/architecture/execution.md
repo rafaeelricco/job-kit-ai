@@ -14,7 +14,7 @@ The worker records bounded progress and result references through authorized ser
 
 ## V1 profile AI and provider boundaries
 
-The user must connect one supported AI provider before creating an AI profile. The target adapters cover the methods identified in [provider research](../research/provider-connections.md): OpenAI device login or API key; Anthropic pasted setup token or API key; xAI device login or API key. Optional Claude setup-token generation may happen in the user's external terminal; Job Kit does not install provider tooling. Hosted authorization and compatibility are validation gates, not assumed capabilities.
+The user must connect one supported AI provider before creating an AI profile. The target adapters cover the methods identified in [provider research](../research/provider-connections.md): Anthropic pasted setup token or API key; xAI device login or API key. Optional Claude setup-token generation may happen in the user's external terminal; Job Kit does not install provider tooling. Hosted authorization and compatibility are validation gates, not assumed capabilities.
 
 The API decrypts credentials only through the server-side adapter required for the call. It passes a task's minimal selected inputs and validates output against versioned schemas. Credentials stay out of prompts, client storage, queue payloads, and logs. An expired or unavailable connection leaves the operation waiting; the user reconnects or explicitly switches provider. The system does not silently switch to another account or billing route.
 

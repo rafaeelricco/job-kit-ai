@@ -99,7 +99,7 @@ test("a purpose that does not fit the registry is refused before any attempt ope
   const { ctx } = await signedIn(db, ai)
 
   const reconnectNothing = await rejection(
-    startAuth.handler({ ...ctx, payload: { provider: "openai", method: "api_key", purpose: "reconnect" } })
+    startAuth.handler({ ...ctx, payload: { provider: "xai", method: "api_key", purpose: "reconnect" } })
   )
   assert.match(statusOf(reconnectNothing), /"status":409/)
 })

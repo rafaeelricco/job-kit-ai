@@ -11,8 +11,8 @@ import { Session } from "@be/app/session"
 import { schemas } from "@be/app/events"
 import { type UserActor } from "@be/app/actor"
 import { type AiConnections } from "@be/app/ai/connections"
-import { type Attempts } from "@be/app/ai/attempts"
-import { type SecretVault } from "@be/app/ai/vault"
+import { type Attempts } from "@be/app/ai/store/attempts"
+import { type SecretVault } from "@be/app/ai/store/vault"
 
 import { MemoryEventDatabase, MemorySessionStore, MemoryLoginCodes, MemoryVault, memoryAi } from "@tests/support/memory"
 import { result, rejection } from "@tests/support/future"
@@ -21,9 +21,9 @@ import { provisionUser } from "@be/domain/auth/provisionUser"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { type Method, type Provider, type Purpose } from "@be/domain/ai/routes"
 import { type ProviderAdapter } from "@be/domain/ai/adapter"
-import { FakeProvider, testAdapter } from "@be/app/ai/testAdapter"
-import { apiKeyAdapter } from "@be/app/ai/apiKeyAdapter"
-import { type Llm } from "@be/app/ai/llm/router"
+import { FakeProvider, testAdapter } from "@tests/support/test-provider/adapter"
+import { apiKeyAdapter } from "@be/app/ai/adapters/api-key"
+import { type Llm, type LlmCredential } from "@be/app/ai/llm/types"
 import { type StepRequest } from "@be/domain/ai/command/advanceAuthorization.api"
 
 import { controller as startAuth } from "@be/domain/ai/command/startAuthorization"
@@ -59,7 +59,7 @@ async function scenario(options: { fake?: FakeProvider; adapter?: ProviderAdapte
     startAuth.handler({ ...ctx, payload: { provider, method, purpose } })
   const advance = (attemptId: Id<"AiAttempt">, step: StepRequest) =>
     advanceAuth.handler({ ...ctx, payload: { attemptId, step } })
-  const connectKey = async (key: string, purpose: Purpose = "initial", provider: Provider = "openai") => {
+  const connectKey = async (key: string, purpose: Purpose = "initial", provider: Provider = "xai") => {
     const started = await result(start(provider, "api_key", purpose))
     return result(advance(started.attemptId, { kind: "secret", secret: key }))
   }
@@ -87,7 +87,7 @@ afterEach(() => {
 describe("AI recovery", () => {
   test("a failed device verify stays failed through repeated polls until the user retries", async () => {
     const s = await scenario()
-    const started = await result(s.start("openai", "device"))
+    const started = await result(s.start("xai", "device"))
     if (started.status.status !== "pending" || started.status.challenge.kind !== "device") throw new Error("device")
     s.fake.decideDevice(started.status.challenge.userCode, "approve_quota", "tester@example.test")
 
@@ -108,7 +108,7 @@ describe("AI recovery", () => {
 
   test("a device quota failure is not turned into an expired code by the next poll", async () => {
     const s = await scenario()
-    const started = await result(s.start("openai", "device"))
+    const started = await result(s.start("xai", "device"))
     if (started.status.status !== "pending" || started.status.challenge.kind !== "device") throw new Error("device")
     s.fake.decideDevice(started.status.challenge.userCode, "approve_quota", "tester@example.test")
 
@@ -119,7 +119,7 @@ describe("AI recovery", () => {
 
   test("denied and time-expired device attempts drop their sealed device code", async () => {
     const denied = await scenario()
-    const d = await result(denied.start("openai", "device"))
+    const d = await result(denied.start("xai", "device"))
     if (d.status.status !== "pending" || d.status.challenge.kind !== "device") throw new Error("device")
     denied.fake.decideDevice(d.status.challenge.userCode, "deny", "tester@example.test")
     assert.equal((await result(denied.advance(d.attemptId, { kind: "poll" }))).status.status, "failed")
@@ -176,7 +176,7 @@ describe("AI recovery", () => {
     const adapter: ProviderAdapter = { ...base, accept: () => Future.reject(new Error("exchange failed")) }
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     const s = await scenario({ adapter })
-    const started = await result(s.start("openai", "api_key"))
+    const started = await result(s.start("xai", "api_key"))
     const step: StepRequest = { kind: "secret", secret: "sk-any" }
 
     assert.match(statusOf(await rejection(s.advance(started.attemptId, step))), /"status":500/)
@@ -188,9 +188,9 @@ describe("AI recovery", () => {
     const s = await scenario()
     const active = (await s.connectKey("sk-working")).setup.active
     assert.ok(active)
-    const staged = (await s.connectKey("sk-staged-then-revoked", "switch", "xai")).setup.staged
+    const staged = (await s.connectKey("sk-staged-then-revoked", "switch", "anthropic")).setup.staged
     assert.ok(staged)
-    const stagedGrant = s.fake.grants().find((g) => g.provider === "xai")
+    const stagedGrant = s.fake.grants().find((g) => g.provider === "anthropic")
     assert.ok(stagedGrant)
     s.fake.setGrant(stagedGrant.id, "revoked")
     await result(testConnection.handler({ ...s.ctx, payload: { connectionId: staged.connectionId } }))
@@ -208,13 +208,15 @@ describe("AI recovery", () => {
       revoked.has(key)
         ? Future.reject(OpenAI.APIError.generate(401, {}, "Incorrect API key provided", new Headers()))
         : Future.resolve(value)
+    const secretOf = (credential: LlmCredential): string =>
+      credential.kind === "api_key" ? credential.key : credential.accessToken
     const llm: Llm = {
-      listModels: (_provider, key) =>
-        answer(key, [
+      listModels: (_provider, credential) =>
+        answer(secretOf(credential), [
           { id: "model-a", name: "Model A", createdAt: POSIX.now(), structuredOutput: Nothing(), efforts: Nothing() },
         ]),
-      generate: (provider, key) =>
-        answer(key, {
+      generate: (provider, credential) =>
+        answer(secretOf(credential), {
           text: "OK",
           metadata: {
             provider,
@@ -227,14 +229,14 @@ describe("AI recovery", () => {
     }
     vi.spyOn(console, "error").mockImplementation(() => undefined)
     const s = await scenario({ adapter: apiKeyAdapter(llm, "account-key") })
-    const firstKey = `sk-${"a".repeat(20)}1111`
+    const firstKey = `xai-${"a".repeat(20)}1111`
     const active = (await s.connectKey(firstKey)).setup.active
     assert.ok(active)
     revoked.add(firstKey)
     const checked = await result(testConnection.handler({ ...s.ctx, payload: { connectionId: active.connectionId } }))
     assert.notEqual(checked.setup.active?.status, "ready")
 
-    const reconnected = await s.connectKey(`sk-${"b".repeat(20)}2222`, "reconnect")
+    const reconnected = await s.connectKey(`xai-${"b".repeat(20)}2222`, "reconnect")
     assert.deepEqual(reconnected.status, { status: "connected", role: "active" })
     assert.equal(reconnected.setup.active?.connectionId.value, active.connectionId.value)
     assert.equal(reconnected.setup.active?.status, "ready")
@@ -272,13 +274,13 @@ describe("AI recovery", () => {
           raced = true
           // A fresh start commits between the winning claim and the emit.
           return s
-            .start("openai", "api_key")
+            .start("xai", "api_key")
             .mapRej((e) => new Error(statusOf(e)))
             .map(() => won)
         }),
     }
     const racing = { ...s.ctx, ai: { ...s.ai, attempts } }
-    const started = await result(s.start("openai", "api_key"))
+    const started = await result(s.start("xai", "api_key"))
     const step: StepRequest = { kind: "secret", secret: "sk-racing" }
 
     const first = await result(advanceAuth.handler({ ...racing, payload: { attemptId: started.attemptId, step } }))
@@ -290,7 +292,7 @@ describe("AI recovery", () => {
 
   test("a repeated advance after a disconnect reports superseded, not connected", async () => {
     const s = await scenario()
-    const started = await result(s.start("openai", "api_key"))
+    const started = await result(s.start("xai", "api_key"))
     const step: StepRequest = { kind: "secret", secret: "sk-then-disconnected" }
     const active = (await result(s.advance(started.attemptId, step))).setup.active
     assert.ok(active)
@@ -305,15 +307,17 @@ describe("AI recovery", () => {
     const active = (await s.connectKey("sk-first-key")).setup.active
     assert.ok(active)
     const vault = s.ai.vault
+    const reconnect = () =>
+      s
+        .start("xai", "api_key", "reconnect")
+        .chain((started) => s.advance(started.attemptId, { kind: "secret", secret: "sk-second-key" }))
+        .mapRej((e) => new Error(statusOf(e)))
     const racingVault: SecretVault = {
       ...vault,
-      // The reconnect lands while the test reads the old credential; the old one is gone by the time it verifies.
-      get: (workspaceId, ref) =>
-        s
-          .start("openai", "api_key", "reconnect")
-          .chain((started) => s.advance(started.attemptId, { kind: "secret", secret: "sk-second-key" }))
-          .mapRej((e) => new Error(statusOf(e)))
-          .chain(() => vault.get(workspaceId, ref)),
+      // The reconnect lands while the test reads the old credential (`update` is how a live adapter's check reads it);
+      // the old one is gone by the time it verifies.
+      get: (workspaceId, ref) => reconnect().chain(() => vault.get(workspaceId, ref)),
+      update: (workspaceId, ref, f) => reconnect().chain(() => vault.update(workspaceId, ref, f)),
     }
     const racing = { ...s.ctx, ai: { ...s.ai, vault: racingVault } }
 
@@ -324,7 +328,7 @@ describe("AI recovery", () => {
 
   test("a cancel that races a failed verify deletes the credential the verify kept", async () => {
     const s = await scenario()
-    const started = await result(s.start("openai", "api_key"))
+    const started = await result(s.start("xai", "api_key"))
     const attempts: Attempts = {
       ...s.ai.attempts,
       // The verify settles `verification_failed`, keeping its credential, between the cancel's read and its write.
@@ -349,7 +353,7 @@ describe("AI recovery", () => {
       let later: Id<"AiAttempt"> | null = null
       const runLater = <T>(value: T) =>
         s
-          .start("openai", "api_key")
+          .start("xai", "api_key")
           .mapRej((e) => new Error(statusOf(e)))
           .map((started) => {
             later = started.attemptId
@@ -367,7 +371,7 @@ describe("AI recovery", () => {
       const racing = { ...s.ctx, ai: { ...s.ai, attempts } }
 
       const earlier = await result(
-        startAuth.handler({ ...racing, payload: { provider: "openai", method: "api_key", purpose: "initial" } })
+        startAuth.handler({ ...racing, payload: { provider: "xai", method: "api_key", purpose: "initial" } })
       )
       assert.deepEqual(earlier.status, { status: "failed", reason: "superseded", retry: "restart" }, at)
       assert.ok(later !== null)
@@ -382,7 +386,7 @@ describe("AI recovery", () => {
     const s = await scenario()
     const matches = (label: string) => assert.deepEqual(sorted(s.vaultRefs()), sorted(s.referenced()), label)
 
-    const device = await result(s.start("openai", "device"))
+    const device = await result(s.start("xai", "device"))
     if (device.status.status !== "pending" || device.status.challenge.kind !== "device") throw new Error("device")
     s.fake.decideDevice(device.status.challenge.userCode, "approve", "pat@example.test")
     await result(s.advance(device.attemptId, { kind: "poll" }))

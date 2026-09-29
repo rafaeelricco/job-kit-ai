@@ -1,4 +1,11 @@
-export { type Secret, type Authorization, type ReadinessFailure, type Readiness, type ProviderAdapter }
+export {
+  type Secret,
+  type Authorization,
+  type ReadinessFailure,
+  type Readiness,
+  type ProviderAdapter,
+  CredentialRevoked,
+}
 
 import { type Future } from "@lib/future"
 import { type Maybe } from "@lib/maybe"
@@ -10,7 +17,12 @@ import { type Capabilities } from "@be/domain/ai/capabilities"
 import { type Challenge } from "@be/domain/ai/views"
 
 /** Never logged, never in an event, a projection, a queue payload or a response. Lives only in the vault and adapter memory. */
-type Secret = { kind: "token"; token: string } | { kind: "key"; key: string } | { kind: "device"; deviceCode: string }
+type Secret =
+  | { kind: "token"; token: string }
+  | { kind: "key"; key: string }
+  | { kind: "device"; deviceCode: string }
+  /** A device sign-in's tokens (commit-tools `BearerTokens`); `refresh` renews them before they lapse. */
+  | { kind: "oauth"; accessToken: string; refreshToken: string; expiresAt: POSIX }
 
 type Authorization =
   { kind: "pending" } | { kind: "denied" } | { kind: "expired" } | { kind: "authorized"; credential: Secret }
@@ -34,5 +46,21 @@ type ProviderAdapter = {
   readonly accept: (route: Route, entered: string) => Future<Error, Secret> // setup_token, api_key
   /** The readiness proof: one bounded real request through the provider. The only producer of `Capabilities`. */
   readonly verify: (route: Route, credential: Secret) => Future<Error, Readiness>
+  /**
+   * Renews a credential close to expiry (commit-tools `ensureFresh*Tokens`); any other credential comes back as is.
+   * Answers within ~5 s. Rejects with `CredentialRevoked` when the provider has withdrawn the sign-in; any other
+   * rejection counts as passing.
+   */
+  readonly refresh: (route: Route, credential: Secret) => Future<Error, Secret>
 }
 /** Error messages from adapters must never quote a secret or provider response body; commands map them to a generic 500. */
+
+/** A `refresh` rejection that means the provider withdrew the sign-in (OAuth `invalid_grant`), not a passing failure. */
+class CredentialRevoked extends Error {
+  override readonly name = "CredentialRevoked"
+
+  constructor(message = "The provider revoked this sign-in") {
+    super(message)
+    Object.setPrototypeOf(this, CredentialRevoked.prototype)
+  }
+}

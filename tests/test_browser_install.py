@@ -98,7 +98,7 @@ exit /b 97
         with (self.bin / (name + ".cmd")).open("w", encoding="utf-8", newline="\r\n") as stream:
             stream.write(cmd)
 
-    def run(self, entrypoint, *args):
+    def run(self, entrypoint, *args, override=True):
         excluded = {"HOME", "USERPROFILE", "CLAUDE_SKILLS", "ASIDE_SKILLS",
                     "BASH_ENV", "ENV", "PSMODULEPATH", "XDG_CONFIG_HOME",
                     "XDG_DATA_HOME", "LOCALAPPDATA", "APPDATA", "PROGRAMFILES",
@@ -108,7 +108,7 @@ exit /b 97
                and not key.upper().startswith(("JOB_KIT_", "ASIDE_", "BROWSER_TEST_", "XDG_"))}
         paths = {
             "HOME": self.root / "home", "USERPROFILE": self.root / "home",
-            "CLAUDE_SKILLS": self.skills, "ASIDE_SKILLS": self.aside,
+            "ASIDE_SKILLS": self.aside,
             "JOB_KIT_HOME": self.kit, "XDG_CONFIG_HOME": self.root / "config",
             "XDG_DATA_HOME": self.root / "data", "APPDATA": self.root / "config",
             "LOCALAPPDATA": self.root / "localappdata",
@@ -118,6 +118,8 @@ exit /b 97
             "BROWSER_TEST_ERRORS": self.errors,
         }
         env.update({key: shell_path(path, self.kind) for key, path in paths.items()})
+        if override:
+            env["CLAUDE_SKILLS"] = shell_path(self.skills, self.kind)
         env["PATH"] = str(self.bin) + os.pathsep + os.environ.get("PATH", "")
         env["PYTHONDONTWRITEBYTECODE"] = "1"
         suffix = ".sh" if self.kind == "bash" else ".ps1"
@@ -326,6 +328,26 @@ class BrowserChannelTests(unittest.TestCase):
                 _marker_skill_tail((dest / ".job-kit").read_text(encoding="utf-8").strip()),
                 _marker_skill_tail(str(f.kit / "skill" / "job-match")),
             )
+        self.each_shell(scenario)
+
+    def test_claude_worker_agent_cycle(self):
+        def scenario(f):
+            (f.root / "home" / ".claude").mkdir()
+            source = f.kit / "skill/job-match/agents/job-kit-worker.md"
+            dest = f.root / "home/.claude/agents/job-kit-worker.md"
+            self.success(f.run("agents/install", "--dry-run", override=False))
+            self.assertFalse(dest.exists())
+            self.success(f.run("agents/install", override=False))
+            self.assertEqual(dest.read_bytes(), source.read_bytes())
+            dest.write_text(source.read_text() + "\n# stale\n")
+            self.success(f.run("agents/install", override=False))
+            self.assertEqual(dest.read_bytes(), source.read_bytes())
+            self.success(f.run("uninstall", "agents", override=False))
+            self.assertFalse(dest.exists())
+            dest.write_text("mine\n")
+            self.assertNotEqual(f.run("agents/install", override=False).returncode, 0)
+            self.success(f.run("uninstall", "agents", override=False))
+            self.assertEqual(dest.read_text(), "mine\n")
         self.each_shell(scenario)
 
     def test_agents_stale_link_relinks(self):

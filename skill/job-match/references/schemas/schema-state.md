@@ -1,6 +1,8 @@
 # Match state
 
-Orchestrator holds this object in-session. Nodes write only their keys. Never a file.
+Orchestrator holds this object in-session, or as JSON files in the run-scoped temp
+directory `SKILL.md` names — never under Profile root. Nodes write only their keys.
+Pipe those files to the scripts; never retype their JSON.
 
 ```json
 {

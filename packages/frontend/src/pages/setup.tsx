@@ -48,7 +48,7 @@ type CompleteSetupStepResponse = s.Infer<typeof api.completeSetupStep.response>
  * parameter typed `StepId` keeps the literal union intact.
  */
 
-/** The route as a noun phrase: "chose OpenAI device login". */
+/** The route as a noun phrase: "chose xAI device login". */
 const ROUTE_PHRASE: Record<Method, string> = {
   device: "device login",
   setup_token: "setup token",
@@ -366,7 +366,13 @@ function Wizard({ setup }: { readonly setup: AiSetupView }) {
       : <ConnectContent
           setup={setup}
           notice={notice}
-          onChoose={(route, tab) => openDialog({ kind: "route", route }, tab, choosePurpose)}
+          onChoose={(route, tab) =>
+            openDialog(
+              route.method === "api_key" ? { kind: "apiKey", provider: route.provider } : { kind: "route", route },
+              tab,
+              choosePurpose
+            )
+          }
           onApiKey={(request, tab) => openDialog(request, tab, choosePurpose)}
         />
       }

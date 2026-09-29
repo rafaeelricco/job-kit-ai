@@ -6,7 +6,7 @@ import { type Provider } from "@be/domain/ai/routes"
 
 /** Client-safe: this file (and everything it imports) never reaches pg, mongo, express, node:crypto, or `@be/app/*`. */
 
-const KEY_PREFIX: Record<Provider, string> = { openai: "sk-", anthropic: "sk-ant-api", xai: "xai-" }
+const KEY_PREFIX: Record<Provider, string> = { anthropic: "sk-ant-api", xai: "xai-" }
 const MIN_LENGTH = 20
 
 /** A shape check only, so an obvious typo never reaches the provider: `Just(message)` when `value` can't be this provider's key. */

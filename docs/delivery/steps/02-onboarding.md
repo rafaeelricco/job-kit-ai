@@ -18,9 +18,8 @@ Own setup progress and navigation after [login](01-login.md). Profile content an
 
 Job Kit login and AI-provider authorization are separate operations. V1 is web-only and runs platform services on the owner's VPS. A provider connection is required before profile creation. Hosted encrypted credential adapters serve profile generation and browser-agent work. Connection state, capabilities, and credential references may be stored; raw provider credentials must not enter progress records, logs, analytics, or model inputs. Follow [provider-connection research](../../research/provider-connections.md), [execution architecture](../../architecture/execution.md), and the accepted [self-hosted platform decision](../../decisions/0008-self-hosted-platform.md).
 
-The provider target is OpenAI, Anthropic and xAI (Gemini was dropped on 2026-09-27) with these methods from the reviewed `commit-tools` implementation at commit `07321aa31a734bbe6e52fa0776666d1df81eaee9`:
+The provider target is Anthropic and xAI (Gemini was dropped on 2026-09-27, OpenAI on 2026-09-28) with these methods from the reviewed `commit-tools` implementation at commit `07321aa31a734bbe6e52fa0776666d1df81eaee9`:
 
-- **OpenAI:** device login or API key.
 - **Anthropic:** pasted setup token or API key. A user may generate an optional setup token in an external terminal; Job Kit does not install a companion or local executor.
 - **xAI:** device login or API key.
 
@@ -52,12 +51,12 @@ The primary action is **Connect my AI**. Let users continue immediately and revi
 
 Show progress through **Overview → Connect AI → Create profile** as a full-screen guided wizard with no app chrome until setup is done. This layout was selected on 2026-09-23 over an in-app checklist and a split screen, which remain on the design canvas as archived options.
 
-The Connect AI screen offers one card per provider. Each card names the provider, the sign-in it uses, and its billing basis in one quiet line (for example, "Uses your ChatGPT plan"). It also states once what data the provider receives. API-key entry is a secondary text link below the cards, not a peer option. Keep model and effort customization out of this screen; the recommended default applies until the user changes it in settings.
+The Connect AI screen offers one card per provider. Each card names the provider, the sign-in it uses, and its billing basis in one quiet line (for example, "Uses your xAI account"). It also states once what data the provider receives. Anthropic's card is its API key, since its setup token stays unproven; API-key entry for either provider also stays a secondary text link below the cards. Keep model and effort customization out of this screen; the recommended default applies until the user changes it in settings.
 
 Choosing a provider opens its authorization page in a new tab where one exists, and Job Kit shows a dialog for that route:
 
-- **OpenAI and xAI:** the dialog shows the device code as selectable text with **Copy**, the time left, a visible waiting state, and a link to reopen the provider tab if it was blocked.
-- **Anthropic:** no tab opens. The dialog shows the `claude setup-token` command with **Copy** and a secure field to paste the token. It does not require a Job Kit installation.
+- **xAI:** the dialog shows the device code as selectable text with **Copy**, the time left, a visible waiting state, and a link to reopen the provider tab if it was blocked.
+- **Anthropic:** no tab opens. The card opens the API-key dialog on Anthropic, with a button that opens the Anthropic Console's API-key page in a new tab. The `claude setup-token` paste dialog is not offered while that route is unproven.
 - **API key:** the dialog asks for the provider and a secure key field, and states that the key bills the provider's API account rather than a chat plan.
 
 Every dialog can be cancelled. It ends in one of two states: connected, or a failure with a specific next action (see step 3).
@@ -88,7 +87,7 @@ Add an **AI** panel to the existing settings dialog, second in the rail after Pr
 
 - A new user can explain what Job Kit produces, why an AI connection is needed, and what V1 does with a match.
 - One visual overview communicates the V1 journey using labeled sample content.
-- Onboarding lists OpenAI, Anthropic, and xAI with the target connection methods specified above; the target set is not silently reduced.
+- Onboarding lists Anthropic and xAI with the target connection methods specified above; the target set is not silently reduced.
 - Each advertised-ready provider method passes both hosted technical verification and the applicable product-authorization check. Unproven methods cannot be represented as ready.
 - A user can complete a proven provider route through guided UI, including device handoff or secure key/token entry as applicable.
 - No companion installation, device enrollment, local executor, or companion wait is part of onboarding.
@@ -102,7 +101,7 @@ Add an **AI** panel to the existing settings dialog, second in the rail after Pr
 
 ## Decisions for this step
 
-The three provider targets, listed methods, hosted encrypted credential adapters, and own-AI prerequisite are selected. API keys are the first live routes; the subscription sign-ins stay unproven because the commit-tools flows impersonate each provider's own CLI. The guided-wizard layout, per-provider dialogs, secondary API-key entry, and single active connection with verify-then-confirm switching were selected on 2026-09-23. Technical support and provider authorization are still separate proof gates. Step 02 ends when a selected route is verified and profile creation can begin; profile confirmation remains owned by step 03.
+The two provider targets, listed methods, hosted encrypted credential adapters, and own-AI prerequisite are selected. API keys and xAI's device sign-in are live (the owner accepted the xAI CLI-client sign-in on 2026-09-28); Anthropic's setup token stays unproven because it impersonates Claude Code, so Anthropic's card uses its API key (2026-09-29). The guided-wizard layout, per-provider dialogs, secondary API-key entry, and single active connection with verify-then-confirm switching were selected on 2026-09-23. Technical support and provider authorization are still separate proof gates. Step 02 ends when a selected route is verified and profile creation can begin; profile confirmation remains owned by step 03.
 
 Use [provider-connection research](../../research/provider-connections.md) to resolve compatibility and authorization evidence. Keep unresolved provider proofs and any required measured limits as bounded blocker tickets in the [delivery backlog](../linear-backlog.md); do not turn a research recommendation into a product guarantee.
 

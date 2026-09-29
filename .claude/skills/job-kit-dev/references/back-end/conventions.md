@@ -30,7 +30,7 @@ packages/backend/src/
 │   ├── handleProjection.ts    # decode → withIdempotency → handler
 │   ├── handleReaction.ts      # (to add) decode → withIdempotency → handler with withEventStore + services
 │   ├── auth/                  # policy.ts (Auth), grants.ts, README.md
-│   ├── ai/                    # connections.ts, vault.ts, attempts.ts, authorize.ts, crypto.ts, testAdapter.ts, testProvider.ts
+│   ├── ai/                    # connections.ts, authorize.ts, credential.ts, store/ (attempts, vault, crypto), adapters/ (api-key, xai-device, readiness), llm/, auth/xai.ts
 │   ├── events.ts  projections.ts  projectionStore.ts  idempotency.ts
 │   ├── integrations.ts        # configureDependencies(): Dependencies
 │   ├── environment.ts  mailer.ts  session.ts  loginCodes.ts  engine.ts  responses.ts

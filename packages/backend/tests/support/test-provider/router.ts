@@ -4,53 +4,25 @@ import express from "express"
 
 import { Failure } from "@lib/result"
 import { isRecord } from "@lib/helpers/object"
+import { type FakeProvider, type DeviceOutcome, type GrantOutcome } from "@tests/support/test-provider/adapter"
 
-import { type FakeProvider } from "@be/app/ai/testAdapter"
-
-type DeviceOutcome = "approve" | "approve_quota" | "deny" | "expire"
-function isDeviceOutcome(value: string): value is DeviceOutcome {
-  switch (value) {
-    case "approve":
-    case "approve_quota":
-    case "deny":
-    case "expire":
-      return true
-    default:
-      return false
-  }
+const DEVICE_LABELS: Record<DeviceOutcome, string> = {
+  approve: "approved",
+  approve_quota: "approved (usage limit)",
+  deny: "denied",
+  expire: "expired",
 }
 
-type GrantOutcome = "ok" | "revoked" | "expired" | "quota"
-function isGrantOutcome(value: string): value is GrantOutcome {
-  switch (value) {
-    case "ok":
-    case "revoked":
-    case "expired":
-    case "quota":
-      return true
-    default:
-      return false
-  }
+const GRANT_ACTIONS: Record<GrantOutcome, string> = {
+  revoked: "Revoke",
+  expired: "Expire",
+  quota: "Exhaust quota",
+  ok: "Restore",
 }
 
-function outcomeLabel(outcome: DeviceOutcome): string {
-  switch (outcome) {
-    case "approve":
-      return "approved"
-    case "approve_quota":
-      return "approved (usage limit)"
-    case "deny":
-      return "denied"
-    case "expire":
-      return "expired"
-    default: {
-      const exhaustive: never = outcome
-      throw new Error(`Unknown outcome: ${String(exhaustive)}`)
-    }
-  }
-}
+const isDeviceOutcome = (value: string): value is DeviceOutcome => Object.hasOwn(DEVICE_LABELS, value)
+const isGrantOutcome = (value: string): value is GrantOutcome => Object.hasOwn(GRANT_ACTIONS, value)
 
-/** Escapes text for interpolation into the plain HTML this router renders — no templating engine, no assets. */
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -82,21 +54,15 @@ function deviceForm(notice: string): string {
 }
 
 function grantsTable(fake: FakeProvider): string {
-  const actions: ReadonlyArray<{ value: GrantOutcome; label: string }> = [
-    { value: "revoked", label: "Revoke" },
-    { value: "expired", label: "Expire" },
-    { value: "quota", label: "Exhaust quota" },
-    { value: "ok", label: "Restore" },
-  ]
   const rows = fake
     .grants()
     .map((g) => {
-      const buttons = actions
+      const buttons = Object.entries(GRANT_ACTIONS)
         .map(
-          (a) =>
+          ([value, label]) =>
             `<form method="post" action="grants" style="display:inline">
               <input type="hidden" name="id" value="${escapeHtml(g.id)}">
-              <button type="submit" name="outcome" value="${a.value}">${a.label}</button>
+              <button type="submit" name="outcome" value="${value}">${label}</button>
             </form>`
         )
         .join(" ")
@@ -106,11 +72,7 @@ function grantsTable(fake: FakeProvider): string {
   return `<table><thead><tr><th>Id</th><th>Provider</th><th>Method</th><th>Account</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`
 }
 
-/**
- * Mounted only when the test adapter is active. Plain, escaped HTML forms posting to relative paths — no assets, no
- * templating engine, its own body parser.
- */
-function testProviderRouter(fake: FakeProvider, _appUrl: string): express.Router {
+function testProviderRouter(fake: FakeProvider): express.Router {
   const router = express.Router()
   router.use(express.urlencoded({ extended: false }))
 
@@ -143,7 +105,7 @@ function testProviderRouter(fake: FakeProvider, _appUrl: string): express.Router
       .send(
         layout(
           "Device code decided",
-          `<p>Marked ${escapeHtml(outcomeLabel(outcome))}${accountNote}. You can close this tab.</p>`
+          `<p>Marked ${escapeHtml(DEVICE_LABELS[outcome])}${accountNote}. You can close this tab.</p>`
         )
       )
   })

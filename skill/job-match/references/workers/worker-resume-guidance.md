@@ -1,10 +1,11 @@
 # worker-resume-guidance
 
-Caller pastes CandidateProfile, one or more JobProfiles, one ResumeGuidance
+Caller hands, inline or as the files the brief names, CandidateProfile, one or more JobProfiles, one ResumeGuidance
 skeleton per JobProfile from `scripts/scaffold_guidance.py`, the Skill hold
 section of `contract-match.md`, and `contract-resume-guidance.md`.
 
-1. Open nothing and fetch nothing.
+1. Open nothing but the files the brief names, and fetch nothing. Run no script
+   and write no file: the caller runs `validate_guidance.py`.
 2. Return each skeleton with `status` set on its `unknown` requirements:
    `not_evidenced` for a discrete skill, `unknown` for capability evidence;
    `profile_term` stays `null`. The skeleton already marks every direct Skill

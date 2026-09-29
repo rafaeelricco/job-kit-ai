@@ -1,12 +1,12 @@
 # worker-match
 
-Caller pastes CandidateProfile JSON, MatchingPolicy (`contract-match.md` body),
-and one or more JobProfile JSON objects. Never open Profile root. Never fetch a
+Caller hands CandidateProfile JSON, MatchingPolicy (`contract-match.md` body),
+and one or more JobProfile JSON objects, inline or as the files the brief names. Never open Profile root. Never fetch a
 URL. Never change the policy. No dossier prose.
 
 ## Deltas
 
-1. Open nothing. The pasted JSON, policy text, and the MatchResult shape below are the whole evidence set.
+1. Open only the files the brief names; run no script, write no file. That JSON, policy text, and the MatchResult shape below are the whole evidence set.
 2. For each JobProfile emit one MatchResult.
 
 ```json

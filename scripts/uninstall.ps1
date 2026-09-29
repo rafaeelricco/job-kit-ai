@@ -286,6 +286,19 @@ function Uninstall-Aside {
   Write-Host "Uninstall completed for $destRoot"
 }
 
+# New-PlanRowWorkerAgentRemoval
+# I remove copy | N not kit-owned | N not installed.
+function New-PlanRowWorkerAgentRemoval {
+  $dest = Get-WorkerAgentDest
+  if (Test-WorkerAgentMarked $dest) {
+    return (New-PlanRow 'I' 'remove copy' $dest)
+  }
+  if ((Test-Path -LiteralPath $dest) -or (Test-ReparsePoint $dest)) {
+    return (New-PlanRow 'N' 'not kit-owned' $dest)
+  }
+  return (New-PlanRow 'N' 'not installed' $dest)
+}
+
 function Get-PlanRowsAgents {
   $rows = New-Object System.Collections.Generic.List[object]
   try {
@@ -318,6 +331,9 @@ function Get-PlanRowsAgents {
     foreach ($name in @(Get-AgentsNamesForRoot $root $script:RepoRoot)) {
       $row = New-UninstallSkillRow (Get-SkillDest $root $name) $name 'current'
       if ($row) { $rows.Add($row) | Out-Null }
+    }
+    if ($target -eq 'claude') {
+      $rows.Add((New-PlanRowWorkerAgentRemoval)) | Out-Null
     }
   }
   $legacyRoot = Join-Path $script:KitHome '.codex\skills'
@@ -529,6 +545,9 @@ function Uninstall-Agents {
     Write-Host "== $label ($destRoot) =="
     try {
       Uninstall-SkillsFrom $destRoot $script:RepoRoot @(Get-AgentsNamesForRoot $destRoot $script:RepoRoot)
+      if ($target -eq 'claude') {
+        Remove-WorkerAgent
+      }
     } catch {
       Write-KitDie $_.Exception.Message
     }

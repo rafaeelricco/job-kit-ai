@@ -22,7 +22,7 @@ import { controller as ai_disconnect } from "@be/domain/ai/command/disconnect"
 import { controller as ai_setPreferences } from "@be/domain/ai/command/setPreferences"
 import { controller as ai_query_setup } from "@be/domain/ai/query/getSetup"
 import { controller as aiSetupsProjection } from "@be/domain/ai/projection/aiSetups"
-import { testProviderRouter } from "@be/app/ai/testProvider"
+import { testProviderRouter } from "@tests/support/test-provider/router"
 import { createEngineProxy } from "@be/app/engine"
 import {
   GOOGLE_START_PATH,
@@ -159,7 +159,7 @@ function createApp(dependencies: Dependencies): express.Express {
   app.use(noStore)
   app.use("/api/dev/engine", createEngineProxy())
   // Only with AI_TEST_ADAPTER=on (refused in production): the fake provider the test adapter's routes open in a new tab.
-  dependencies.ai.fakeProvider.map((fake) => app.use("/api/dev/test-provider", testProviderRouter(fake, env.APP_URL)))
+  dependencies.ai.fakeProvider.map((fake) => app.use("/api/dev/test-provider", testProviderRouter(fake)))
   mountProjection(app, dependencies)
   app.use(express.json())
   mountApi(app, dependencies)

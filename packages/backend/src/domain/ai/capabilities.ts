@@ -4,6 +4,8 @@ export {
   schema_Preferences,
   defaultPreferences,
   checkPreferences,
+  maskAccount,
+  billingLabel,
   type Model,
   type Capabilities,
   type Preferences,
@@ -14,7 +16,7 @@ import * as s from "@lib/json/schema"
 
 import { type Result, Success, Failure } from "@lib/result"
 
-import { schema_Effort, type Effort } from "@be/domain/ai/routes"
+import { schema_Effort, type Effort, type Provider, type Route } from "@be/domain/ai/routes"
 
 /** Client-safe: this file (and everything it imports) never reaches pg, mongo, express, node:crypto, or `@be/app/*`. */
 
@@ -61,4 +63,26 @@ function checkPreferences(caps: Capabilities, p: Preferences): Result<Preference
   if (!model.usable) return Failure("model_unusable")
   if (!model.efforts.includes(p.effort)) return Failure("effort_unsupported")
   return Success(p)
+}
+
+/** `"tester@example.test"` → `"t•••@example.test"`. */
+function maskAccount(account: string): string {
+  const at = account.indexOf("@")
+  if (at <= 0) return "•••"
+  return `${account.slice(0, 1)}•••${account.slice(at)}`
+}
+
+const API_KEY_BILLING: Record<Provider, string> = {
+  anthropic: "Your Anthropic API account",
+  xai: "Your xAI API account",
+}
+
+const SUBSCRIPTION_BILLING: Record<Provider, string> = {
+  anthropic: "Your Claude subscription",
+  xai: "Your xAI account",
+}
+
+/** Whose bill a connection runs on: an API key bills the API account, a sign-in the subscription. Total over every route. */
+function billingLabel(route: Route): string {
+  return route.method === "api_key" ? API_KEY_BILLING[route.provider] : SUBSCRIPTION_BILLING[route.provider]
 }

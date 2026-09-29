@@ -14,7 +14,7 @@ import { result, rejection } from "@tests/support/future"
 import { provisionUser } from "@be/domain/auth/provisionUser"
 import { Workspace } from "@be/domain/workspace/aggregate/workspace"
 import { routeViews } from "@be/domain/ai/routes"
-import { FakeProvider } from "@be/app/ai/testAdapter"
+import { FakeProvider } from "@tests/support/test-provider/adapter"
 
 import { controller as startAuth } from "@be/domain/ai/command/startAuthorization"
 import { controller as advanceAuth } from "@be/domain/ai/command/advanceAuthorization"
@@ -46,7 +46,7 @@ const statusOf = (response: unknown): string => JSON.stringify(response)
 
 async function connectKey(ctx: Ctx, key: string) {
   const started = await result(
-    startAuth.handler({ ...ctx, payload: { provider: "openai", method: "api_key", purpose: "initial" } })
+    startAuth.handler({ ...ctx, payload: { provider: "xai", method: "api_key", purpose: "initial" } })
   )
   return result(
     advanceAuth.handler({ ...ctx, payload: { attemptId: started.attemptId, step: { kind: "secret", secret: key } } })
@@ -134,7 +134,7 @@ describe("AI readiness", () => {
     const { ctx } = await signedIn(db, ai)
 
     const reconnectNothing = await rejection(
-      startAuth.handler({ ...ctx, payload: { provider: "openai", method: "api_key", purpose: "reconnect" } })
+      startAuth.handler({ ...ctx, payload: { provider: "xai", method: "api_key", purpose: "reconnect" } })
     )
     assert.match(statusOf(reconnectNothing), /"status":409/)
 

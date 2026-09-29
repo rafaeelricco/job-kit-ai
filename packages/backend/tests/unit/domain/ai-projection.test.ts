@@ -88,7 +88,7 @@ async function seedActiveConnection(h: ReturnType<typeof projectionsHarness>) {
       role: "active",
       connection: {
         connectionId,
-        provider: "openai",
+        provider: "xai",
         method: "device",
         accountId: "hash-1",
         credentialRef,
@@ -129,7 +129,7 @@ describe("AI setups projection", () => {
         type: AiAuthorizationStarted.type,
         aggregateId: workspaceId,
         attemptId,
-        provider: "openai",
+        provider: "xai",
         method: "device",
         purpose: "initial",
         expiresAt: new POSIX(5000),
@@ -146,7 +146,7 @@ describe("AI setups projection", () => {
         role: "active",
         connection: {
           connectionId,
-          provider: "openai",
+          provider: "xai",
           method: "device",
           accountId: "hash-1",
           credentialRef: Id.random<"AiSecret">(),
@@ -255,7 +255,7 @@ describe("AI setups projection", () => {
         role: "active",
         connection: {
           connectionId,
-          provider: "openai",
+          provider: "xai",
           method: "device",
           accountId: "hash-1",
           credentialRef: Id.random<"AiSecret">(),
