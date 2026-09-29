@@ -17,7 +17,7 @@ Brief every subagent with the PR title, description, head SHA, review tree path,
 and diff. Subagents have full tool access: tell them to check claims by reading
 and running code instead of guessing, and never to commit or push. Scratch files
 go under `$SCRATCH`, which is `${RUNNER_TEMP:-${TMPDIR:-/tmp}}`, never inside a
-checkout, except the prover test files step 5 names. Agents never call a
+checkout. Agents never call a
 server, database, or API they did not start themselves: a local dev stack or a
 remote service holds someone's data. Stay in-process, or start a throwaway
 instance on a random port and remove it afterwards.
@@ -54,8 +54,7 @@ git checkout -q --detach <head sha>
 ```
 
 Then run `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile` once
-at the repo root: `packages/*` (frontend, backend, lib) is one pnpm workspace
-with one lockfile. In CI add `--store-dir "$SCRATCH/pnpm-store"`: the runner's default
+at the repo root, for pyright. In CI add `--store-dir "$SCRATCH/pnpm-store"`: the runner's default
 store is read-only to Claude's commands.
 
 Review rules come from the base branch, because the PR can edit them. Fetch it
@@ -82,9 +81,8 @@ In one message, launch in the foreground:
   each check's output.
 - **Rules** (two sonnet agents, changed files split between them): CLAUDE.md
   compliance. A rule applies only under its CLAUDE.md's directory. Quote it.
-- **Bugs** (one opus agent per touched area: `packages/backend/src/app`,
-  `packages/backend/src/domain`, `packages/backend/src/lib`, `packages/frontend/src`, everything else): read each
-  changed function's callers and callees.
+- **Bugs** (one opus agent per touched area: `skill/`, `scripts/`, everything
+  else): read each changed function's callers and callees.
 - **Lifecycle** (one opus agent, whole diff): security and auth, cleanup on
   failure and cancellation, Future laziness and double execution, concurrency.
 
@@ -107,13 +105,7 @@ raised it. It shows the bug fires on the PR head, or that it does not.
 
 - **Bugs**: write a throwaway test or script that drives the trigger through the
   real callers, run it, and keep the command and the output lines that show the
-  failure. For the server, create
-  `packages/backend/tests/unit/pr-review-proof-<cluster>.test.ts` and run
-  `pnpm vitest run tests/unit/pr-review-proof-<cluster>.test.ts` in `packages/backend/`.
-  When the proof needs a database, start only that service with Docker
-  on a random host port, since provers run in parallel
-  (`docker run -d --rm -p 127.0.0.1::5432 -e POSTGRES_PASSWORD=proof postgres:16.4`,
-  then `docker port <id> 5432`).
+  failure.
   When it must change source (fault injection, a fix check), work in its own
   clone, never in the shared review tree: step 2's commands with
   `"$SCRATCH/pr-review-N"` as the source and `"$SCRATCH/pr-review-N-<cluster>"`
@@ -212,6 +204,5 @@ reproduced it, and give every sentence one of those four jobs.
 check it ran; then its `NOT RUN` lines as prose, dropping any stage a proof
 ran; then `{N} candidates could not be reproduced and were not posted.` when
 N > 0.
-Examples: "All 107 server tests, lint, typecheck, and build passed. Docker
-integration and mutation tests were not run." and "`scripts/test.sh --fast` and
-`pnpm typecheck:release` passed. The mutation stage was not run."
+Example: "`scripts/test.sh --fast` and `pnpm typecheck:release` passed. The
+mutation stage was not run."
