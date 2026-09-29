@@ -13,7 +13,14 @@ bind → profile → candidates → filter₁ → extract → filter₂ → matc
 report ◄─ advise ◄─ select ◄─ order ◄─ validate ◄──────────────┘
 ```
 
-Fan-out only on extract, match, validate, and advise. Same `state.candidate` + same policy on every worker. Batch ~10 when Runtime=workers; else inline sequential.
+Fan-out only on extract, match, validate, and advise. Same `state.candidate` + same policy on every worker that takes them. Batch ~10 when Runtime=workers; else inline sequential. A node with 3 rows or fewer
+runs inline even when Runtime=workers — except validate, which spawns whenever it
+can so the review stays independent of the pass that wrote the row.
+Hand each worker one slice file in the run directory — exactly its batch, plus
+`state.candidate` for match, validate, and advise — and the paths of the worker and contract files it obeys. Never paste JSON
+into a brief. Spawn each worker as agent type `job-kit-worker` when the harness
+offers it, else the default type. A worker runs no script and writes no file; main
+runs every script.
 
 ## bind
 
@@ -42,6 +49,11 @@ leftover tokens, or two selectors → stop.
 3. `--all`, or `--exclude` with no selector → store, every parseable dossier except `dropped` and dead-by-log, then drop `--exclude` statuses.
 4. Empty or `--new` → store, frontmatter `status:` = `new`, not dead-by-log, then drop `--exclude` statuses.
 
+Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` (same launcher as
+**score**) with `{"root", "select", "exclude"}`: its `filter` rows are the Posting facts
+filter₁ reads, and its `gaps` go to `state.gaps`. A rule 2 dossier that lands in `gaps`
+is unparseable: stop and name it.
+
 Zero → `No dossiers to match.` and end.
 `--posting`: extract next, then filter₁ on the JobProfile (no Posting facts table). Store sources keep the graph order below.
 
@@ -51,7 +63,7 @@ Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `ti
 
 ## extract
 
-Load `./references/workers/worker-extract.md`. Paste per that file, including its JobProfile JSON block. Write `state.jobs[]`. Malformed → `state.gaps`.
+Load `./references/workers/worker-extract.md`. Store sources: rerun `job-store/scripts/slice_store.py` with `skip` = the rows filter₁ blocked, `out` = the run directory, and `batch` = 10, and hand each extract worker one batch file. `--posting`: hand over the supplied body. Write `state.jobs[]`. Malformed → `state.gaps`.
 
 ## filter₂
 
@@ -90,9 +102,10 @@ A row carrying `score_error` → `state.gaps` and drop that row; a row carrying
 
 ## validate
 
-Load `./references/workers/worker-validate.md`. Rows with `match_score >= 75` or `confidence < 0.7`
-after score, or that carry a `match_uncertain` list, are selected once. Parallelize dossiers.
-Each worker pastes the MatchResult currently in `state.matches`. `APPROVED` leaves the row; `CORRECTION_REQUIRED` replaces it, and a replaced row goes back through **score** before order.
+Load `./references/workers/worker-validate.md`. Rows with `match_score >= 75`, rows that carry a
+`match_uncertain` list, and rows with `confidence < 0.7` and `match_score >= 60` after score are
+selected once. Batch them like every other fan-out.
+Each worker's slice carries the MatchResult currently in `state.matches`. `APPROVED` leaves the row; `CORRECTION_REQUIRED` replaces it, and a replaced row goes back through **score** before order.
 Malformed or failed validate output → `state.gaps` and drop the row.
 Non-reviewed rows stay as match wrote them.
 
@@ -104,7 +117,8 @@ for equal scores.
 ## select
 
 Apply `--top <n>` after validation and ordering. With no modifier, retain every
-valid match. Only retained rows proceed to advise.
+valid match. Only retained rows at or above `possible_match` proceed to advise;
+the rest are reported without guidance.
 
 ## advise
 
@@ -120,7 +134,7 @@ Validate the batch with `./scripts/validate_guidance.py`. Add valid rows to
 ## report
 
 Use the prompt scaffold when supplied. Otherwise retain title, company, URL,
-and first strength, then add held requirements, requirements not evidenced by
+and first strength, then, for rows advise covered, add held requirements, requirements not evidenced by
 the thin match profile, unresolved requirements, and exact priority roles.
 Invalid guidance prints `Resume guidance unavailable`; raw worker/state JSON
 stays hidden. End.

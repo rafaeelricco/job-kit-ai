@@ -17,7 +17,9 @@ Refs: `./references/flows/flow-preflight.md`, `./references/flows/flow-search.md
 `./references/flows/flow-rank.md`, `./references/flows/flow-match-gate.md`.
 
 List only. Never apply, message, or connect.
-Write-set: `scout/jobs/*.md` + lock furniture per job-store `contract-persistence.md`.
+Write-set: `scout/jobs/*.md` + lock furniture per job-store `contract-persistence.md`,
+plus job-match's run-scoped temp directory outside Profile root during the match gate,
+removed before this run ends.
 
 1. Read `./references/flows/flow-preflight.md`; obey end-to-end.
 2. Read `./references/flows/flow-search.md`; obey end-to-end (includes merge). Under `--refresh` skip this step.

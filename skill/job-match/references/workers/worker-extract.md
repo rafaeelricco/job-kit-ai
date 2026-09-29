@@ -1,12 +1,12 @@
 # worker-extract
 
-Caller pastes one or more excerpts: dossier slice (Posting facts + `## The role` +
+Caller hands one or more excerpts, inline or in the one slice file the brief names: dossier slice (Posting facts + `## The role` +
 frontmatter `company` / `title` / `url` / `score`) or one supplied posting body
 already in the brief. Never open Profile root. Never fetch a URL. Never score.
 
 ## Deltas
 
-1. Open nothing. The pasted excerpts and the JobProfile shape below are the whole evidence set.
+1. Open only the files the brief names; run no script, write no file. Those excerpts and the JobProfile shape below are the whole evidence set.
 2. For each excerpt emit one JobProfile. Facts `—` → `null` / `[]`. A token not in the excerpt is absent.
    `languages_required` / `languages_preferred` items are `{name, level}` (`level` null when unprinted).
 

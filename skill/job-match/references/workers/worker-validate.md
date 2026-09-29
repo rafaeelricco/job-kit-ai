@@ -1,7 +1,7 @@
 # worker-validate
 
-Caller pastes CandidateProfile + JobProfile + MatchResult + MatchingPolicy.
-Open nothing. Never change the policy.
+Caller hands CandidateProfile + JobProfile + MatchResult + MatchingPolicy, inline
+or as the files the brief names. Open nothing else; run no script, write no file. Never change the policy.
 
 Output per `url`:
 

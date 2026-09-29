@@ -1,0 +1,10 @@
+{
+  "script": "skill/job-store/scripts/slice_store.py",
+  "stdin": {
+    "select": "new"
+  },
+  "exit": 1,
+  "stdout": {
+    "slice_error": "root must be an absolute path"
+  }
+}
