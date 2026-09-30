@@ -37,7 +37,7 @@ synonym for a concept already on this table.
 | `--status <s>[,<s>…]`     | one token, comma-joined                        | keep only these statuses                     |
 | `--exclude <s>[,<s>…]`    | one token, comma-joined                        | drop these statuses                          |
 | `--since <n>d` or `<iso>` | one token                                      | earliest date considered                     |
-| `--from <name>`           | a job-\* skill name                            | consume that skill's last output as input    |
+| `--from <name>`           | exactly the value the skill's own flow names   | consume that skill's last output as input    |
 | `--engine <name>`         | one token                                      | scoring engine other than the default worker |
 | `--channel <c>`           | `ats`, `dm_request`, `direct_email`, `founder` | keep only that `channel`                     |
 | `--host <family>`         | `ats`                                          | keep only hosts of that family               |
