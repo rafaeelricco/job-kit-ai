@@ -34,11 +34,11 @@ One or more files → those dossiers only, any status but `dropped`. A skill tha
 `--match <text>` → every parseable dossier except `dropped` whose `company` or
 `title` contains that text, case-insensitive. It is a filter, never a target: a
 bare company or title token is a leftover token and stops.
-`--status` replaces the default set. `--since` sets the harvest window.
+`--status` replaces the default set with the named statuses, except `dropped`. `--since` sets the harvest window.
 
 Per candidate: `company`, `title`, `url`, `status`; Application log bottom-up → latest `applied via` date, every `(account_uid, thread_id, outcome)`, any legacy naked `thread:{id}`. Filename is not an id.
 
-Print `{n} candidates · {default | named | all | match}`. Zero: `No open applications to match mail against.` and end.
+Print `{n} candidates · {default | named | all | match | status}`, naming the selector that bound the set and `status` only when `--status` bound it alone. Zero: `No open applications to match mail against.` and end.
 
 ## Harvest
 
