@@ -7,8 +7,9 @@ Print `Profile root:`, `Deck:` (`data/search_packs.yaml`), `Runtime: workers` if
 
 Enabled packs empty and no URL token → STOP; enable via `/job-profile`. `enabled: false` is unlisted.
 Parse tokens per `job-store/references/contracts/contract-tokens.md`. Verbs are
-`search` (default) and `refresh`; a deck pack whose `id` is `search` or
-`refresh` is unreachable — name it and stop. Remaining tokens bind the run set
+`search` (default) and `refresh`. A first token spelled `search` or `refresh` is
+the verb, so a deck pack with that `id` is reachable only through `--all` — name
+it and go on. Remaining tokens bind the run set
 (enabled deck `id:`). A token that
 is an http(s) URL or bare domain binds an ad-hoc pack instead: `source` = its
 host, `id` = its host (`-2`, `-3` on collision), `entry` = the URL (`https://`

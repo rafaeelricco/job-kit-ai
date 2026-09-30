@@ -36,9 +36,11 @@ qualifies, stop and name what is missing.
 
 Parse tokens per `job-store/references/contracts/contract-tokens.md`. This skill
 declares no verb. Selectors are `<file>` | `<url>` | `--new`; `<file>` and
-`<url>` may repeat with no filename twice, and `--new` stands alone, never
-beside a `<file>` or a `<url>`. `--unattended` takes no value. `--cv-sha256
-<hex>` and `--prepared-at <iso-Z>` are this skill's own,
+`<url>` may repeat, and `--new` stands alone, never beside a `<file>` or a
+`<url>`. Two selectors that resolve to the same posting — the same filename, or
+URLs that normalize equal per `job-store/references/schemas/schema-dossier.md`
+"URL normalize" — are one queue slot, not two. `--unattended` takes no value.
+`--cv-sha256 <hex>` and `--prepared-at <iso-Z>` are this skill's own,
 each consuming one value token; both must appear together and only with
 `--unattended` (digest `send` carries them). A lone one of the pair, or either
 without `--unattended` → stop.
