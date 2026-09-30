@@ -18,7 +18,7 @@ Empty → list as `N. {id}`; last line `{N+1}. Search in all` (`--all`). Wait.
 Any token → no wait. Run set: `--all` → every enabled pack, else the named ids
 (file order, unique by `id`), then each ad-hoc pack in token order (unique by
 `entry` among ad-hoc packs). Two deck packs may share an `entry`.
-`--all` beside a `<pack-id>` or a URL, an unknown id, or a named disabled id → stop.
+`--all` beside a `<pack-id>`, an unknown id, or a named disabled id → stop.
 `refresh` takes no target and no flag but `--top` (any other beside it → stop). It binds no pack and skips search: the refresh set is every dossier in `scout/jobs/` whose frontmatter `status:` is `new` and whose latest posting-state line is not a closure (`job-store/references/flows/flow-read.md`), oldest `last_seen` first, capped by `--top`, default 40. Print `Refresh: {n} of {total}` and enter extract with those rows, each carrying its stored frontmatter and Provenance as its search columns. Fold each row's stored `source` through `job-store/scripts/normalize_source.py` before it becomes a search column. Host-shaped stored tokens (contain `.`) go in `ids` as well as `sources`, so a legal ad-hoc host outranks `ALIASES`; otherwise `ids` is `[]` and a drifted non-host spelling still folds. A refresh must not revive a retired non-host spelling.
 Skip-wait → print `Packs: {id}, …` in run order.
 
