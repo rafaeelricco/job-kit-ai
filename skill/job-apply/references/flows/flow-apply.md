@@ -35,9 +35,10 @@ file, and hold a logged-in session. A text fetcher is not a driver. If none
 qualifies, stop and name what is missing.
 
 Parse tokens per `job-store/references/contracts/contract-tokens.md`. This skill
-declares no verb. Selectors are `<file>` | `<url>` | `--new`; at most one, and
-`--new` never combines with a `<file>` or a `<url>`. `--unattended` takes no
-value. `--cv-sha256 <hex>` and `--prepared-at <iso-Z>` are this skill's own,
+declares no verb. Selectors are `<file>` | `<url>` | `--new`; `<file>` and
+`<url>` may repeat with no filename twice, and `--new` stands alone, never
+beside a `<file>` or a `<url>`. `--unattended` takes no value. `--cv-sha256
+<hex>` and `--prepared-at <iso-Z>` are this skill's own,
 each consuming one value token; both must appear together and only with
 `--unattended` (digest `send` carries them). A lone one of the pair, or either
 without `--unattended` → stop.

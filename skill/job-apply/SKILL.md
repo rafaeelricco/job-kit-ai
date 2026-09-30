@@ -1,7 +1,7 @@
 ---
 name: job-apply
 description: "Apply to scout-store postings with no operator in the loop: tailor the CV, fill the form from profile Facts, clear captchas and mail codes, submit and record. Use for /job-apply, apply to this posting, or confirming sent/submitted/applied. Not for scoring (job-match) or searching (job-scout)."
-argument-hint: "[<file> | <url> | --new | --unattended | --cv-sha256 <hex> | --prepared-at <iso-Z> | <auto-detect>]"
+argument-hint: "[<file>… | <url>… | --new | --unattended | --cv-sha256 <hex> | --prepared-at <iso-Z> | <auto-detect>]"
 ---
 
 # Job application
