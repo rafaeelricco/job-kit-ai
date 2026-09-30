@@ -17,8 +17,9 @@ token test.
   what the skill does, only what it acts on. Exact match always: never resolve a
   target by company+title, because one company posts many roles.
 - **Flag** — every remaining token. One that takes a value consumes exactly one
-  following token; `--flag=value` is not a form. A flag is legal with every
-  selector unless the skill's own flow refuses it.
+  following token; a double-quoted run of words is one token and the quotes are
+  delimiters, not part of the value, and `--flag=value` is not a form. A flag is
+  legal with every selector unless the skill's own flow refuses it.
 
 Prose around the tokens is context, not tokens: read it for the targets it
 names, ignore the rest.
