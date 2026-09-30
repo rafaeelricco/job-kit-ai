@@ -42,8 +42,13 @@ Print `{n} candidates · {default | named | all | match}`. Zero: `No open applic
 
 ## Harvest
 
-Window: `--since` when parsed, else `after:{earliest candidate applied date}`,
-else `newer_than:21d`.
+Window, per query: `after:{bound}`. For a per-candidate query `{bound}` is the
+**later** of `--since` and that candidate's latest `applied via` date; for the
+intent sweep it is the later of `--since` and the earliest candidate `applied
+via` date. With neither, `newer_than:21d`. `--since <n>d` resolves to the day
+`n` days before today, `<iso>` to that day — always an `after:` bound, never a
+bare search term. `--since` never widens a candidate's window past its own
+application date.
 
 Queries, in order:
 
