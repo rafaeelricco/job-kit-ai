@@ -63,8 +63,8 @@ Run these skills in your agent:
 5. `/job-inbox` — check replies from a session with Gmail access.
 
 **`/job-apply` submits without pausing for approval.** Use `/job-prep` to prepare
-application packages without submitting. Scout finds and records jobs; inbox
-reads mail and updates matching records.
+application packages without submitting, and `/job-prep digest` to list what is
+ready. Scout finds and records jobs; inbox reads mail and updates matching records.
 
 Your profile defaults to `${XDG_CONFIG_HOME:-$HOME/.config}/job-kit`:
 `data/` holds your facts, `cv/` holds base resumes, and `scout/` holds jobs and
@@ -74,7 +74,7 @@ Aside needs filesystem access to that directory.
 Resume tailoring requires a base CV PDF and its matching `.tex` source under
 `cv/`. Use `/job-profile cvs` to select the base or disable per-vacancy tailoring.
 
-`/job-match --typesafe` fills fit scores with TypeSafe's Jev model instead of
+`/job-match --engine typesafe` fills fit scores with TypeSafe's Jev model instead of
 the LLM match worker; high or low-confidence rows are still re-checked by the
 validate worker. Set `TYPESAFE_API_KEY` (from
 https://console.typesafe.ai/settings/keys) first. It sends each job and your

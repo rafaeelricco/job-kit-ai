@@ -6,17 +6,20 @@ Print `Profile root:`, `Deck:` (`data/search_packs.yaml`), `Runtime: workers` if
 `location_scope` is `worldwide` or `listed`. `listed` needs a named location (not only `Anywhere`).
 
 Enabled packs empty and no URL token → STOP; enable via `/job-profile`. `enabled: false` is unlisted.
-Tokens after `/job-scout` bind the run set (enabled deck `id:`). A token that
+Parse tokens per `job-store/references/contracts/contract-tokens.md`. Verbs are
+`search` (default) and `refresh`; a deck pack whose `id` is `search` or
+`refresh` is unreachable — name it and stop. Remaining tokens bind the run set
+(enabled deck `id:`). A token that
 is an http(s) URL or bare domain binds an ad-hoc pack instead: `source` = its
 host, `id` = its host (`-2`, `-3` on collision), `entry` = the URL (`https://`
 assumed when bare), formulations = `[role]` — under every deck law (ATS-root,
 filters, caps, defect log).
-Empty → list as `N. {id}`; last line `{N+1}. Search in all`. Wait.
-Any token → no wait. Run set: `all` → every enabled pack, else the named ids
+Empty → list as `N. {id}`; last line `{N+1}. Search in all` (`--all`). Wait.
+Any token → no wait. Run set: `--all` → every enabled pack, else the named ids
 (file order, unique by `id`), then each ad-hoc pack in token order (unique by
 `entry` among ad-hoc packs). Two deck packs may share an `entry`.
-Unknown `--` flag, leftover non-URL token, `all` plus a non-URL token, unknown id, or named disabled id → stop.
-`--refresh` is the one known flag and takes no other token (any beside it → stop). It binds no pack and skips search: the refresh set is every dossier in `scout/jobs/` whose frontmatter `status:` is `new` and whose latest posting-state line is not a closure (`job-store/references/flows/flow-read.md`), oldest `last_seen` first, capped at 40. Print `Refresh: {n} of {total}` and enter extract with those rows, each carrying its stored frontmatter and Provenance as its search columns. Fold each row's stored `source` through `job-store/scripts/normalize_source.py` before it becomes a search column. Host-shaped stored tokens (contain `.`) go in `ids` as well as `sources`, so a legal ad-hoc host outranks `ALIASES`; otherwise `ids` is `[]` and a drifted non-host spelling still folds. A refresh must not revive a retired non-host spelling.
+`--all` beside a `<pack-id>` or a URL, an unknown id, or a named disabled id → stop.
+`refresh` takes no target and no flag but `--top` (any other beside it → stop). It binds no pack and skips search: the refresh set is every dossier in `scout/jobs/` whose frontmatter `status:` is `new` and whose latest posting-state line is not a closure (`job-store/references/flows/flow-read.md`), oldest `last_seen` first, capped by `--top`, default 40. Print `Refresh: {n} of {total}` and enter extract with those rows, each carrying its stored frontmatter and Provenance as its search columns. Fold each row's stored `source` through `job-store/scripts/normalize_source.py` before it becomes a search column. Host-shaped stored tokens (contain `.`) go in `ids` as well as `sources`, so a legal ad-hoc host outranks `ALIASES`; otherwise `ids` is `[]` and a drifted non-host spelling still folds. A refresh must not revive a retired non-host spelling.
 Skip-wait → print `Packs: {id}, …` in run order.
 
 Print `### Profile card` (role · skills · industries · languages) and `### Constraints` (those keys plus salary_range_usd, work auth, employment_routes, relocation) — values per `job-profile` flow-show Blocks; scout adds no fields and prints no Packs/CV blocks. Pass both into every search.

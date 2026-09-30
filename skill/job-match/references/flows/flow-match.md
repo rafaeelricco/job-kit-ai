@@ -32,16 +32,13 @@ Derive `state.candidate` per schema-state CandidateProfile. Unreadable required 
 
 ## candidates
 
-Parse tokens. At most one selector: `--new` | `--all` | `--posting` | one
-`scout/jobs/` filename. `--exclude <status>[,<status>…]` is a modifier; it
-consumes the next token. `--top <n>` consumes one positive integer and is legal
-with every selector; absent means no cap. `--typesafe` takes no value, is legal
-with every selector, and switches **match** to TypeSafe; with `TYPESAFE_API_KEY`
-unset or empty, stop and name it. Status vocabulary =
-`job-store/references/flows/flow-read.md` frontmatter `status:`. Missing, non-integer,
-non-positive, or repeated `--top` values, or a repeated `--typesafe` → stop. Unknown status, `--exclude`
-with `--posting` or a dossier, an unmatched `.md` filename, unknown flags,
-leftover tokens, or two selectors → stop.
+Parse tokens per `job-store/references/contracts/contract-tokens.md`. This skill
+declares no verb. At most one selector: `--new` | `--all` | `--posting` | one
+`scout/jobs/` filename. `--exclude` and `--top` are legal with every selector;
+absent `--top` means no cap. `--engine typesafe` switches **match** to TypeSafe;
+with `TYPESAFE_API_KEY` unset or empty, stop and name it. An unknown status,
+`--exclude` with `--posting` or a dossier, or an `--engine` value other than
+`typesafe` → stop.
 
 1. `--posting`, or no selector and the message already holds a posting body (role text or structured facts — not a lone company/title token) → one candidate: that body. Never fetch. No body → stop.
 2. A dossier filename → that exact readable, parseable file under `scout/jobs/`.
@@ -71,7 +68,7 @@ Main. Contract HF8 on JobProfile + `state.candidate`. Hit → move to `state.blo
 
 ## match
 
-`--typesafe` → run `./scripts/typesafe_match.py` (same launcher as **score**)
+`--engine typesafe` → run `./scripts/typesafe_match.py` (same launcher as **score**)
 instead of the worker, with `{"candidate": state.candidate, "jobs": state.jobs}`
 on stdin. It sends that CandidateProfile and each JobProfile to
 `api.typesafe.ai` and needs `TYPESAFE_API_KEY`. Non-zero exit → print its

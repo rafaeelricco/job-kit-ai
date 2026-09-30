@@ -1,7 +1,7 @@
 ---
 name: job-match
 description: "Deep-rank scout dossiers, score one named dossier, or score one posting already in the conversation against MatchingPolicy. Returns a read-only fit report plus source-grounded resume guidance for displayed jobs. Not for searching (job-scout), printing scores as stored (job-list), or editing or generating a CV (job-resume-refine)."
-argument-hint: "[--new | --all | --posting | --exclude <status>[,status…] | --top <n> | --typesafe | <dossier> | <auto-detect>]"
+argument-hint: "[<dossier> | --new | --all | --posting | --exclude <status>[,…] | --top <n> | --engine typesafe | <auto-detect>]"
 ---
 
 # Job match

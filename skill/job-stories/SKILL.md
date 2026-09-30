@@ -1,6 +1,7 @@
 ---
 name: job-stories
 description: "Write the interview story deck, or render it as a vetting script or S.T.A.R.T. bullets. Use when the user runs /job-stories or /job-pitch, asks to add a story, which stories need numbers, a 90-second script, or work-experience bullets. Not for drafting an application (job-apply)."
+argument-hint: "[add | audit | script | experience] [<slug>]"
 ---
 
 # Job stories
@@ -17,6 +18,8 @@ Writable here: `data/stories/*.md` and their `*.md.tmp` staging siblings during
 atomic rename. Every other path under Profile root is read-only in this skill.
 
 1. Read `./references/schemas/schema-story.md` now; field law for `add` and `audit`.
+   Parse tokens per `job-store/references/contracts/contract-tokens.md`: a verb
+   wins over a same-spelled story slug.
 2. `add`: obey `./references/flows/flow-author.md` end-to-end.
 3. `audit`: obey `./references/flows/flow-audit.md`. Read-only; never repairs.
 4. `script` / `experience`: read `./references/contracts/contract-say.md` now; it is

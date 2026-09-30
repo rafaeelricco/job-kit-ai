@@ -10,6 +10,7 @@ description: >
 
 # CAPTCHA solver
 
+Takes no token; it acts on whatever widget the attached page already shows.
 Requires an attached **browser-use** session. If `browser-use` is not loaded,
 read its `SKILL.md` now and follow it for connection; do not restate that
 skill here.

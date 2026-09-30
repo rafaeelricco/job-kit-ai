@@ -4,13 +4,14 @@ Load `./references/contracts/contract-refine.md` now.
 
 ## 1. Posting
 
-The argument is one posting, in one of three forms:
+Parse tokens per `job-store/references/contracts/contract-tokens.md`. This skill
+declares no verb and takes exactly one posting, in one of three forms:
 
-| argument               | posting is                                     | `{slug}`                    |
-| ---------------------- | ---------------------------------------------- | --------------------------- |
-| `scout/jobs/` filename | that dossier, tailored from its live `url`     | filename minus `.md`        |
-| a URL                  | the matching dossier, else the live page alone | that dossier's, else ad-hoc |
-| pasted ad text         | the text itself; nothing to open               | ad-hoc                      |
+| argument                       | posting is                                     | `{slug}`                    |
+| ------------------------------ | ---------------------------------------------- | --------------------------- |
+| `scout/jobs/` filename         | that dossier, tailored from its live `url`     | filename minus `.md`        |
+| a URL                          | the matching dossier, else the live page alone | that dossier's, else ad-hoc |
+| `--posting`, or pasted ad text | the text itself; nothing to open               | ad-hoc                      |
 
 Lookup obeys `job-store/references/schemas/schema-dossier.md` "URL normalize" and its
 Slug rule. Never company+title: one company posts many roles. Ad-hoc slug is

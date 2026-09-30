@@ -1,6 +1,7 @@
 ---
 name: job-profile
 description: "Create, register, or edit a job-search profile. Use when the user runs /job-profile, /job-profile-init, or /job-profile-me, asks to scaffold a profile, show search config, change positions or packs, or what is missing for scout. Not for finding jobs (job-scout)."
+argument-hint: "[show | gaps | init | register | set | packs | cvs | qa | refresh-card | fill] [<key> <value>…]"
 ---
 
 # Job profile

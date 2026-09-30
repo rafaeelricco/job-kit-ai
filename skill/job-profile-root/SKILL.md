@@ -5,7 +5,8 @@ description: "Print the absolute job-kit Profile root path. Read-only."
 
 # Job profile root
 
-Print the absolute path before returning. STOP if none. Do not invent a path.
+Takes no token. Print the absolute path before returning. STOP if none. Do not
+invent a path.
 
 **Probe** (all must pass): dir exists, readable, has `data/candidate.yaml` and `data/job_search.yaml`. Unreadable (sandbox `Operation not permitted`, missing path) → fail that candidate; next step.
 

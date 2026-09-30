@@ -26,23 +26,29 @@ Chained from `job-apply` flow-apply.md's queue-terminal step → print `Chained 
 Reader SSOT: `job-store/references/flows/flow-read.md`. Unparseable → Gap; keep going.
 The re-scan STOP in `job-store/references/contracts/contract-persistence.md` step 4 still binds under the lock.
 
-Tokens after `/job-inbox` bind the set.
+Parse tokens per `job-store/references/contracts/contract-tokens.md`. This skill
+declares no verb; its targets are `scout/jobs/` filenames.
 Default: `status:` ∈ `applied` | `interview` | `offer`.
-Named company, title, or one or more files → those dossiers only, any status but `dropped`. A skill that chains this one names files the same way; a caller that names none gets the default.
-Named `all` → every parseable dossier except `dropped`.
+One or more files → those dossiers only, any status but `dropped`. A skill that chains this one names files the same way; a caller that names none gets the default.
+`--all` → every parseable dossier except `dropped`.
+`--match <text>` → every parseable dossier except `dropped` whose `company` or
+`title` contains that text, case-insensitive. It is a filter, never a target: a
+bare company or title token is a leftover token and stops.
+`--status` replaces the default set. `--since` sets the harvest window.
 
 Per candidate: `company`, `title`, `url`, `status`; Application log bottom-up → latest `applied via` date, every `(account_uid, thread_id, outcome)`, any legacy naked `thread:{id}`. Filename is not an id.
 
-Print `{n} candidates · {default | named | all}`. Zero: `No open applications to match mail against.` and end.
+Print `{n} candidates · {default | named | all | match}`. Zero: `No open applications to match mail against.` and end.
 
 ## Harvest
 
-Window: `after:{earliest candidate applied date}`, else `newer_than:21d`.
+Window: `--since` when parsed, else `after:{earliest candidate applied date}`,
+else `newer_than:21d`.
 
 Queries, in order:
 
 1. Per candidate: `("{company}" OR from:{from_token})` + window. `{from_token}` = lowercase `company` with every non-alphanumeric removed (Gmail `-` is NOT).
-2. Operator named `all` only: intent sweep: `(interview OR "phone screen" OR "next steps" OR "not moving forward" OR "unfortunately" OR "offer letter" OR "application received")` + window.
+2. Operator named `--all` only: intent sweep: `(interview OR "phone screen" OR "next steps" OR "not moving forward" OR "unfortunately" OR "offer letter" OR "application received")` + window.
 
 Cap queries, not results. Paginate each per-candidate query until no further page. Page ceiling → candidate **truncated** — cannot report silent.
 
