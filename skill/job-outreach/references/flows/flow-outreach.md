@@ -194,20 +194,21 @@ Immediately before each send, `--dry-run` included:
    run's sends.
 2. Search the bound account's sent mail for this touch: for `first`, a message
    with this note's subject in the last 30 days, to anyone; otherwise a
-   message in the latest thread, To the first block's `> to:` address, dated
-   on a later calendar day than the latest sent line (for the multiplier,
-   after the dossier's earliest reply), whose id no `> message:` line on this
-   dossier records. A note the operator wrote by hand there counts too: the
-   skill does not send over it. Found → do
-   not send. Under `--dry-run`, name it under Gaps as `recovered` and write
+   message in any sent thread, logged or not, To the first block's `> to:`
+   address, dated on a later calendar day than the latest sent line (for the
+   multiplier, after the dossier's earliest reply), whose id no `> message:`
+   line on this dossier records. A note the operator wrote by hand there
+   counts too: the skill does not send over it. Found → do not send. Under
+   `--dry-run`, name it under Gaps as `recovered` and write
    nothing. Otherwise record it as sent with that message's date, id, and
    thread; its block takes `> to:`, `> subject:`, and the body lines from that
    message, not from this run's Contacts or draft. Name it under Gaps as
    `recovered`, with both addresses when its To is not this run's recipient.
 3. For `first`, when step 2 found nothing, also search the sent mail of the
-   last 30 days for a message whose subject ends in ` at {company}` as the
-   contract builds it, or any message to an address at the company domain.
-   Found → do not send, write nothing, and name it under Gaps as
+   last 30 days for a message whose subject, after its last standalone word
+   `at`, has this dossier's company key; any message to this run's recipient;
+   or any message to an address at the company domain. Found → do not send,
+   write nothing, and name it under Gaps as
    `company emailed`: an earlier note may have gone out without a record.
 
 `--dry-run` → print the recipient, subject, and body; count the note toward
