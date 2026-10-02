@@ -182,8 +182,9 @@ Immediately before each send, `--dry-run` included:
 2. Search the bound account's sent mail for this touch: for `first`, a message
    with this note's subject in the last 30 days, to anyone; otherwise a
    message in the latest thread dated after the latest sent line. Found → do
-   not send. Record it as sent with that message's date, id, and thread, and
-   name it under Gaps as `recovered`.
+   not send. Under `--dry-run`, name it under Gaps as `recovered` and write
+   nothing. Otherwise record it as sent with that message's date, id, and
+   thread, and name it under Gaps as `recovered`.
 
 `--dry-run` → print the recipient, subject, and body; count the note toward
 `--max`; skip the rest of Send and all of Record.
