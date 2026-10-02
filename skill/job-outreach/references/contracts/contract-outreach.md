@@ -29,7 +29,8 @@ overlaps the ad most, stated in one sentence with no number.
   `Re:`, no emoji.
 - Body, in this order:
   1. (verbatim) `Hi {first name},`. A role mailbox, or an address with no
-     name the page prints → `Hi {company} team,`.
+     name the page prints → `Hi {company} team,`, with each em dash in
+     `{company}` turned into a hyphen.
   2. Fit: one sentence that opens on their need, not on `I`, states the fit,
      and says the application is in.
   3. Proof: the carrying story's claim. An outcome number only where the
