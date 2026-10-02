@@ -541,6 +541,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             search,
         )
         self.assertIn("get new first", search)
+        self.assertIn("(3) every row of each `slug_lists` url", search)
+        self.assertIn("get new first, then the window", search)
         self.assertIn("there is no board-registry file", search)
         self.assertNotIn("`data/boards.yaml` is an optional seed", search)
         self.assertNotIn(
