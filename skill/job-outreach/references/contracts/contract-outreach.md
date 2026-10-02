@@ -1,15 +1,13 @@
 # Outreach contract
 
 How every note job-outreach sends is shaped. Pasted verbatim as `CONTRACT` to
-`job-humanize`, followed by the `### Number firewall`, `### Credit`, and
-`### Surface` subsections of the `## Voice law` in
-`job-apply/references/contracts/contract-prose.md`, and by its
-`## Forbidden claims`. Where those name slot 2, read Fit. The Subject and
-every line marked (verbatim) are verbatim: rewrite nothing on them.
+`job-humanize`, followed verbatim by `./contract-voice.md`. Where that names
+slot 2, read Fit; slot 6, the links and name lines. The Subject and every line
+marked (verbatim) are verbatim: rewrite nothing on them.
 
 ## Sources
 
-The `## Sources` of `job-apply/references/contracts/contract-prose.md`, plus:
+The `## Sources` of `./contract-voice.md`, plus:
 
 - the dossier `company`, `title`, and `## The role`;
 - one fact about the company's product or problem, printed by the ad or by a

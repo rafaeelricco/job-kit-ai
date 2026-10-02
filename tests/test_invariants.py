@@ -53,6 +53,19 @@ FLOW_MATCH_GATE: Path = (
     harness.SKILL / "job-scout" / "references" / "flows" / "flow-match-gate.md"
 )
 FLOW_PREP: Path = harness.SKILL / "job-prep" / "references" / "flows" / "flow-prep.md"
+CONTRACT_PROSE: Path = (
+    harness.SKILL / "job-apply" / "references" / "contracts" / "contract-prose.md"
+)
+CONTRACT_VOICE: Path = (
+    harness.SKILL / "job-outreach" / "references" / "contracts" / "contract-voice.md"
+)
+VOICE_SECTIONS: Tuple[str, ...] = (
+    "## Sources",
+    "### Number firewall",
+    "### Credit",
+    "### Surface",
+    "## Forbidden claims",
+)
 
 
 @dataclass(frozen=True)
@@ -169,6 +182,20 @@ def check_parse_contains(text: str, token: str) -> bool:
     }
     verdict = check_parse.check(text, expected)
     return not verdict["missing"]
+
+
+def markdown_section(path: Path, heading: str) -> str:
+    """Body under ``heading`` up to the next heading of the same or a higher level."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    level = len(heading.split(" ", 1)[0])
+    start = lines.index(heading) + 1
+    body = []
+    for line in lines[start:]:
+        marks = line.split(" ", 1)[0]
+        if marks and set(marks) == {"#"} and len(marks) <= level:
+            break
+        body.append(line)
+    return "\n".join(body).strip()
 
 
 def instruction_text(path: Path) -> str:
@@ -582,6 +609,18 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
     def test_dossier_validator_matches_readers(self):
         rule = FLOW_READ.read_text(encoding="utf-8").partition("Required keys:")[2].partition(".")[0]
         self.assertEqual(tuple(re.findall(r"`([^`]+)`", rule)), validate_dossier.KEYS)
+
+
+class OutreachVoiceTests(unittest.TestCase):
+    """job-outreach ships on installs without job-apply, so it carries a copy of the voice rules."""
+
+    def test_voice_sections_match_prose_contract(self):
+        for heading in VOICE_SECTIONS:
+            with self.subTest(heading=heading):
+                self.assertEqual(
+                    markdown_section(CONTRACT_VOICE, heading),
+                    markdown_section(CONTRACT_PROSE, heading),
+                )
 
 
 if __name__ == "__main__":

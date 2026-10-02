@@ -154,15 +154,14 @@ List the people found without an address under `## No address`, and any
 
 ## Draft
 
-Load `./references/contracts/contract-outreach.md` and write the note for
-this touch from its Sources. Then load the `job-humanize` skill and obey it
-end-to-end with:
+Load `./references/contracts/contract-outreach.md` and
+`./references/contracts/contract-voice.md`, and write the note for this touch
+from their Sources. Then load the `job-humanize` skill and obey it end-to-end
+with:
 
 - `Surface: letter`;
-- `CONTRACT` = `contract-outreach.md` verbatim, followed verbatim by the
-  `### Number firewall`, `### Credit`, and `### Surface` subsections of the
-  `## Voice law` in `job-apply/references/contracts/contract-prose.md`, and by
-  its `## Forbidden claims`;
+- `CONTRACT` = `contract-outreach.md` verbatim, followed verbatim by
+  `contract-voice.md`;
 - `DRAFT` = the note.
 
 Check the returned note: the Subject and every line the contract marks

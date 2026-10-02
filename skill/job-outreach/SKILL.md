@@ -33,6 +33,7 @@ Load each additional reference only when that flow names it.
 
 - `./references/flows/flow-outreach.md`
 - `./references/contracts/contract-outreach.md`
+- `./references/contracts/contract-voice.md`
 - `./references/formats/format-report.md`
 
 ## Hard refuses
