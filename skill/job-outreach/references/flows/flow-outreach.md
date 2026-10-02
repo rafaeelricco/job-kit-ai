@@ -188,7 +188,10 @@ Immediately before each send, `--dry-run` included:
    run's sends.
 2. Search the bound account's sent mail for this touch: for `first`, a message
    with this note's subject in the last 30 days, to anyone; otherwise a
-   message in the latest thread dated after the latest sent line. Found → do
+   message in the latest thread, To the first block's `> to:` address, dated
+   on a later calendar day than the latest sent line, whose id no `> message:`
+   line on this dossier records. A note the operator wrote by hand there
+   counts too: the skill does not send over it. Found → do
    not send. Under `--dry-run`, name it under Gaps as `recovered` and write
    nothing. Otherwise record it as sent with that message's date, id, and
    thread, and name it under Gaps as `recovered`.
