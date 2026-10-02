@@ -39,7 +39,8 @@ Load each additional reference only when that flow names it.
 ## Hard refuses
 
 - Send a first note for an application whose latest `applied via` line is
-  not `ats` or is older than yesterday, or to a company another dossier's
+  not `ats` or is older than yesterday, or whose mail since then already holds
+  a rejection, interview, or offer, or to a company another dossier's
   outreach reached in the last 30 days
 - Send a follow-up or multiplier outside the thread an `outreach sent` line
   logs, or to anyone but that thread's first recipient; send a follow-up

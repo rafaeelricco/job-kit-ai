@@ -55,6 +55,12 @@ Read every dossier per `job-store/references/flows/flow-read.md`. Terms:
   to (under `--dry-run`, would send to).
 - **Reply**: any message in any of the dossier's threads whose From is not
   the bound account, bounces and automatic replies included.
+- **Unscanned outcome**: a message in the bound account's mail, dated on or
+  after the dossier's latest `applied via` date, whose From is not the bound
+  account, that names the company in From, Subject, or body and fires
+  `rejected`, `interview`, or `offer` under the Outcome rules of
+  `job-inbox/references/contracts/contract-classify.md`. Search the mail for
+  the company name since that date and read each result's full body.
 
 Drop a dossier that holds an `outreach unconfirmed` line with no later sent
 line (print `Unconfirmed send per scout/jobs/{file}`). Each other dossier
@@ -63,7 +69,9 @@ takes at most one touch, first match:
 1. **first** — `status: applied`; the latest `applied via` line reads
    `applied via ats` and is dated today or yesterday; no sent line, no
    `outreach unconfirmed` line, and no `outreach skipped` line on this
-   dossier; not dead-by-log; its company is not contacted. The other channels
+   dossier; not dead-by-log; its company is not contacted; no unscanned
+   outcome (list it under `## Skipped` as `outcome in mail: run /job-inbox`,
+   and log nothing). The other channels
    are out: `job-apply` already wrote to the contact on `direct_email`,
    `dm_request`, and `founder`.
 2. **multiplier** — `status: rejected`; a first block dated within 60 days;
