@@ -387,7 +387,7 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertFalse((f.package / ".git").exists())
             installed = f.agents / "job-match"
             self.assertEqual(installed.resolve(), (f.physical / "skill/job-match").resolve())
-            self.assertEqual(len(list(f.agents.iterdir())), 9)
+            self.assertEqual(len(list(f.agents.iterdir())), 10)
             self.success(f.run("agents"))
             self.success(f.run("agents", version="v1.0.1"))
             self.assertEqual((f.package / "VERSION").read_text(), "v1.0.1\n")

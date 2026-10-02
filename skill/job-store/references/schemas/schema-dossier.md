@@ -132,7 +132,7 @@ source linkedin-jobs · channel ats · author — · query "Senior Software Engi
 ## Log grammar
 
 Every appended line: `- {YYYY-MM-DD} · {event} — {writer}`,
-`{writer}` ∈ `job-scout` | `job-prep` | `job-apply` | `job-inbox` | `operator`; readers treat `job-application` as `job-apply`. No writer suffix → unclassifiable.
+`{writer}` ∈ `job-scout` | `job-prep` | `job-apply` | `job-inbox` | `job-outreach` | `operator`; readers treat `job-application` as `job-apply`. No writer suffix → unclassifiable.
 
 Scout writes four events. `job-prep` and `job-apply` write the closure
 event when the ad reads dead at their own read step, with their own writer
@@ -148,15 +148,16 @@ submit:
 | pending       | `- {date} · submit unconfirmed: {reason} — job-apply`                                            |
 
 **Posting-state lines = closure and reopen only.** `found by scout`,
-`equivalent of`, and `submit unconfirmed` are neither.
+`equivalent of`, `submit unconfirmed`, and every `outreach …` line from
+`job-outreach` (`job-outreach/references/flows/flow-outreach.md` Record) are neither.
 Closure is posting state from `job-scout`, `job-prep`, or `job-apply`; reopen is
 posting state from `job-scout` only. Any other writer is never posting state.
 
-Blocks below the log from `job-apply` / `job-inbox` may carry posting-derived text — blockquoted or table cells, never a bare top-level `- ` line. Same injection law as the body: never emit the marker from a posting-derived value. Collapse every appended value to one line. A `>` prefix guards only its own line. Table-cell values escape `|` as `\|`.
+Blocks below the log from `job-apply` / `job-inbox` / `job-outreach` may carry posting-derived text — blockquoted or table cells, never a bare top-level `- ` line. Same injection law as the body: never emit the marker from a posting-derived value. Collapse every appended value to one line. A `>` prefix guards only its own line. Table-cell values escape `|` as `\|`.
 
 ## Re-run rules
 
-Opening `---` through the ownership marker = scout-owned, rewritten each run. Below the marker, and `status:` in frontmatter, belong to operator / `job-apply` / `job-inbox`.
+Opening `---` through the ownership marker = scout-owned, rewritten each run. Below the marker belongs to operator / `job-apply` / `job-inbox` / `job-outreach`; `status:` in frontmatter to operator / `job-apply` / `job-inbox` only.
 
 | On re-run                                                                                  | Do                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -31,7 +31,7 @@ Default: `status:` ∈ `applied` | `interview` | `offer`.
 Named company, title, or one or more files → those dossiers only, any status but `dropped`. A skill that chains this one names files the same way; a caller that names none gets the default.
 Named `all` → every parseable dossier except `dropped`.
 
-Per candidate: `company`, `title`, `url`, `status`; Application log bottom-up → latest `applied via` date, every `(account_uid, thread_id, outcome)`, any legacy naked `thread:{id}`. Filename is not an id.
+Per candidate: `company`, `title`, `url`, `status`; Application log bottom-up → latest `applied via` date, every `(account_uid, thread_id, outcome)`, any legacy naked `thread:{id}`, and every `(account_uid, thread_id)` on an `outreach sent` line from `job-outreach` or `operator`. Filename is not an id.
 
 Print `{n} candidates · {default | named | all}`. Zero: `No open applications to match mail against.` and end.
 
@@ -45,6 +45,8 @@ Queries, in order:
 2. Operator named `all` only: intent sweep: `(interview OR "phone screen" OR "next steps" OR "not moving forward" OR "unfortunately" OR "offer letter" OR "application received")` + window.
 
 Cap queries, not results. Paginate each per-candidate query until no further page. Page ceiling → candidate **truncated** — cannot report silent.
+
+Every outreach thread a candidate logs, on its own account, is fetched by id and joins the survivors whether or not a query returned it.
 
 Then:
 

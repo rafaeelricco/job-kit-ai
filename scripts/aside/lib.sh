@@ -4,7 +4,7 @@
 
 # Skill folder names under skill/ that Aside may load (Aside channel only).
 CORE_SKILL_NAMES="job-profile-root job-store"
-SKILL_NAMES="job-scout job-apply job-prep job-resume-refine job-profile job-list job-match job-stories job-inbox job-humanize ${CORE_SKILL_NAMES}"
+SKILL_NAMES="job-scout job-apply job-prep job-resume-refine job-profile job-list job-match job-stories job-inbox job-outreach job-humanize ${CORE_SKILL_NAMES}"
 # Prior Aside basenames from this kit; install/uninstall may remove orphans.
 # Predicates: kit symlink OR kit copy (.job-kit marker). Source dir need not exist for legacy links.
 LEGACY_SKILL_NAMES="job-discovery job-application profile-scaffold application-stage profile-init job-profile-config job-tracker job-resume job-profile-me job-pitch"

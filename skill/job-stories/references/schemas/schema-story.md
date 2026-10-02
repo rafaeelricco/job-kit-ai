@@ -31,7 +31,7 @@ was happy", and "shipped to production" are not impact.
 ## Body
 
 Everything below the frontmatter is for speech and never reaches outbound text.
-`job-apply`, `job-stories`, and `job-resume-refine` read frontmatter only.
+`job-apply`, `job-outreach`, `job-stories`, and `job-resume-refine` read frontmatter only.
 
 ## Status law
 

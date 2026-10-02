@@ -20,7 +20,7 @@ Usage: install.ps1                 # interactive menu (console required)
 Targets:
   aside        Aside skills - full copy into the Aside skills root
   agents       Coding-agent skills (job-profile, job-list,
-               job-match, job-stories, job-inbox, job-humanize,
+               job-match, job-stories, job-inbox, job-outreach, job-humanize,
                job-profile-root, job-store, job-resume-refine)
   browser-use  Browser skills (job-scout, job-apply, job-prep) plus the browser-use
                driver skill into coding-agent homes; driven by the local

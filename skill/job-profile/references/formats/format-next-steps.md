@@ -26,3 +26,5 @@ Omit empty optional placeholders (GAPS_LINE / CV_LINE); never print them blank.
   and application status — without writing to it.
 - After apply, `/job-inbox` checks Gmail for replies and writes later `status:`
   when the mail strongly matches a tracked application.
+- `/job-outreach` emails the hiring manager for ATS applications from the last
+  48 hours and follows up at day 7 and 14, without pausing for approval.
