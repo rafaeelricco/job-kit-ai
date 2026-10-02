@@ -1,7 +1,7 @@
 ---
 name: job-inbox
 description: "Check Gmail for replies to tracked applications and write lifecycle status onto existing scout/jobs/ dossiers when evidence is strong. Reads mail only. Use when the user runs /job-inbox, asks if anyone replied, check application email, update status from inbox, or scan for interview / rejection / offer mail. Not for drafting an application (job-apply) or listing dossiers without mail (job-list)."
-argument-hint: "[company | title | <file>… | all]"
+argument-hint: "[all | <company> | <title> | <dossier>…]"
 ---
 
 # Job inbox

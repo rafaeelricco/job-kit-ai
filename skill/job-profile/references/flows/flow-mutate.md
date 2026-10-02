@@ -3,10 +3,10 @@
 One mutation per confirm cycle. Several related edits in one user message are one
 batch — still one diff, one yes.
 
-Verbs: `set` (`job_search.yaml`), `packs` (enable/disable/formulations/location/add/remove),
-`refresh-card` (`profile_card.yaml`), `cvs set` (`cvs.yaml`), `qa` (`candidate.yaml`
+Verbs: `search set` (`job_search.yaml`), `packs` (enable/disable/formulations/location/add/remove),
+`card refresh` (`profile_card.yaml`), `cv set` (`cvs.yaml`), `qa` (`candidate.yaml`
 `screening_defaults.qa[]`: add/answer/remove/ingest).
-Load `./references/schemas/schema-profile-card.md` when the verb is `refresh-card` or when a
+Load `./references/schemas/schema-profile-card.md` when the verb is `card refresh` or when a
 `positions` write clears `primary_role`.
 
 ## Protocol
@@ -65,7 +65,7 @@ write. Never invent a replacement value for a deleted key.
 After a yes that writes `positions`: if `data/profile_card.yaml` exists, also
 clear `primary_role` in that file in the **same** confirm cycle (show it empty
 in the diff). Do not rewrite other card fields; do not invent a full refresh —
-that is `refresh-card`.
+that is `card refresh`.
 
 ## `search_packs.yaml` — writable
 
@@ -119,7 +119,7 @@ not already in `qa[]` with `answer: ""`, `source: "needs_you · {slug}"`, and a
 `scope` only when `why` or `where` names an ATS host or country, and prints
 the diff for one yes. Empty-answer rows are inert until `qa answer` fills them.
 
-## `refresh-card`
+## `card refresh`
 
 Derive every field in `./references/schemas/schema-profile-card.md` from files on disk only.
 Print the full proposed `data/profile_card.yaml` as the cycle diff, then the

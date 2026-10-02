@@ -46,7 +46,7 @@ roots stay active until the tree is deleted.
    confirmation, edits, or skips.
 2. Review Gaps in the fill report; fix any empty fields scout needs.
 3. The compiled CV PDF goes in `cv/`; name it in `data/cvs.yaml` `base` (set via
-   `/job-profile cvs`). Set `adapt_per_vacancy` there too. With no `base`,
+   `/job-profile cv set`). Set `adapt_per_vacancy` there too. With no `base`,
    job-apply attaches `cv/en-us-resume.pdf`.
 4. Search packs live in this profile at `data/search_packs.yaml`; tune formulations
    there or via `/job-profile packs`.

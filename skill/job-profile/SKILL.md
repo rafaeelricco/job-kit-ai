@@ -1,6 +1,7 @@
 ---
 name: job-profile
 description: "Create, register, or edit a job-search profile. Use when the user runs /job-profile, /job-profile-init, or /job-profile-me, asks to scaffold a profile, show search config, change positions or packs, or what is missing for scout. Not for finding jobs (job-scout)."
+argument-hint: "[show | gaps | cv | continue fill [<field>] | search set … | packs [list|enable|disable|formulations|location|add|remove] … | card refresh | cv set … | qa <add|answer|remove|ingest> …]"
 ---
 
 # Job profile
@@ -57,7 +58,7 @@ end this skill.
 When the operator says `continue fill`, with or without naming a field, read
 `./references/flows/flow-fill.md` now.
 When the operator mutates search config, packs, the profile card, CV settings, or
-reusable answers (`set` / `packs` / `refresh-card` / `cvs set` / `qa`), or asks to change salary, notice,
+reusable answers (`search set` / `packs` / `card refresh` / `cv set` / `qa`), or asks to change salary, notice,
 visa, sponsorship, EOR, Fact fields, or identity, read `./references/flows/flow-mutate.md` now.
 Otherwise read `./references/flows/flow-show.md` now.
 Load each additional reference only when that flow names it.

@@ -1,7 +1,7 @@
 ---
 name: job-scout
 description: "Find and rank live job openings from operator-selected search packs or ad-hoc site URLs, report results, and persist scout dossiers. List-only. Use when the user runs /job-scout or asks to find, search, or scout openings. Not for dossier reading (job-list), applications (job-apply), inbox triage (job-inbox), or profile configuration (job-profile)."
-argument-hint: "[all | <pack-id>…] [<url>…] | --refresh"
+argument-hint: "[all | <pack-id>…] [<url>…] | refresh"
 ---
 
 # Job scout
@@ -22,7 +22,7 @@ plus job-match's run-scoped temp directory outside Profile root during the match
 removed before this run ends.
 
 1. Read `./references/flows/flow-preflight.md`; obey end-to-end.
-2. Read `./references/flows/flow-search.md`; obey end-to-end (includes merge). Under `--refresh` skip this step.
+2. Read `./references/flows/flow-search.md`; obey end-to-end (includes merge). Under `refresh` skip this step.
 3. Read `./references/flows/flow-extract.md`; obey end-to-end.
 4. Validate every extract row with `job-store/scripts/validate_extract.py` per `./references/flows/flow-extract.md`; then read `./references/flows/flow-gate.md`; obey end-to-end.
 5. Read `./references/flows/flow-rank.md`; obey end-to-end.
@@ -34,7 +34,7 @@ removed before this run ends.
    that pair, append that line on this file and on the other. Do not merge.
    Do not change `url`. No dossier for kit
    drop or uncertain. Existing dead dossier → closure log only. Under
-   `--refresh` every row already owns a dossier: a row that leaves the persist
+   `refresh` every row already owns a dossier: a row that leaves the persist
    set keeps its body and `status:` untouched beyond the schema's re-run rules
    for dead and `incompatible`, but every re-extracted row that is not `dead`
    still bumps `last_seen` so the next sweep moves past it, and Gaps names it.

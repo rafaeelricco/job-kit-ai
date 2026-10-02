@@ -72,7 +72,7 @@ application packages. Use `/job-profile` to activate another directory.
 Aside needs filesystem access to that directory.
 
 Resume tailoring requires a base CV PDF and its matching `.tex` source under
-`cv/`. Use `/job-profile cvs` to select the base or disable per-vacancy tailoring.
+`cv/`. Use `/job-profile cv set` to select the base or disable per-vacancy tailoring.
 
 `/job-match --typesafe` fills fit scores with TypeSafe's Jev model instead of
 the LLM match worker; high or low-confidence rows are still re-checked by the
