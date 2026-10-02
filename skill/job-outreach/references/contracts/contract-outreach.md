@@ -25,7 +25,8 @@ overlaps the ad most, stated in one sentence with no number.
 
 - Subject: `{title} at {company}`, both exactly as the dossier prints them,
   minus a trailing location or work-model tag on the title such as
-  `| REMOTE` or `- Remote`. No `Re:`, no emoji.
+  `| REMOTE` or `- Remote`, and with each em dash turned into a hyphen. No
+  `Re:`, no emoji.
 - Body, in this order:
   1. (verbatim) `Hi {first name},`. A role mailbox, or an address with no
      name the page prints → `Hi {company} team,`.

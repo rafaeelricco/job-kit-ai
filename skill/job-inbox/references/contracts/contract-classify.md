@@ -28,6 +28,7 @@ Weak does not promote.
 Mail naming its own opportunity title does not bind a dossier whose `title` differs.
 Normalize both — lowercase, non-alphanumeric runs → spaces, collapse, trim.
 Title conflict removes that candidate even if it is the only dossier for that company.
+A thread logged on that candidate's `outreach sent` line is never a title conflict for it: `job-outreach` wrote its subject from that dossier.
 Two named titles → `skip`.
 
 After conflict removal: zero → `unmatched`; one may bind; more than one needs
