@@ -139,7 +139,7 @@ packs:
       posting_url: absolute_url
       title: title
       location: location.name
-      date: updated_at
+      date: first_published
     formulations:
       - "[role]"
 
