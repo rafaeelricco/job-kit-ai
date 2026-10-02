@@ -23,7 +23,7 @@ Collapse every value that comes from mail or a page to one line.
     - {company} · {kind} · check Sent in Gmail; if it went out, append the operator line from the flow's Record
 
     ## Unrecorded
-    - {company} · {kind} · message:{message_id} · thread:{thread_id} · {stop reason} · sent but not written; fix the dossier, then append the operator line from the flow's Record
+    - {company} · {kind} · to {email} · subject:{subject} · message:{message_id} · thread:{thread_id} · {stop reason} · sent but not written; fix the cause and rerun /job-outreach {file} while the touch still selects, so the sent-mail check records it; past that, append the operator line from the flow's Record
 
     ## Skipped
     - {company} · {reason}

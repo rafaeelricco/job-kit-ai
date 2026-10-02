@@ -203,10 +203,11 @@ Immediately before each send, `--dry-run` included:
    thread; its block takes `> to:`, `> subject:`, and the body lines from that
    message, not from this run's Contacts or draft. Name it under Gaps as
    `recovered`, with both addresses when its To is not this run's recipient.
-3. For `first`, also search the sent mail of the last 30 days for any message
-   to an address at the company domain. Found → do not send, write nothing,
-   and name it under Gaps as `company emailed`: an earlier note may have gone
-   out without a record.
+3. For `first`, when step 2 found nothing, also search the sent mail of the
+   last 30 days for a message whose subject ends in ` at {company}` as the
+   contract builds it, or any message to an address at the company domain.
+   Found → do not send, write nothing, and name it under Gaps as
+   `company emailed`: an earlier note may have gone out without a record.
 
 `--dry-run` → print the recipient, subject, and body; count the note toward
 `--max`; skip the rest of Send and all of Record.
@@ -238,8 +239,8 @@ One `job-store/references/contracts/contract-persistence.md` transaction per
 dossier appends below the marker, never above it: the log line, then, for a
 sent or unconfirmed note, its block. A transaction that STOPs after the mail
 went out leaves the dossier as it was: list the note under `## Unrecorded`
-with its kind, message id, thread id, and the stop reason, and count its
-company as contacted for the rest of the run. `{kind}` is `first`, `follow-up-1`,
+with its kind, recipient, subject, message id, thread id, and the stop
+reason, and count its company as contacted for the rest of the run. `{kind}` is `first`, `follow-up-1`,
 `follow-up-2`, or `multiplier`:
 
     - {date} · outreach sent: {kind} · account:{account_uid} · thread:{thread_id} — job-outreach
