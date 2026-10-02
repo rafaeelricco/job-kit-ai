@@ -22,6 +22,9 @@ Collapse every value that comes from mail or a page to one line.
     ## Unconfirmed
     - {company} · {kind} · check Sent in Gmail; if it went out, append the operator line from the flow's Record
 
+    ## Unrecorded
+    - {company} · {kind} · message:{message_id} · thread:{thread_id} · {stop reason} · sent but not written; fix the dossier, then append the operator line from the flow's Record
+
     ## Skipped
     - {company} · {reason}
 

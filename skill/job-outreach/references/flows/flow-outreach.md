@@ -88,6 +88,12 @@ For a follow-up, read the threads first. Any reply → no touch; Record writes
 `outreach stopped: reply in thread` and the report lists it under
 `## Stopped`. A later rejection in that thread can still take the multiplier.
 
+A dossier that takes a touch must first pass
+`job-store/scripts/validate_dossier.py`, run on the dossier file the way step
+5 of `job-store/references/contracts/contract-persistence.md` runs it on a
+render. A failing dossier takes no touch and is named under Gaps as
+`invalid dossier`: Record could not write it after the mail went out.
+
 Order: first (latest `applied via` date descending, then filename ascending),
 multiplier, follow-up-1, follow-up-2. Print
 `Queue: {n} · first {a} · multiplier {b} · follow-up {c}`, counted before
@@ -195,6 +201,10 @@ Immediately before each send, `--dry-run` included:
    not send. Under `--dry-run`, name it under Gaps as `recovered` and write
    nothing. Otherwise record it as sent with that message's date, id, and
    thread, and name it under Gaps as `recovered`.
+3. For `first`, also search the sent mail of the last 30 days for any message
+   to an address at the company domain. Found → do not send, write nothing,
+   and name it under Gaps as `company emailed`: an earlier note may have gone
+   out without a record.
 
 `--dry-run` → print the recipient, subject, and body; count the note toward
 `--max`; skip the rest of Send and all of Record.
@@ -224,7 +234,10 @@ from step 2. Found → success. None → Record writes
 
 One `job-store/references/contracts/contract-persistence.md` transaction per
 dossier appends below the marker, never above it: the log line, then, for a
-sent or unconfirmed note, its block. `{kind}` is `first`, `follow-up-1`,
+sent or unconfirmed note, its block. A transaction that STOPs after the mail
+went out leaves the dossier as it was: list the note under `## Unrecorded`
+with its kind, message id, thread id, and the stop reason, and count its
+company as contacted for the rest of the run. `{kind}` is `first`, `follow-up-1`,
 `follow-up-2`, or `multiplier`:
 
     - {date} · outreach sent: {kind} · account:{account_uid} · thread:{thread_id} — job-outreach
