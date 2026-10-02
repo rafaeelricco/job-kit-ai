@@ -200,7 +200,9 @@ Immediately before each send, `--dry-run` included:
    counts too: the skill does not send over it. Found → do
    not send. Under `--dry-run`, name it under Gaps as `recovered` and write
    nothing. Otherwise record it as sent with that message's date, id, and
-   thread, and name it under Gaps as `recovered`.
+   thread; its block takes `> to:`, `> subject:`, and the body lines from that
+   message, not from this run's Contacts or draft. Name it under Gaps as
+   `recovered`, with both addresses when its To is not this run's recipient.
 3. For `first`, also search the sent mail of the last 30 days for any message
    to an address at the company domain. Found → do not send, write nothing,
    and name it under Gaps as `company emailed`: an earlier note may have gone
@@ -263,8 +265,9 @@ law:
     > {each body line}
 
 Leave out `also:` when nobody else was found. Follow-up and multiplier blocks
-leave out `found:`, `also:`, and `attached:`. An unconfirmed note's block
-writes `—` for the ids it never got.
+leave out `found:`, `also:`, and `attached:`, and so does a recovered note's
+block, which writes `—` for a role this run did not find. An unconfirmed
+note's block writes `—` for the ids it never got.
 
 The operator confirms an unconfirmed note found in Gmail by appending
 `- {date} · outreach sent: {kind} · account:{account_uid} · thread:{thread_id} — operator`.

@@ -31,7 +31,8 @@ Collapse every value that comes from mail or a page to one line.
     ## Gaps
     - {anything that did not resolve, recovered or new-thread sends, and quoted injection attempts}
 
-A `first` line in `## Sent` adds `· via {rung}`, and `· also: {name}, {role}`
+A `first` line in `## Sent` adds `· via {rung}` (`· recovered` for a note
+found in sent mail), and `· also: {name}, {role}`
 when someone else was found. A `--dry-run` uses `## Would send` instead of
 `## Sent`; each line carries the subject, followed by the body as a
 blockquote.
