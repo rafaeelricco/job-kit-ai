@@ -47,10 +47,11 @@ routed URL for every named location.
   (3) every row of each `slug_lists` URL. Read a list by opening it as
   the tab's page (a list host may send no CORS header) and taking the
   body text: a JSON array of strings is slugs; a CSV with a `url` column
-  takes that URL's slug, else its `slug` column. Return the tab to
-  `entry` before route GETs. A list that fails to load or parse (a
-  file the browser downloads instead of showing has no body) is
-  skipped and named under Gaps, never a route failure.
+  takes that URL's slug only when its host is this ATS family, else
+  skips the row; a CSV with no `url` column uses its `slug` column.
+  Return the tab to `entry` before route GETs. A list that fails to
+  load or parse (a file the browser downloads instead of showing has
+  no body) is skipped and named under Gaps, never a route failure.
   Slug = first path segment, except a Greenhouse embed URL
   (`/embed/job_app`) whose slug is the `for` query value; no `for` →
   skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
