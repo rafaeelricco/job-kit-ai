@@ -53,6 +53,19 @@ class Phrases(unittest.TestCase):
                 self.assertTrue(kinds(detect.scan(text), "phrase"))
         self.assertEqual(kinds(detect.scan("The unleveraged position held."), "phrase"), [])
 
+    def test_placeholder_phrases_need_the_whole_word(self):
+        for text in [
+            "Nothing broke during the cutover, but we added alerts anyway.",
+            "Notion held the runbook, but we moved it to the wiki.",
+            "Stopwatch data was noisy, start times were wrong.",
+            "Nobody paged. Nothing failed. Just a quiet release.",
+        ]:
+            with self.subTest(text=text):
+                self.assertEqual(kinds(detect.scan(text), "phrase"), [])
+        for text in ["Not speed, but safety.", "Stop guessing, start measuring.", "No meetings. No tickets. Just code."]:
+            with self.subTest(text=text):
+                self.assertTrue(kinds(detect.scan(text), "phrase"))
+
     def test_load_skill_rejects_a_skill_without_the_list(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "SKILL.md"

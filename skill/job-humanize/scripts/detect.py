@@ -27,12 +27,15 @@ def phrase_regex(phrase: str) -> re.Pattern:
         parts.pop(0)
     while parts and parts[-1] in PLACEHOLDERS:
         parts.pop()
+    if parts:
+        parts[0] = parts[0].lstrip()
+        parts[-1] = parts[-1].rstrip()
     core = "".join(parts).strip()
     if re.fullmatch(r"[A-Za-z0-9-]+", core):  # one word: any inflection
         body = re.escape(core[:-1] if core.endswith("e") else core) + r"\w*"
         post = ""
     else:
-        body = "".join(GAP if t in PLACEHOLDERS else r"\s+".join(map(re.escape, t.split())) for t in parts)
+        body = "".join(GAP if t in PLACEHOLDERS else r"\s+".join(map(re.escape, re.split(r"\s+", t))) for t in parts)
         post = r"(?!\w)" if re.search(r"\w$", core) else ""
     pre = r"(?<!\w)" if re.match(r"\w", core) else ""
     return re.compile(pre + body + post, re.I)
