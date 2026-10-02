@@ -21,6 +21,7 @@ SKILL: Path = REPO / "skill"
 MATCH: Path = SKILL / "job-match" / "scripts"
 REFINE: Path = SKILL / "job-resume-refine" / "scripts"
 STORE: Path = SKILL / "job-store" / "scripts"
+HUMANIZE: Path = SKILL / "job-humanize" / "scripts"
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ TARGETS: Tuple[Target, ...] = (
     Target(STORE / "validate_extract.py", STORE),
     Target(STORE / "validate_dossier.py", STORE),
     Target(STORE / "normalize_source.py", STORE),
+    Target(HUMANIZE / "detect.py", HUMANIZE),
 )
 
 
