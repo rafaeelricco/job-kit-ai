@@ -15,7 +15,7 @@ is not a second surface and not a DOM fallback: `entry` already
 declared the host, and a later route failure still never falls back
 to DOM. A bot-wall, captcha, throttle, or empty interrupt on that
 harvest records `defect: surface_interrupted` for the harvest and
-still GETs stored slugs (2); it does not stop the pack or mark route
+still GETs stored slugs (2) and list slugs (3); it does not stop the pack or mark route
 GETs unsubmitted. A `kind: json` pack runs once
 per expanded formulation; a `kind: board` pack runs once per board
 slug. Location remains a keep filter instead of repeating the same
@@ -40,20 +40,31 @@ routed URL for every named location.
 - `kind: board` needs `ats` (`job-store/references/schemas/schema-dossier.md`
   "ATS family" vocabulary), a `url` containing `{slug}`, and `items`,
   `posting_url`, `title` dot paths; `location`, `date`, and `listed` are
-  optional dot paths. `items: $` names the response root. Collect slugs
+  optional dot paths; `slug_lists` is an optional list of http(s) URLs.
+  `items: $` names the response root. Collect slugs
   unique by lowercased slug: (1) each `site:` result URL this run;
-  (2) every readable store dossier whose url host is this ATS family.
+  (2) every readable store dossier whose url host is this ATS family;
+  (3) every row of each `slug_lists` URL. Read a list by opening it as
+  the tab's page (a list host may send no CORS header) and taking the
+  body text: a JSON array of strings is slugs; a CSV with a `url` column
+  takes that URL's slug, else its `slug` column. Return the tab to
+  `entry` before route GETs. A list that fails to load or parse (a
+  file the browser downloads instead of showing has no body) is
+  skipped and named under Gaps, never a route failure.
   Slug = first path segment, except a Greenhouse embed URL
   (`/embed/job_app`) whose slug is the `for` query value; no `for` →
   skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
   separate Lever instance: skip it, do not GET `api.lever.co`. New = (1) not in (2).
-  GET new first, then remaining (2) oldest min `last_seen` first.
+  List-only = (3) not in (1) or (2), sorted; the window is the 100
+  list-only slugs from index (UTC days since 1970-01-01 × 100) mod
+  their count, wrapping. GET new first, then the window, then
+  remaining (2) oldest min `last_seen` first.
   One GET per slug, `{slug}` percent-encoded, serial. Stop at the
-  40-candidate keep cap. Empty (1)+(2) → `defect: no_boards`, scan
+  40-candidate keep cap. Empty (1)+(2)+(3) → `defect: no_boards`, scan
   nothing. `site:` cards on a `kind: board` pack are slug sources,
   not candidates; candidates come only from a successful route GET.
   Company = the `site:` card company, else the store company, else
-  the slug. Per item: `posting_url` normalized; `matched_query` = the
+  a list row `name`, else the slug. Per item: `posting_url` normalized; `matched_query` = the
   first `positions[]` entry the item's `title` contains as whole
   words, case-insensitive, punctuation ignored — no entry → drop the
   item; `listed` resolving to `false` → drop; `channel` = `ats`.

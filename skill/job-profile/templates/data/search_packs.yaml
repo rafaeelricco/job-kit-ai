@@ -33,8 +33,10 @@
 #                 url with {formulation} and {page}, plus pages, items, and
 #                 posting_url. kind board: ats, url with {slug}, plus items,
 #                 posting_url, and title; slugs are discovered each run from
-#                 site:{entry host} and store URLs; items: $ is the response
-#                 root. A route url carries no constraint filters, so
+#                 site:{entry host}, store URLs, and a daily window of any
+#                 optional slug_lists URLs (JSON string array, or CSV with
+#                 url/slug columns); items: $ is the response root.
+#                 A route url carries no constraint filters, so
 #                 work_model, date_posted, job_types, and location fall to the
 #                 keep gate.
 #
