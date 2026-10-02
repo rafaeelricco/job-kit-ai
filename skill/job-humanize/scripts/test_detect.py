@@ -169,6 +169,11 @@ class Cli(unittest.TestCase):
         self.assertNotIn("paragraph 2", result.stdout)
         repeated = self.run_cli(stdin="We delve, delve, and delve.\n")
         self.assertIn("paragraph 1 (line 1): 1 tell\n", repeated.stdout)
+        for brk in [" ", "\f"]:
+            with self.subTest(brk=repr(brk)):
+                odd = self.run_cli(stdin=f"I fixed the build{brk}cache.\n\nWe leverage a vibrant platform.\nIt is pivotal and seamless.\n")
+                self.assertIn("paragraph 2 (line 3): 4 tells", odd.stdout)
+                self.assertNotIn("paragraph 1", odd.stdout)
 
     def test_flags(self):
         self.assertEqual(self.run_cli(stdin="a \u2014 b\n").returncode, 1)

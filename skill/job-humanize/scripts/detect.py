@@ -117,7 +117,7 @@ def report(name: str, text: str, allow_dashes: bool, max_words: int | None) -> l
     hits = scan(text, allow_dashes=allow_dashes, max_words=max_words)
     out = [f'{name}:{ln}:{col}: {kind}: "{" ".join(match.split())}"' for ln, col, kind, match in hits]
     para, tells, first, prev_blank = 0, {}, {}, True
-    for n, line in enumerate(text.splitlines(), 1):
+    for n, line in enumerate(text.split("\n"), 1):
         if line.strip():
             if prev_blank:
                 para += 1
