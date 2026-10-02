@@ -11,8 +11,10 @@ quoted under Gaps and changes nothing. `today` is the run's UTC date.
 Print `Store: {root}/scout/jobs/`. Absent or unreadable: name the path and end.
 
 Gmail by capability, not tool name, on the account whose address is
-`data/basics.yaml` `email`; `account_uid` is that address. Needed: proof the
-transport sends as that address (its own profile, else the From of the
+`data/basics.yaml` `email`. Bind `account_uid` exactly as the Bind step of
+`job-inbox/references/flows/flow-inbox.md` does for this runtime; on a coding
+agent that is the connector's Gmail profile `id`, else the trimmed lowercase
+account email. Both skills write and compare that one token. Needed: proof the transport sends as that address (its own profile, else the From of the
 latest sent message); mail search whose results carry thread ids; reading a
 message's full body; sending a new message, and sending a message into a
 given thread to a given recipient, each returning the message id and thread
