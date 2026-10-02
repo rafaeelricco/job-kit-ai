@@ -1,6 +1,6 @@
 # Show
 
-Read-only: `show`, `gaps`, and `cvs` (display). Writes are `flow-mutate.md`.
+Read-only: `show`, `gaps`, and `cv` (display). Writes are `flow-mutate.md`.
 Load `./references/schemas/schema-profile-card.md` now for card field sources (cache absent, hybrid,
 or any `### Profile card` print).
 

@@ -1,6 +1,6 @@
 # profile_card.yaml
 
-Optional cache of the card `show` otherwise derives. Full rewrite: `refresh-card`
+Optional cache of the card `show` otherwise derives. Full rewrite: `card refresh`
 via `flow-mutate.md` after diff → yes. Same-cycle clear of `primary_role` on a
 `positions` write is also `flow-mutate.md`. job-scout may glob this file in.
 `show` never prefers this cache for `primary_role` (always from `job_search.yaml`).

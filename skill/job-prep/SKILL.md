@@ -1,13 +1,13 @@
 ---
 name: job-prep
-description: "Prepare application packages offline for hot dossiers: revalidate the ad, resolve form fields against profile Facts, chain job-resume-refine, write plan.json and package.md; --digest shows what is ready. Use for /job-prep, a nightly prep cron, or a morning digest cron. Not for submitting (job-apply)."
-argument-hint: "[--from-match] [--ats-only] [--top N] [--channel ats|dm_request|direct_email|founder] [--digest] [<file>...]"
+description: "Prepare application packages offline for hot dossiers: revalidate the ad, resolve form fields against profile Facts, chain job-resume-refine, write plan.json and package.md; digest shows what is ready. Use for /job-prep, a nightly prep cron, or a morning digest cron. Not for submitting (job-apply)."
+argument-hint: "[digest | from-match | <dossier>… | --ats [<family>[,…]]] [--channel ats|dm_request|direct_email|founder] [--top <n>]"
 ---
 
 # Job prep
 
 Prepares, never posts. `job-apply/references/flows/flow-apply.md` §§2–4 run here;
-§5 does not exist in this skill. `--digest` is read-only and opens no browser.
+§5 does not exist in this skill. `digest` is read-only and opens no browser.
 
 Profile root: load the `job-profile-root` skill now; obey it end-to-end.
 

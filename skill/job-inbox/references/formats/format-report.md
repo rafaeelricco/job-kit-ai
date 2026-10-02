@@ -44,7 +44,7 @@ A reply with no dossier, or one the transition table blocked, keeps its
 Every `rejected` row that wrote `status:` this run adds one line after
 `## Written`, so the search can learn from it:
 
-    Exclude: /job-profile set exclude_companies + "{company}"
+    Exclude: /job-profile search set exclude_companies + "{company}"
 
 When `## Replies` holds no `interview` and no `offer`:
 

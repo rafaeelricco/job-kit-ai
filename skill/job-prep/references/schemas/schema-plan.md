@@ -2,7 +2,7 @@
 
 One file per prepared posting at `scout/applications/{slug}/plan.json`. Written
 only by `job-prep`; read by `job-apply/references/flows/flow-apply.md` §3 rule 0 and
-by `job-prep --digest`.
+by `job-prep digest`.
 
 ```json
 {

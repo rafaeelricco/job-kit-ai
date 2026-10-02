@@ -5,7 +5,7 @@ Main is the orchestrator. It does not score a job.
 State: `./references/schemas/schema-state.md`. Policy: `./references/contracts/contract-match.md` (load; never spawn a criteria agent).
 Reader law: `job-store/references/flows/flow-read.md`.
 
-Store source (below) and the store is absent or unreadable → name the path and end. `--posting` does not need the store.
+Store source (below) and the store is absent or unreadable → name the path and end. A pasted posting (rule 1) does not need the store.
 
 ```
 bind → profile → candidates → filter₁ → extract → filter₂ → match → score
@@ -32,22 +32,22 @@ Derive `state.candidate` per schema-state CandidateProfile. Unreadable required 
 
 ## candidates
 
-Parse tokens. At most one selector: `--new` | `--all` | `--posting` | one
-`scout/jobs/` filename. `--exclude <status>[,<status>…]` is a modifier; it
+Parse tokens. At most one selector: `all` | one `scout/jobs/` filename; a
+pasted posting needs none (rule 1). `--exclude <status>[,<status>…]` is a modifier; it
 consumes the next token. `--top <n>` consumes one positive integer and is legal
 with every selector; absent means no cap. `--typesafe` takes no value, is legal
 with every selector, and switches **match** to TypeSafe; with `TYPESAFE_API_KEY`
 unset or empty, stop and name it. Status vocabulary =
 `job-store/references/flows/flow-read.md` frontmatter `status:`. Missing, non-integer,
 non-positive, or repeated `--top` values, or a repeated `--typesafe` → stop. Unknown status, `--exclude`
-with `--posting` or a dossier, an unmatched `.md` filename, unknown flags,
+with a pasted posting or a dossier, an unmatched `.md` filename, unknown flags,
 leftover tokens, or two selectors → stop.
 
-1. `--posting`, or no selector and the message already holds a posting body (role text or structured facts — not a lone company/title token) → one candidate: that body. Never fetch. No body → stop.
+1. No selector and the message already holds a posting body (role text or structured facts — not a lone company/title token) → one candidate: that body. Never fetch.
 2. A dossier filename → that exact readable, parseable file under `scout/jobs/`.
    Use its stored snapshot, never fetch, and do not apply status or dead-log filters.
-3. `--all`, or `--exclude` with no selector → store, every parseable dossier except `dropped` and dead-by-log, then drop `--exclude` statuses.
-4. Empty or `--new` → store, frontmatter `status:` = `new`, not dead-by-log, then drop `--exclude` statuses.
+3. `all`, or `--exclude` with no selector → store, every parseable dossier except `dropped` and dead-by-log, then drop `--exclude` statuses.
+4. Empty → store, frontmatter `status:` = `new`, not dead-by-log, then drop `--exclude` statuses.
 
 Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` (same launcher as
 **score**) with `{"root", "select", "exclude"}`: its `filter` rows are the Posting facts
@@ -55,15 +55,15 @@ filter₁ reads, and its `gaps` go to `state.gaps`. A rule 2 dossier that lands 
 is unparseable: stop and name it.
 
 Zero → `No dossiers to match.` and end.
-`--posting`: extract next, then filter₁ on the JobProfile (no Posting facts table). Store sources keep the graph order below.
+Pasted posting: extract next, then filter₁ on the JobProfile (no Posting facts table). Store sources keep the graph order below.
 
 ## filter₁
 
-Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. `--posting`: same filters on the JobProfile after extract (`company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility` / `salary`). First hit → `state.blocked`. Do not score.
+Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting: same filters on the JobProfile after extract (`company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility` / `salary`). First hit → `state.blocked`. Do not score.
 
 ## extract
 
-Load `./references/workers/worker-extract.md`. Store sources: rerun `job-store/scripts/slice_store.py` with `skip` = the rows filter₁ blocked, `out` = the run directory, and `batch` = 10, and hand each extract worker one batch file. `--posting`: hand over the supplied body. Write `state.jobs[]`. Malformed → `state.gaps`.
+Load `./references/workers/worker-extract.md`. Store sources: rerun `job-store/scripts/slice_store.py` with `skip` = the rows filter₁ blocked, `out` = the run directory, and `batch` = 10, and hand each extract worker one batch file. Pasted posting: hand over the supplied body. Write `state.jobs[]`. Malformed → `state.gaps`.
 
 ## filter₂
 
