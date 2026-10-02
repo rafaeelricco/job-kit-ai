@@ -14,7 +14,7 @@ GAP = r"[^.!?\n]{1,80}?"  # what X, Y, Z, or … stand for
 PLACEHOLDERS = ("X", "Y", "Z", "…")
 SHORT = {"a", "an", "and", "as", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "the", "to", "vs", "with"}
 BLOCK = r"[ \t]*(?:#|[-*+][ \t]|\||\d+\.[ \t])"
-SENTENCE_END = re.compile(rf"(?<=[.!?])\s+|\n\s*\n|\n(?={BLOCK})")
+SENTENCE_END = re.compile(rf"(?:(?<=[.!?…])|(?<=[.!?…][\"”')\]]))\s+|\n\s*\n|\n(?={BLOCK})")
 BOLD_LABEL = re.compile(r"^[ \t]*(?:[-*+]|\d+\.)[ \t]+(\*\*[^*\n]+\*\*)", re.M)
 HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t]*$", re.M)
 EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF]")

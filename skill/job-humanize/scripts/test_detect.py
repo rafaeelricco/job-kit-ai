@@ -108,6 +108,15 @@ class Structure(unittest.TestCase):
         self.assertEqual(len(kinds(detect.scan(wrapped, max_words=limit), "long-sentence")), 1)
         self.assertEqual(kinds(detect.scan(over, max_words=None), "long-sentence"), [])
 
+    def test_sentence_ends_after_closing_mark(self):
+        _, limit = detect.load_skill()
+        half = " ".join(["word"] * (limit - 5))
+        for end in ['."', ".\u201d", ".)", "!)", ".]", "\u2026"]:
+            with self.subTest(end=end):
+                self.assertEqual(kinds(detect.scan(f"{half}{end} {half}.", max_words=limit), "long-sentence"), [])
+        quoted = '"' + " ".join(["word"] * (limit + 1)) + '." Done.'
+        self.assertEqual(len(kinds(detect.scan(quoted, max_words=limit), "long-sentence")), 1)
+
     def test_markdown_tells(self):
         self.assertEqual(len(kinds(detect.scan("- **Speed:** fast\n"), "bold-label")), 1)
         self.assertEqual(kinds(detect.scan("- a plain bullet with **one** bold word\n"), "bold-label"), [])
