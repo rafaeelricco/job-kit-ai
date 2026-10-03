@@ -100,8 +100,10 @@ Order: first (latest `applied via` date descending, then filename ascending),
 multiplier, follow-up-1, follow-up-2. Print
 `Queue: {n} · first {a} · multiplier {b} · follow-up {c}`, counted before
 `--max`. Zero → `No outreach due.` then Report. Work the queue in order until
-`--max` notes are sent, or would be sent under `--dry-run`. Touches left when
-the cap is reached print under `## Deferred`.
+`--max` notes are sent, or would be sent under `--dry-run`. Every message
+handed to the transport counts as sent here, including one that ends
+`outreach unconfirmed` or under `## Unrecorded`. Touches left when the cap is
+reached print under `## Deferred`.
 
 ## Contacts
 
