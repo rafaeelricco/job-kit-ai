@@ -94,10 +94,13 @@ additions from sergebulaev/linkedin-skills.
 
 ## Before returning
 
-Pipe the rewrite to `./scripts/detect.py` on stdin, one slot per paragraph (a
-blank line between bullets or answers), with the first working Python 3
-launcher: `python3`; on Windows, `py -3`; otherwise `python` only when its major
-version is 3. Add `--max-words 0` for `summary`, `resume`, and `experience`.
+Write the rewrite to a UTF-8 file in the system temp directory with your
+file-writing tool. Put one slot per paragraph, with a blank line between bullets
+or answers. Pass its path to `./scripts/detect.py`, then delete the file. Don't
+pipe or redirect it through a shell: Windows PowerShell turns dashes and curly
+quotes into `?`. Use the first working Python 3 launcher: `python3`; on
+Windows, `py -3`; otherwise `python` only when its major version is 3. Add
+`--max-words 0` for `summary`, `resume`, and `experience`.
 Missing launcher or script → stop and name it. Fix each hit; a hit inside a
 name, quotation, technical term, or text the Surface or CONTRACT keeps as
 written stays. Then reread it once: every claim in the draft is present,
