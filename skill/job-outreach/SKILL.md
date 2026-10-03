@@ -19,7 +19,8 @@ Resolve every profile path against Profile root (not CWD, not skill dir).
 Write-set: `scout/jobs/`, below the ownership marker only: the outreach log
 lines and `#### Outreach` blocks `./references/flows/flow-outreach.md` Record
 names, plus the lock furniture of
-`job-store/references/contracts/contract-persistence.md`. Mail: messages sent
+`job-store/references/contracts/contract-persistence.md` and the
+`scout/jobs/outreach.lock` directory the flow's Send takes. Mail: messages sent
 from the `data/basics.yaml` `email` account. Never `status:`, never the
 scout-owned body, never `data/` or `cv/`. `--dry-run` sends no mail and
 writes nothing.

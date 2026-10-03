@@ -191,6 +191,14 @@ name it.
 
 ## Send
 
+Outside `--dry-run`, start each touch's Send by taking the outreach lock: the
+directory `scout/jobs/outreach.lock`, resolved, acquired, retried, reclaimed,
+and released exactly as steps 1, 3, and 7 of
+`job-store/references/contracts/contract-persistence.md` handle a URL lock.
+Hold it through this touch's Record and release it when the touch ends, sent
+or not. Not taken → skip the touch, reason `outreach lock held`, with no log
+line; another run is sending, and the next run retries.
+
 Immediately before each send, `--dry-run` included:
 
 1. Re-read the dossier. The touch must still select, and for `first` the
@@ -248,8 +256,9 @@ dossier appends below the marker, never above it: the log line, then, for a
 sent or unconfirmed note, its block. A transaction that STOPs after the mail
 went out leaves the dossier as it was: list the note under `## Unrecorded`
 with its kind, recipient, subject, message id, thread id, and the stop
-reason, and count its company as contacted for the rest of the run. `{kind}` is `first`, `follow-up-1`,
-`follow-up-2`, or `multiplier`:
+reason, and count its company as contacted for the rest of the run.
+Committed or STOPped, then release the outreach lock Send took. `{kind}` is
+`first`, `follow-up-1`, `follow-up-2`, or `multiplier`:
 
     - {date} · outreach sent: {kind} · account:{account_uid} · thread:{thread_id} — job-outreach
     - {date} · outreach unconfirmed: {kind} — job-outreach
