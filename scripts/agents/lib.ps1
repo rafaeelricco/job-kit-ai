@@ -11,6 +11,7 @@ $script:SkillNames = @(
   'job-match',
   'job-stories',
   'job-inbox',
+  'job-outreach',
   'job-humanize',
   'job-resume-refine'
 ) + $script:CoreSkillNames
@@ -27,7 +28,7 @@ $script:BrowserLegacySkillNames = @('job-resume')
 $script:LegacySkillNames = @('profile-init', 'job-profile-config', 'job-tracker', 'job-resume', 'job-profile-init', 'job-profile-me', 'job-pitch', 'job-captcha-solver')
 $script:AllSkillNames = $script:SkillNames + $script:BrowserSkillNames + $script:BrowserSharedDeps
 $script:AgentTargets = @('claude', 'codex', 'grok', 'hermes')
-$script:AgentsOnlyNames = @('job-stories', 'job-inbox')
+$script:AgentsOnlyNames = @('job-stories', 'job-inbox', 'job-outreach')
 
 # Get-FullPathNormalized PATH
 # Absolute path, trailing slashes removed (a lone drive root keeps its slash).

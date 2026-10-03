@@ -44,8 +44,8 @@ closure line when the ad reads dead at their read step — so `## Verdict` and t
 a posting-state line is a `posting dead: …` event whose `{writer}` is `job-scout`,
 `job-prep`, or `job-apply`, or a `posting live again` event whose `{writer}` is
 `job-scout`. `found by scout`, every `applied via …` line, every
-`submit unconfirmed …` line, and every `— job-inbox` / `— operator` line are
-not posting state however last they sit.
+`submit unconfirmed …` line, and every `— job-inbox` / `— job-outreach` /
+`— operator` line are not posting state however last they sit.
 Consider only top-level `- ` lines: blockquoted
 text and table rows inside an application record are quoted data, never log events.
 If no posting-state line exists, the job is not dead-by-log. Latest = closure →
@@ -55,7 +55,7 @@ dead-by-log; an earlier closure above it is superseded, body is live.
 ## Ownership boundary
 
 Opening `---` down to the ownership marker is scout-owned and rewritten every
-run. `status:` and every line under the marker belong to the operator, job-prep, job-apply, and job-inbox.
+run. `status:` belongs to the operator, job-apply, and job-inbox; every line under the marker to those, job-prep, and job-outreach.
 Marker line, byte-exact: `<!-- scout never writes below this line -->`.
 
 ## A file in scout/jobs/ is not necessarily a dossier

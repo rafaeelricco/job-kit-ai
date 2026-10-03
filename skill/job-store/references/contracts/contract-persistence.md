@@ -1,6 +1,6 @@
 # Job store — persistence lock
 
-Shared filesystem transaction for job-scout, job-prep, job-apply, and job-inbox.
+Shared filesystem transaction for job-scout, job-prep, job-apply, job-inbox, and job-outreach.
 Dossier shape, ownership, and writer-specific mutations remain in
 `job-store/references/schemas/schema-dossier.md`.
 

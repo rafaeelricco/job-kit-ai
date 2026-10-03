@@ -244,8 +244,8 @@ Usage: uninstall.sh                 # interactive menu (TTY required)
        uninstall.sh -h|--help
 
 Targets:
-  aside     Aside skills (job-scout, job-apply, job-prep, job-resume-refine, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
-  agents    Coding-agent skills (job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store, job-resume-refine)
+  aside     Aside skills (job-scout, job-apply, job-prep, job-resume-refine, job-profile, job-list, job-match, job-stories, job-inbox, job-outreach, job-humanize, job-profile-root, job-store)
+  agents    Coding-agent skills (job-profile, job-list, job-match, job-stories, job-inbox, job-outreach, job-humanize, job-profile-root, job-store, job-resume-refine)
   browser-use  Browser skills (job-scout, job-apply, job-prep) in coding-agent homes, plus
                the browser-use driver: its skill, its CLI, its state directory.
                Never a browser app bundle
@@ -350,7 +350,7 @@ uninstall_browser_use() {
         d="$(skill_dest "${root}" "${n}")"
         unlink_skill "${d}" "${repo}" "${n}"
       done
-      for n in job-stories job-inbox; do
+      for n in job-stories job-inbox job-outreach; do
         if is_kit_skill_link "$(skill_dest "${root}" "${n}")" "${repo}" "${n}"; then
           agents_owned=1
           break
@@ -847,7 +847,7 @@ plan_rows_browser_use() {
           return 0
           ;;
       esac
-      for pn in job-stories job-inbox; do
+      for pn in job-stories job-inbox job-outreach; do
         if is_kit_skill_link "$(skill_dest "${plan_root}" "${pn}")" "${repo}" "${pn}"; then
           agents_owned=1
           break
@@ -1648,7 +1648,7 @@ unremovable_skill_entries() {
                 case " ${UNINSTALL_TARGETS} " in
                   *" agents "*) ;;
                   *)
-                    for n in job-stories job-inbox; do
+                    for n in job-stories job-inbox job-outreach; do
                       if is_kit_skill_link "$(skill_dest "${root}" "${n}")" "${REPO_ROOT}" "${n}"; then
                         continue 2
                       fi

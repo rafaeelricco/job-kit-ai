@@ -107,6 +107,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-store\scripts\normalize_source.py',
   'skill\job-stories\SKILL.md',
   'skill\job-inbox\SKILL.md',
+  'skill\job-outreach\SKILL.md',
   'skill\job-humanize\SKILL.md',
   'skill\job-profile-root\SKILL.md',
   'skill\job-store\SKILL.md',

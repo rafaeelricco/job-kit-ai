@@ -86,6 +86,23 @@ def no_opening_fence(text: str) -> str:
     return text[len("---\n"):]
 
 
+def outreach_record(text: str) -> str:
+    """A job-outreach send: one log line and its blockquoted block below the marker."""
+    assert text.endswith("applied via ats — job-apply\n")
+    return text + (
+        "- 2026-09-12 · outreach sent: first · account:a@x.com · thread:t1 — job-outreach\n"
+        "\n"
+        "#### Outreach 2026-09-12 · first\n"
+        "\n"
+        "> to: Ana Lima <ana@cosuno.com> · CTO\n"
+        "> found: company site · https://cosuno.com/team\n"
+        "> account: a@x.com\n"
+        "> thread: t1\n"
+        "> subject: Senior Full Stack Developer (TypeScript) at Cosuno\n"
+        "> Hi Ana,\n"
+    )
+
+
 # (transform on CLEAN, expected errors). The first is the 2026-09-11 Range defect.
 CASES: Tuple[Tuple[Callable[[str], str], List[str]], ...] = (
     (
@@ -94,6 +111,7 @@ CASES: Tuple[Tuple[Callable[[str], str], List[str]], ...] = (
     ),
     (identity, []),
     (scout_dossier_with_verdict, []),
+    (outreach_record, []),
     (swap("status: applied", "status: open"), ["status: not in new|applied|rejected|interview|offer|dropped"]),
     (swap("bucket: unbucketed", "bucket: EU"), ["bucket: not in direct|EOR|restricted-geo|unbucketed"]),
     (swap("channel: ats", "channel: —"), ["channel: not in ats|direct_email|dm_request|founder"]),

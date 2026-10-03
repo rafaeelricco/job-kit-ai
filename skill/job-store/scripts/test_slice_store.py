@@ -146,6 +146,32 @@ class SliceStore(unittest.TestCase):
         )
         self.assertEqual(self.files(self.run_slice(select="new")), [])
 
+    def test_outreach_lines_are_not_posting_state(self) -> None:
+        self.write(
+            "h.md",
+            dossier(
+                "H",
+                status="applied",
+                log=[
+                    "- 2026-09-02 · posting dead: gone — job-scout",
+                    "- 2026-09-03 · outreach sent: first · account:a@x.com · thread:t1 — job-outreach",
+                    "- 2026-09-10 · outreach stopped: reply in thread · account:a@x.com · thread:t1 — job-outreach",
+                ],
+            ),
+        )
+        self.write(
+            "i.md",
+            dossier(
+                "I",
+                status="applied",
+                log=[
+                    "- 2026-09-03 · outreach sent: first · account:a@x.com · thread:t2 — job-outreach",
+                    "- 2026-09-04 · outreach unconfirmed: follow-up-1 — job-outreach",
+                ],
+            ),
+        )
+        self.assertEqual(self.files(self.run_slice(select="all")), ["i.md"])
+
     def test_exclude(self) -> None:
         self.seed()
         result = self.run_slice(select="all", exclude=["applied"])

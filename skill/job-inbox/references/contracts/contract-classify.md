@@ -9,12 +9,13 @@ Join on **company**, then **title** when more than one dossier shares that compa
 
 Strength is a property of the **sender**:
 
-| Sender evidence                                             | Strength |
-| ----------------------------------------------------------- | -------- |
-| Envelope domain is the company's own                        | strong   |
-| Known-ATS envelope domain, company named in From or Subject | medium   |
-| Company in From display-name or Subject only                | medium   |
-| Company in body only, title tokens only, or agency From     | weak     |
+| Sender evidence                                                   | Strength |
+| ----------------------------------------------------------------- | -------- |
+| Thread logged on an `outreach sent` line of exactly one candidate | strong   |
+| Envelope domain is the company's own                              | strong   |
+| Known-ATS envelope domain, company named in From or Subject       | medium   |
+| Company in From display-name or Subject only                      | medium   |
+| Company in body only, title tokens only, or agency From           | weak     |
 
 Known-ATS: `greenhouse.io`, `lever.co`, `ashbyhq.com`, `myworkday.com`,
 `smartrecruiters.com`, `workable.com`, `teamtailor.com`. Any other non-company
@@ -27,6 +28,7 @@ Weak does not promote.
 Mail naming its own opportunity title does not bind a dossier whose `title` differs.
 Normalize both — lowercase, non-alphanumeric runs → spaces, collapse, trim.
 Title conflict removes that candidate even if it is the only dossier for that company.
+A thread logged on that candidate's `outreach sent` line is never a title conflict for it: `job-outreach` wrote its subject from that dossier.
 Two named titles → `skip`.
 
 After conflict removal: zero → `unmatched`; one may bind; more than one needs
@@ -40,6 +42,7 @@ Exactly one per thread, from the **fetched body** of one **inbound** message.
 1. Full thread body fetched. Snippet, subject, sender name are not a body.
 2. Verdict quotes one clause from that body — the words that fired it.
 3. Clause from a message the operator **received**. Outbound → `skip`.
+   A message whose From is the bound account's address is outbound.
    Calendar or "click to confirm" chrome is not evidence.
 
 Several stages in one thread — pick, in order:

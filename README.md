@@ -61,10 +61,16 @@ Run these skills in your agent:
 3. `/job-list` — review saved jobs and application statuses.
 4. `/job-apply` — fill, submit, and record applications.
 5. `/job-inbox` — check replies from a session with Gmail access.
+6. `/job-outreach` — email the hiring manager after you apply, with follow-ups.
 
 **`/job-apply` submits without pausing for approval.** Use `/job-prep` to prepare
 application packages without submitting. Scout finds and records jobs; inbox
 reads mail and updates matching records.
+
+**`/job-outreach` sends email without pausing for approval**: a first note only
+for ATS applications from the last 48 hours, follow-ups only in threads it
+started and only while nobody has replied.
+Run `/job-outreach --dry-run` to read the notes first.
 
 Your profile defaults to `${XDG_CONFIG_HOME:-$HOME/.config}/job-kit`:
 `data/` holds your facts, `cv/` holds base resumes, and `scout/` holds jobs and
@@ -82,6 +88,11 @@ full match profile to `api.typesafe.ai`: roles, skills, domains, languages,
 work history, preferences, work authorization, and search constraints. Your
 name and contact details are not included.
 
+`/job-outreach` uses an address only when the ad or the company prints it,
+unless `HUNTER_API_KEY` is set: then it sends the company domain and the
+person's first and last name to `api.hunter.io` to find and verify one.
+Nothing about you is sent there.
+
 ## Documentation
 
 Each skill contains its usage and detailed workflow:
@@ -96,6 +107,7 @@ Each skill contains its usage and detailed workflow:
 | [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                           |
 | [job-resume-refine](skill/job-resume-refine/SKILL.md) | Tailor a one-page resume.                                 |
 | [job-inbox](skill/job-inbox/SKILL.md)                 | Track Gmail replies.                                      |
+| [job-outreach](skill/job-outreach/SKILL.md)           | Email hiring managers and follow up.                      |
 | [job-stories](skill/job-stories/SKILL.md)             | Build interview stories, scripts, and experience bullets. |
 
 Shared skills handle [profile lookup](skill/job-profile-root/SKILL.md) and
