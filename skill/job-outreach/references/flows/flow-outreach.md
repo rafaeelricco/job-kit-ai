@@ -121,11 +121,15 @@ job board (LinkedIn, hiring.cafe, Wellfound, Work at a Startup, HN,
 mail providers. The exception is a company that is the vendor itself, such
 as Ashby on `ashbyhq.com`.
 
-**Company domain**, first that holds: a link the ad prints; the website the
-company's LinkedIn page prints; a web search for the company name. A host
-counts only when it is not on the never list and its home page prints the
-company name, ignoring case, spacing, and punctuation. None → rungs 2 and 4
-have nothing to run on.
+**Company domain**, first that holds: a link the ad prints, or the domain of
+an address it prints; the company website that the ad's ATS board (its
+tenant page on the ATS host) links to; the website the company's LinkedIn
+page prints, when the ad links to that page; a web search for the company
+name, when the host's home or careers page links to or embeds the ad or that
+ATS board. A host counts only when it is not on the never list and its home
+page prints the company name, ignoring case, spacing, and punctuation; the
+name alone does not tie a host to this posting, since another company can
+share it. None → rungs 2 and 4 have nothing to run on.
 
 **Deciding person**, ranked: the hiring manager for the team the ad names; a
 head, director, or VP of engineering; the CTO; a founder or CEO. The page
