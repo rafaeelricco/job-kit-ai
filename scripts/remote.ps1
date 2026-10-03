@@ -105,6 +105,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-store\scripts\validate_extract.py',
   'skill\job-store\scripts\validate_dossier.py',
   'skill\job-store\scripts\normalize_source.py',
+  'skill\job-humanize\scripts\detect.py',
   'skill\job-stories\SKILL.md',
   'skill\job-inbox\SKILL.md',
   'skill\job-humanize\SKILL.md',
