@@ -87,6 +87,8 @@ takes at most one touch, first match:
 For a follow-up, read the threads first. Any reply → no touch; Record writes
 `outreach stopped: reply in thread` and the report lists it under
 `## Stopped`. A later rejection in that thread can still take the multiplier.
+No reply but an unscanned outcome → no touch, as for `first`: list it under
+`## Skipped` as `outcome in mail: run /job-inbox`, and log nothing.
 
 A dossier that takes a touch must first pass
 `job-store/scripts/validate_dossier.py`, run on the dossier file the way step

@@ -45,7 +45,8 @@ Load each additional reference only when that flow names it.
   outreach reached in the last 30 days
 - Send a follow-up or multiplier outside the thread an `outreach sent` line
   logs, or to anyone but that thread's first recipient; send a follow-up
-  after any reply landed in that thread
+  after any reply landed in that thread, or when mail since the application
+  already holds a rejection, interview, or offer
 - Use a Hunter address the verifier did not return `valid`; guess an address
   from a pattern or read one from commit metadata
 - Address a message to the bound account, to more than one recipient, or to a
