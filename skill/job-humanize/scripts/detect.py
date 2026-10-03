@@ -10,10 +10,10 @@ import argparse, re, sys
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "SKILL.md"
-GAP = r"[^.!?\n]{1,80}?"  # what X, Y, Z, or … stand for
 PLACEHOLDERS = ("X", "Y", "Z", "…")
 SHORT = {"a", "an", "and", "as", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "the", "to", "vs", "with"}
 BLOCK = r"[ \t]*(?:#|[-*+][ \t]|\||\d+\.[ \t])"
+GAP = rf"(?:(?!\n[^\S\n]*\n|\n(?={BLOCK}))[^.!?]){{1,80}}?"  # what X, Y, Z, or … stand for
 SENTENCE_END = re.compile(rf"(?:(?<=[.!?…])|(?<=[.!?…][\"”')\]]))\s+|\n\s*\n|\n(?={BLOCK})")
 BOLD_LABEL = re.compile(r"^[ \t]*(?:[-*+]|\d+\.)[ \t]+(\*\*[^*\n]+\*\*)", re.M)
 HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t]*$", re.M)

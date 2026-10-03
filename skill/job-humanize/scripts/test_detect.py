@@ -66,6 +66,26 @@ class Phrases(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertTrue(kinds(detect.scan(text), "phrase"))
 
+    def test_placeholder_slot_wraps_inside_one_block(self):
+        for text in [
+            "Not speed\nalone, but safety.",
+            "Stop guessing\nwhat works, start measuring.",
+            "No meetings. No long\nslides. Just code.",
+            "It's not just fast\ncode, it's safety.",
+            "Want me to\nexpand this?",
+            "- Not speed\n  alone, but safety.",
+        ]:
+            with self.subTest(text=text):
+                self.assertTrue(kinds(detect.scan(text), "phrase"))
+        for text in [
+            "Not speed\n\nalone, but safety.",
+            "- Not ready yet\n- tests flaky, but the fix landed",
+            "| Status | Not ready yet |\n| Note | flaky, but fixed |",
+            "We do not ship on Fridays\n## Ops, but only on call",
+        ]:
+            with self.subTest(text=text):
+                self.assertEqual(kinds(detect.scan(text), "phrase"), [])
+
     def test_load_skill_rejects_a_skill_without_the_list(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "SKILL.md"
