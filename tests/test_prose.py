@@ -86,8 +86,8 @@ PROFILE_PREFIXES: Tuple[str, ...] = (
 # Profile files the prose also names bare, without their `data/` directory.
 PROFILE_FILES: FrozenSet[str] = frozenset(
     (
+        "answers.yaml",
         "basics.yaml",
-        "candidate.yaml",
         "cvs.yaml",
         "education.yaml",
         "en-us-resume.pdf",

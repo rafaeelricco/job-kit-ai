@@ -22,12 +22,13 @@ Unreadable Profile root, or a present but unreadable `data/cvs.yaml` → stop an
 say so; an absent `data/cvs.yaml` falls back per `flow-apply.md` §3. A dossier
 that will not read or parse is one posting's failure, not the run's —
 `flow-apply.md` §2.
+`data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
 Write-set: `scout/jobs/` — a confirmed submission (`flow-record.md`), one
 `posting dead` log line when the ad reads dead (`flow-apply.md` §2), or one
 `submit unconfirmed` log line after an ambiguous submit (`flow-apply.md` §5) —
-and `data/candidate.yaml` `screening_defaults.qa[]`, appended once per run
-under `flow-learn.md`, plus its `data/candidate.yaml.{run token}.tmp`
+and `data/answers.yaml` `qa[]`, appended once per run
+under `flow-learn.md`, plus its `data/answers.yaml.{run token}.tmp`
 staging sibling during atomic rename. A chained `job-resume-refine` writes
 `scout/applications/{slug}/` under its own law.
 `scout/applications/{slug}/plan.json` is read-only input here
@@ -54,8 +55,8 @@ Load each additional reference only when that flow names it.
 - State a fact no Fact file or the live ad prints, in a form value, a letter,
   or an answer; a missing part is named as not on record, never estimated
 - Read a story body, or ship a `never_say` claim or a process number
-- Write `cv/`, any `data/` path but `data/candidate.yaml`
-  `screening_defaults.qa[]` and its `{run token}.tmp` staging sibling, or —
+- Write `cv/`, any `data/` path but `data/answers.yaml`
+  `qa[]` and its `{run token}.tmp` staging sibling, or —
   before a confirmed submission — `scout/jobs/`, except the one
   `posting dead` or `submit unconfirmed` log line `flow-apply.md` appends
 - Write an `answer` value, a scope guess, a password, a one-time code, or an

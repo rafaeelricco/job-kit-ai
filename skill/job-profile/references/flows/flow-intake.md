@@ -17,10 +17,10 @@ registered here.
    steps 3-4 (read-only; do not write pointers here).
 2. Read the one line of `$HOST_HOME/.config/profile-root` when readable. Absent or
    unreadable (sandbox `Operation not permitted`) → no pointer; continue.
-   Line resolves to a directory passing the two-file probe → offer that path as the
+   Line resolves to a directory passing the profile probe → offer that path as the
    **register existing** candidate, labelled already-active (pointer wins over
    path convention).
-3. Else if `JOB_KIT_CONFIG` passes the two-file probe, treat it as the
+3. Else if `JOB_KIT_CONFIG` passes the profile probe, treat it as the
    already-active candidate (recommended).
 4. Pointer line resolves but fails the probe → say the pointer is **stale** and
    name it. Do not offer it as a register-existing candidate; carry the fact into
@@ -34,8 +34,8 @@ probes only.
 
 Two outcomes; offer both.
 
-- **Register existing**: directory holding both `data/candidate.yaml` and
-  `data/job_search.yaml` (ignore any path under a `templates/` directory). Look
+- **Register existing**: directory holding `data/job_search.yaml` (ignore any
+  path under a `templates/` directory). Look
   where the operator points and where the session already is. Choosing this
   **ends intake** — no Folder, Source, Identity, or Approve; no emit; no fill.
   Then run **Activate ask** (below) with that path as `<target>`, then SKILL step 4.
@@ -77,7 +77,7 @@ Example prompt:
 - **No** → step 4 skips Activate **only** when `<target>` is **not** a path that
   skills probe by convention without a pointer. If `<target>` equals
   `JOB_KIT_CONFIG` (or canonical-equals `HOST_DEFAULT`), **No is not allowed**:
-  presence of the two probe files would make the profile active immediately.
+  presence of the probe file would make the profile active immediately.
   Re-offer: **Yes (Recommended)**, or pick a different absolute non-default
   `<target>` and re-run Activate ask. Never emit under `JOB_KIT_CONFIG` after
   an Activate refusal.

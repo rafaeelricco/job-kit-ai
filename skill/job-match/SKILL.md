@@ -12,6 +12,7 @@ Store law: load the `job-store` skill now; obey it end-to-end.
 
 Resolve `scout/` and every `data/*` path against Profile root (not CWD, not skill dir).
 Unreadable required file under a resolved root → stop and say so.
+`data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
 Write-set: none. Direct calls return chat only; worker and state JSON stay in-session
 or in one run-scoped temp directory outside Profile root, removed after **report**.

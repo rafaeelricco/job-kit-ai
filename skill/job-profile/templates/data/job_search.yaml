@@ -1,29 +1,54 @@
-# Search constraints for job-scout. Scout preflight stops on any other valued key.
-# Keys: work_model, job_types, date_posted, positions, locations, location_scope,
-#   direct_regions, market_currencies, exclude_locations, exclude_companies,
-#   prune_score_max
+# Job search profile: what job-scout searches for, and the screening facts
+# job-apply answers forms from.
+# Keys: work_model, job_types, date_posted, positions, location,
+#   market_currencies, exclude_companies, prune_score_max,
+#   legal_authorization, employment_routes, salary_expectations,
+#   availability, screening_defaults
+# Scout preflight stops on any other valued key. job-profile may write the
+# search keys; every other key is continue fill. Reusable form answers live in
+# answers.yaml.
 #
 # How a search is constrained, and why:
 #
-#   [positions × formulations] + [location_scope] + [work_model / job_types / date_posted]
+#   [positions × formulations] + [location.search_in] + [work_model / job_types / date_posted]
 #
-#   work_model         remote / hybrid / onsite flags. Scout keep uses kit-true flags.
+#   work_model         remote / hybrid / onsite flags. Scout keep uses kit-true
+#                      flags; job-apply answers remote and in-person from them.
 #   job_types          full_time, contract, and the other printed types.
 #   date_posted        one window: 24_hours, week, month, or all_time.
 #   positions          title strings; [role] and board title-match use this list,
 #                      file order.
-#   locations          named places when location_scope is listed.
-#   location_scope     worldwide | listed. listed needs a named location (not
-#                      only Anywhere). Empty → scout STOP.
-#   direct_regions     hire-from tokens that count as direct (LATAM, worldwide,
-#                      anywhere, global).
+#   location           where scout searches and who can hire you:
+#     search_in          markets to search, one run each, or `worldwide` for one
+#                        unfiltered run. An onsite posting must sit in one. This is
+#                        not where you may work (legal_authorization is).
+#                        Empty → scout STOP.
+#     also_eligible_from regions that include you when a posting says "hiring
+#                        from X", on top of your Yes jurisdictions (e.g. LATAM).
+#                        Worldwide / anywhere / global postings always qualify.
+#     exclude_hire_from  hire-from places to drop. Empty → drop none.
 #   market_currencies  salary currencies the gate keeps (USD, EUR, GBP).
-#   exclude_locations  hire-from countries to drop. Empty → drop none.
 #   exclude_companies  company names dropped at search and gate, slug-compared.
 #                      Empty → drop none.
 #   prune_score_max    job-prune threshold; scout ignores it.
 #
-#   Rules: bool maps are explicit. Anywhere is a keep token, never a query.
+# How a screening answer is chosen, and why:
+#
+#   [Fact file] then [derived] then [qa row] then [authored] — never invent
+#
+#   legal_authorization  One row per country. Apply reads the matching country
+#                        only; never copy a row onto another country.
+#   employment_routes    employer_of_record, direct_contractor, local_employment.
+#   salary_range_usd     Yearly USD band. Printed job USD numbers win; this band
+#                        decides only when the job prints none. Never convert non-USD.
+#   availability         notice_period (earliest start is today plus this) and
+#                        open_to_relocation, verbatim.
+#   screening_defaults   on_call, hours_overlap, timezone, consent_to_data_processing.
+#                        Absent key → later apply rules.
+#   qa row               An answers.yaml row whose question matches the label.
+#
+#   Rules: bool maps are explicit. Empty is absent. A Fact file always wins over
+#   a qa row. Never invent visa, salary, or notice. No EEO or demographic data.
 
 work_model:
   remote: false
@@ -47,10 +72,35 @@ date_posted:
 
 positions: [] # confirm target titles; empty → Gap until set
 
-locations: [] # empty OK when location_scope is worldwide; listed + empty → scout STOP
-location_scope: "" # worldwide | listed — empty → scout STOP until set
-direct_regions: [] # tokens vs extract location for bucket `direct` (e.g. LATAM)
+location:
+  search_in: [] # markets to search, or worldwide; empty → scout STOP until set
+  also_eligible_from: [] # hire-from regions that include you (e.g. LATAM); empty → jurisdictions only
+  exclude_hire_from: [] # hire-from places to drop (e.g. Brazil); empty → none
 market_currencies: [] # e.g. USD, EUR, GBP; empty → no markets prose
-exclude_locations: [] # hire-from countries to drop (e.g. Brazil); empty → none
 exclude_companies: [] # company names to drop at search and gate, slug-compared; empty → none
 prune_score_max: 5 # job-prune: dossiers scored at or below this move to scout/jobs/.trash/
+
+# No self-identification block, deliberately. EEO / demographic questions are
+# voluntary and per-employer; answer them in the ATS form at apply time.
+# No kit skill stages protected-class data from a file.
+
+legal_authorization:
+  jurisdictions: [] # TODO each: {country, work_authorization, legally_allowed_to_work, requires_visa, requires_sponsorship}
+
+employment_routes:
+  employer_of_record: "" # Yes | No: gates EOR report eligibility
+  direct_contractor: ""
+  local_employment: ""
+
+salary_expectations:
+  salary_range_usd: "" # TODO e.g. "80000-120000"
+
+availability:
+  notice_period: "" # TODO e.g. "2 weeks"
+  open_to_relocation: ""
+
+screening_defaults:
+  on_call: ""
+  hours_overlap: ""
+  timezone: ""
+  consent_to_data_processing: ""

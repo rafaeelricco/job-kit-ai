@@ -4,18 +4,18 @@ Every prefilled value comes from the Fact file named here. Read it; stop if
 unreadable. Absent is absent — never infer, never answer from a prior draft or
 memory. Never read story bodies.
 
-| Value                                                                      | Read from                                                                                                                                                         |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| language level                                                             | `data/languages.yaml` `languages[].level` with `name`                                                                                                             |
-| salary, notice, authorization, employment routes, relocation               | `data/candidate.yaml`                                                                                                                                             |
-| remote / in-person, relocation, assessments, drug tests, background checks | `data/candidate.yaml` `work_preferences_from_resume`, then readable legacy keys                                                                                   |
-| name, email, phone, site, country                                          | `data/basics.yaml`                                                                                                                                                |
-| LinkedIn, GitHub                                                           | `data/profiles.yaml`                                                                                                                                              |
-| roles, employers, dates, work bullets, project depth                       | `data/experiences.yml`                                                                                                                                            |
-| public portfolio projects                                                  | `data/projects.yml`                                                                                                                                               |
-| skills / stack inventory                                                   | `data/skills.yaml`, then `data/skills-by-company.yml` when present                                                                                                |
-| story claims and verified outcomes                                         | `data/stories/*.md` frontmatter only: `claim`, `evidence.*`, `impact_numbers` whose `verified` is not `unverified` and whose `kind` is `outcome`, and `never_say` |
-| which CV to attach                                                         | `data/cvs.yaml` `adapt_per_vacancy` (absent → true) and `base` (filename under `cv/`)                                                                             |
+| Value                                                        | Read from                                                                                                                                                         |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| language level                                               | `data/languages.yaml` `languages[].level` with `name`                                                                                                             |
+| salary, notice, authorization, employment routes, relocation | `data/job_search.yaml`                                                                                                                                            |
+| remote / in-person                                           | `data/job_search.yaml` `work_model`                                                                                                                               |
+| name, email, phone, site, country                            | `data/basics.yaml`                                                                                                                                                |
+| LinkedIn, GitHub                                             | `data/profiles.yaml`                                                                                                                                              |
+| roles, employers, dates, work bullets, project depth         | `data/experiences.yml`                                                                                                                                            |
+| public portfolio projects                                    | `data/projects.yml`                                                                                                                                               |
+| skills / stack inventory                                     | `data/skills.yaml`, then `data/skills-by-company.yml` when present                                                                                                |
+| story claims and verified outcomes                           | `data/stories/*.md` frontmatter only: `claim`, `evidence.*`, `impact_numbers` whose `verified` is not `unverified` and whose `kind` is `outcome`, and `never_say` |
+| which CV to attach                                           | `data/cvs.yaml` `adapt_per_vacancy` (absent → true) and `base` (filename under `cv/`)                                                                             |
 
 ## Resolution order
 
@@ -27,9 +27,12 @@ the package prints the rule as `source`. Nothing waits for the operator.
 
 1. A Fact file above prints it → that file.
 2. "Derived answers" below computes it → `derived`.
-3. `data/candidate.yaml` `screening_defaults` prints it (`on_call`,
-   `hours_overlap`, `timezone`, `consent_to_data_processing`, or a `qa[]` row)
-   → `data/candidate.yaml`. A `qa[]` row applies when its
+3. `data/job_search.yaml` `screening_defaults` prints it (`on_call`,
+   `hours_overlap`, `timezone`, `consent_to_data_processing`, and the legacy
+   `willing_to_complete_assessments`, `willing_to_undergo_drug_tests`, and
+   `willing_to_undergo_background_checks` the `candidate.yaml` move carries) →
+   `data/job_search.yaml`, or a `data/answers.yaml` `qa[]` row does →
+   `data/answers.yaml`. A `qa[]` row applies when its
    `question` equals the form label after normalizing both — lowercase,
    non-alphanumeric runs → one space, trim — and its `scope` holds: `country`
    equals the jurisdiction the label asks about, else the posting's printed
@@ -80,7 +83,7 @@ Before staging any prose, enforce every `never_say` ban below.
 
 - Language level is the printed self-assessment, paired with the language name. Never assert a certification, test score, or bare letter grade.
 - Never name an employer's client. Use only a domain phrase already present in a Fact file.
-- Remote, in-person, and relocation use `work_preferences_from_resume` verbatim. An empty key is no answer.
+- Remote is `Yes` when `work_model.remote` or `work_model.hybrid` is true, else `No`. In-person is `Yes` when `work_model.onsite` or `work_model.hybrid` is true, else `No`. No `work_model` flag true → neither is an answer. Relocation uses `availability.open_to_relocation` verbatim; an empty key is no answer.
 - Demographic and EEO questions are answered only by declining; never invent, recall, or read them from a file.
 - Disqualifying questions get the truthful answer, even when it disqualifies.
 - Every `never_say` entry is a run-global ban on outbound free-text, exact or semantically equivalent.

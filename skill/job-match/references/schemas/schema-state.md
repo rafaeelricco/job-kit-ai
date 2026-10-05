@@ -31,16 +31,14 @@ Pipe those files to the scripts; never retype their JSON.
 | `languages`                       | same file, `languages` as `{name: level}`                                                                                                                                                                                                                                 |
 | `experience`                      | `experiences.yml` `date` · `position` · `company` per role; no `summary`                                                                                                                                                                                                  |
 | `years_experience`                | Run `./scripts/years.py` (launcher as **score** in `./references/flows/flow-match.md`) with `{"dates": [...]}` from `experience[].date`; take its `years` (`null` stays `null`, not 0). This script is the one years rule: every skill that states a years figure runs it |
-| `preferences.remote`              | `candidate.yaml` `work_preferences_from_resume.remote_work`                                                                                                                                                                                                               |
-| `preferences.in_person`           | `in_person_work`                                                                                                                                                                                                                                                          |
-| `preferences.relocation`          | `open_to_relocation`                                                                                                                                                                                                                                                      |
+| `preferences.remote`              | `job_search.yaml` `work_model.remote` or `work_model.hybrid` true → `Yes`, else `No`; no `work_model` flag true → `""`                                                                                                                                                    |
+| `preferences.in_person`           | `work_model.onsite` or `work_model.hybrid` true → `Yes`, else `No`; no `work_model` flag true → `""`                                                                                                                                                                      |
+| `preferences.relocation`          | `job_search.yaml` `availability.open_to_relocation`                                                                                                                                                                                                                       |
 | `constraints.work_model`          | `job_search.yaml` `work_model`                                                                                                                                                                                                                                            |
-| `constraints.locations`           | `job_search.yaml` `locations`                                                                                                                                                                                                                                             |
-| `constraints.location_scope`      | `job_search.yaml` `location_scope`                                                                                                                                                                                                                                        |
-| `constraints.exclude_locations`   | `job_search.yaml` `exclude_locations`                                                                                                                                                                                                                                     |
+| `constraints.location`            | `job_search.yaml` `location` (`search_in`, `also_eligible_from`, `exclude_hire_from`)                                                                                                                                                                                     |
 | `constraints.exclude_companies`   | `job_search.yaml` `exclude_companies`                                                                                                                                                                                                                                     |
 | `constraints.market_currencies`   | `job_search.yaml` `market_currencies`                                                                                                                                                                                                                                     |
-| `constraints.legal_authorization` | `candidate.yaml` `legal_authorization`                                                                                                                                                                                                                                    |
+| `constraints.legal_authorization` | `job_search.yaml` `legal_authorization`                                                                                                                                                                                                                                   |
 
 ```json
 {
@@ -53,9 +51,7 @@ Pipe those files to the scripts; never retype their JSON.
   "preferences": { "remote": "", "in_person": "", "relocation": "" },
   "constraints": {
     "work_model": {},
-    "locations": [],
-    "location_scope": "",
-    "exclude_locations": [],
+    "location": { "search_in": [], "also_eligible_from": [], "exclude_hire_from": [] },
     "exclude_companies": [],
     "market_currencies": [],
     "legal_authorization": {}

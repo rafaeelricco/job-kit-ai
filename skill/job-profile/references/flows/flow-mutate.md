@@ -4,8 +4,8 @@ One mutation per confirm cycle. Several related edits in one user message are on
 batch — still one diff, one yes.
 
 Verbs: `search set` (`job_search.yaml`), `packs` (enable/disable/formulations/location/add/remove),
-`card refresh` (`profile_card.yaml`), `cv set` (`cvs.yaml`), `qa` (`candidate.yaml`
-`screening_defaults.qa[]`: add/answer/remove/ingest).
+`card refresh` (`profile_card.yaml`), `cv set` (`cvs.yaml`), `qa` (`answers.yaml`
+`qa[]`: add/answer/remove/ingest).
 Load `./references/schemas/schema-profile-card.md` when the verb is `card refresh` or when a
 `positions` write clears `primary_role`.
 
@@ -31,11 +31,13 @@ Load `./references/schemas/schema-profile-card.md` when the verb is `card refres
    first rename: any one changed since step 2 → delete the staged files, write
    nothing, and say the file changed under this cycle, naming the path; the
    operator re-runs the verb against the fresh content. `job-apply`'s
-   `flow-learn.md` appends `screening_defaults.qa[]` unattended, so a step-2
+   `flow-learn.md` appends `answers.yaml` `qa[]` unattended, so a step-2
    read goes stale while step 4 waits. All unchanged → rename each over its
-   original. Rename is the only step that mutates a live file.
+   original. Rename, and the legacy `candidate.yaml` delete after it, are the
+   only steps that mutate a live file.
 9. A rename that fails after an earlier one succeeded → restore those originals
-   from the step-5 contents and report the cycle rolled back. Never print
+   from the step-5 contents, remove any file this cycle created, and report the
+   cycle rolled back. Never print
    `wrote` for a cycle that did not complete: the card-clear and its
    `job_search.yaml` edit stand or fall together.
 10. All renames done → print `wrote <abs path>` per file and re-print only the
@@ -46,21 +48,55 @@ Print `Profile root: /abs/path` before the first diff of the session.
 
 ## `job_search.yaml` — writable keys
 
-| Key                                              | Shape                                       |
-| ------------------------------------------------ | ------------------------------------------- |
-| `positions`                                      | list of strings                             |
-| `locations`                                      | list of strings                             |
-| `location_scope`                                 | `worldwide` \| `listed`, only when explicit |
-| `direct_regions`                                 | list of strings                             |
-| `market_currencies`                              | list of strings                             |
-| `exclude_locations`                              | list of strings                             |
-| `exclude_companies`                              | list of strings                             |
-| `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                    |
+| Key                                              | Shape                                              |
+| ------------------------------------------------ | -------------------------------------------------- |
+| `positions`                                      | list of strings                                    |
+| `location.search_in`                             | list of strings, or `worldwide` only when explicit |
+| `location.also_eligible_from`                    | list of strings                                    |
+| `location.exclude_hire_from`                     | list of strings                                    |
+| `market_currencies`                              | list of strings                                    |
+| `exclude_companies`                              | list of strings                                    |
+| `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                           |
 
-Nothing else in this file is written. When scout preflight (or the operator) names
-a key still present in `job_search.yaml` that is not in the writable table above,
+Nothing else in this file is written, except by the legacy moves below. When
+scout preflight (or the operator) names a key still present in `job_search.yaml`
+that is in neither the writable table above nor the Refuse table's fact keys,
 delete that key only — show the deletion in the same confirm cycle as any other
 write. Never invent a replacement value for a deleted key.
+
+Legacy location keys are moved, not deleted, in one confirm cycle:
+
+| Legacy                                | Becomes                                                              |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `location_scope: worldwide`           | `location.search_in: worldwide` (old `locations` dropped)            |
+| `locations` (scope `listed` or empty) | `location.search_in` list, minus `Anywhere`                          |
+| `direct_regions`                      | `location.also_eligible_from`, minus `worldwide`/`anywhere`/`global` |
+| `exclude_locations`                   | `location.exclude_hire_from`                                         |
+
+Legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle,
+with the location moves above when those keys are present too:
+
+| `candidate.yaml`                                                  | Becomes                                             |
+| ----------------------------------------------------------------- | --------------------------------------------------- |
+| `legal_authorization`, `employment_routes`, `salary_expectations` | same keys in `job_search.yaml`, verbatim            |
+| `availability.notice_period`                                      | `job_search.yaml` `availability.notice_period`      |
+| `work_preferences_from_resume.open_to_relocation`                 | `job_search.yaml` `availability.open_to_relocation` |
+| `work_preferences_from_resume.willing_to_*`                       | `job_search.yaml` `screening_defaults`, same keys   |
+| `screening_defaults` keys but `qa`                                | `job_search.yaml` `screening_defaults`, same keys   |
+| `screening_defaults.qa[]`                                         | `answers.yaml` `qa[]`, appended verbatim            |
+
+`work_preferences_from_resume` `remote_work`, `in_person_work`, and
+`in_person_work_note` are not moved: job-apply answers remote and in-person from
+`work_model`, so the diff shows them removed beside the current `work_model`
+flags. A key `job_search.yaml` already values keeps that value, and the diff
+shows the `candidate.yaml` value dropped. Any other valued key is shown removed,
+never moved. Moved `qa[]` rows keep their `confirmed_at`; a row whose `question`
+(lowercase, non-alphanumeric runs → one space, trim) and `scope` already sit in
+`qa[]` is skipped. `answers.yaml` absent → create it from
+`./templates/data/answers.yaml` in the same cycle. Steps 5 and 8 hold and re-read
+`data/candidate.yaml` with the other targets. After every rename succeeds, delete
+`data/candidate.yaml` and print `deleted <abs path>`; a failed delete names the
+path and leaves the moved keys in place.
 
 After a yes that writes `positions`: if `data/profile_card.yaml` exists, also
 clear `primary_role` in that file in the **same** confirm cycle (show it empty
@@ -104,11 +140,11 @@ route. A disabled required pack may omit it.
 Nothing else in this file is written. Clearing `base` → say in the same message
 that job-apply falls back to `cv/en-us-resume.pdf`.
 
-## `candidate.yaml` — writable keys
+## `answers.yaml` — `qa`
 
-| Key                       | Rule                                                                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `screening_defaults.qa[]` | rows `{question, answer, scope?, source, confirmed_at}`; `scope` is one of `{country}` / `{ats}` / `{company}`; `confirmed_at` is today on every write |
+| Key    | Rule                                                                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `qa[]` | rows `{question, answer, scope?, source, confirmed_at}`; `scope` is one of `{country}` / `{ats}` / `{company}`; `confirmed_at` is today on every write |
 
 Nothing else in this file is written. A `question` that is demographic or EEO
 is refused. `qa add` takes question, answer, and optional scope from the
@@ -127,12 +163,12 @@ Protocol write path. Empty fields stay `""` / `[]`.
 
 ## Refuse (redirect, never write)
 
-| Ask                                                                                                                                            | Answer                                                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| salary, notice, visa, sponsorship, EOR, `legal_authorization.*`, `employment_routes.*`, any `candidate.yaml` key but `screening_defaults.qa[]` | Print what is on disk. Editing is `continue fill`, or a human editing `data/candidate.yaml`. |
-| experiences, skills, languages, projects, basics, profiles                                                                                     | Print what is on disk. Editing is `continue fill`.                                           |
-| identity (LinkedIn username)                                                                                                                   | Print what is on disk. Editing is `continue fill`.                                           |
-| "find me boards"                                                                                                                               | No network. Scout discovers slugs at search from `site:` and the store.                      |
-| Copy another profile's data                                                                                                                    | Refuse. Never read a donor Profile root; values come from the operator for _this_ profile.   |
+| Ask                                                                                                                                                                   | Answer                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| salary, notice, relocation, visa, sponsorship, EOR: `legal_authorization.*`, `employment_routes.*`, `salary_expectations.*`, `availability.*`, `screening_defaults.*` | Print what is on disk. Editing is `continue fill`, or a human editing `data/job_search.yaml`. |
+| experiences, skills, languages, projects, basics, profiles                                                                                                            | Print what is on disk. Editing is `continue fill`.                                            |
+| identity (LinkedIn username)                                                                                                                                          | Print what is on disk. Editing is `continue fill`.                                            |
+| "find me boards"                                                                                                                                                      | No network. Scout discovers slugs at search from `site:` and the store.                       |
+| Copy another profile's data                                                                                                                                           | Refuse. Never read a donor Profile root; values come from the operator for _this_ profile.    |
 
 A suggestion is never a write. An unanswered suggestion stays a suggestion.

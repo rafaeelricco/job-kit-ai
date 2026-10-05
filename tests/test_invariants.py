@@ -53,6 +53,18 @@ FLOW_MATCH_GATE: Path = (
     harness.SKILL / "job-scout" / "references" / "flows" / "flow-match-gate.md"
 )
 FLOW_PREP: Path = harness.SKILL / "job-prep" / "references" / "flows" / "flow-prep.md"
+CONTRACT_MATCH: Path = (
+    harness.SKILL / "job-match" / "references" / "contracts" / "contract-match.md"
+)
+FLOW_JOB_MATCH: Path = (
+    harness.SKILL / "job-match" / "references" / "flows" / "flow-match.md"
+)
+FLOW_MUTATE: Path = (
+    harness.SKILL / "job-profile" / "references" / "flows" / "flow-mutate.md"
+)
+FLOW_PREFLIGHT: Path = (
+    harness.SKILL / "job-scout" / "references" / "flows" / "flow-preflight.md"
+)
 
 
 @dataclass(frozen=True)
@@ -449,16 +461,82 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             search,
         )
         self.assertIn("legally_allowed_to_work_in_us", search)
-        self.assertIn("a `direct_regions` token", search)
-        self.assertIn("under `listed` only", search)
-        self.assertIn("defect: locations_unauthorized", search)
-        self.assertIn("city tokens that name no country", search)
+        self.assertIn("a `location.also_eligible_from` region", search)
+        self.assertNotIn("`anywhere` → keep", search)
+        self.assertNotIn("locations_unauthorized", search)
         self.assertIn("location unknown → keep", search)
         self.assertIn("no kit-true flag → keep", search)
         self.assertIn("still gets stored slugs (2)", search)
         self.assertIn("`/embed/job_app`", search)
         self.assertIn("the `for` query value", search)
         self.assertIn("jobs.eu.lever.co", search)
+
+    def test_eligibility_and_direct_bucket_never_read_search_markets(self):
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("names worldwide / anywhere / global, a country or region with", gate)
+        self.assertIn("or a `location.also_eligible_from` region → `confirmed`", gate)
+        self.assertNotIn("a named `locations` entry", gate)
+        self.assertIn("when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us`", gate)
+        rank = instruction_text(FLOW_RANK)
+        self.assertIn(
+            "each printed route is one the kit refuses (eor, kit eor not yes; contractor/b2b, kit contractor not yes; local employment, kit local employment no) → `unbucketed`; `eligibility` is `confirmed` → `direct`",
+            rank,
+        )
+        self.assertNotIn("direct_regions", rank)
+
+    def test_search_in_drop_never_reads_remote_postings(self):
+        clause = "onsite or hybrid-without-remote place that matches no `location.search_in` entry"
+        for path in (FLOW_GATE, CONTRACT_MATCH):
+            text = instruction_text(path)
+            with self.subTest(path=path.name):
+                self.assertIn(clause, text)
+                self.assertNotIn("location-restricted", text)
+
+    def test_job_match_guards_empty_and_legacy_location(self):
+        contract = instruction_text(CONTRACT_MATCH)
+        self.assertIn("(never under `worldwide` or an empty `search_in`)", contract)
+        flow = instruction_text(FLOW_JOB_MATCH)
+        self.assertIn(
+            "with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`",
+            flow,
+        )
+
+    def test_legacy_candidate_yaml_moves_before_any_fact_reader_runs(self):
+        mutate = instruction_text(FLOW_MUTATE)
+        self.assertIn("legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle", mutate)
+        self.assertIn("| `screening_defaults.qa[]` | `answers.yaml` `qa[]`, appended verbatim |", mutate)
+        self.assertIn(
+            "| `work_preferences_from_resume.willing_to_*` | `job_search.yaml` `screening_defaults`, same keys |",
+            mutate,
+        )
+        screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
+        self.assertIn(
+            "`willing_to_complete_assessments`, `willing_to_undergo_drug_tests`, and "
+            "`willing_to_undergo_background_checks` the `candidate.yaml` move carries) →",
+            screening,
+        )
+        self.assertIn("create it from `./templates/data/answers.yaml`", mutate)
+        self.assertIn("after every rename succeeds, delete `data/candidate.yaml`", mutate)
+        self.assertIn("moved `qa[]` rows keep their `confirmed_at`", mutate)
+        profile = instruction_text(harness.SKILL / "job-profile" / "SKILL.md")
+        self.assertIn("when the operator runs `/job-profile` itself (not a skill loading this edit path)", profile)
+        stop = "`data/candidate.yaml` present → stop; migrate via `/job-profile`."
+        readers = (
+            harness.SKILL / "job-apply" / "SKILL.md",
+            harness.SKILL / "job-prep" / "SKILL.md",
+            harness.SKILL / "job-match" / "SKILL.md",
+            FLOW_PREFLIGHT,
+        )
+        for path in readers:
+            with self.subTest(path=str(path.relative_to(harness.SKILL))):
+                self.assertIn(stop, instruction_text(path))
+
+    def test_hybrid_work_model_answers_remote_and_in_person_yes(self):
+        screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
+        self.assertIn("remote is `yes` when `work_model.remote` or `work_model.hybrid` is true, else `no`.", screening)
+        self.assertIn("in-person is `yes` when `work_model.onsite` or `work_model.hybrid` is true, else `no`.", screening)
+        state = instruction_text(harness.SKILL / "job-match" / "references" / "schemas" / "schema-state.md")
+        self.assertIn("| `preferences.remote` | `job_search.yaml` `work_model.remote` or `work_model.hybrid` true → `yes`", state)
 
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
@@ -479,10 +557,10 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         search = instruction_text(FLOW_SEARCH)
         self.assertIn("`zero_result_runs` = runs that kept no card", search)
         self.assertIn("a routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter", search)
-        self.assertIn("a dom run is one expanded formulation, per named location under `listed`, or once under `worldwide`", search)
-        self.assertIn("for dom runs under `listed`, every run for one named location zero-keep", search)
+        self.assertIn("a dom run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide`", search)
+        self.assertIn("for dom runs under a `search_in` list, every run for one entry zero-keep", search)
         self.assertIn("→ `defect: zero_results`", search)
-        self.assertIn("a pack with `location: keep-only` runs under `listed` as under `worldwide`", search)
+        self.assertIn("a pack with `location: keep-only` runs under a `search_in` list as under `worldwide`", search)
         self.assertIn("a `location: keep-only` pack has no per-location runs", search)
         self.assertNotIn("empty and clean is `pass`", search)
 

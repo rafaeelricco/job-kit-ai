@@ -14,6 +14,7 @@ Profile root: load the `job-profile-root` skill now; obey it end-to-end.
 Store law: load the `job-store` skill now; obey it end-to-end.
 
 Resolve every profile path against Profile root (not CWD, not skill dir).
+`data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
 Write-set: `scout/applications/{slug}/` — `plan.json`, `package.md`, and the
 chained `job-resume-refine`'s own outputs — plus one `posting dead` log line on

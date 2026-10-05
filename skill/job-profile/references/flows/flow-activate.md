@@ -1,15 +1,15 @@
 # Activate
 
 1. `REPO="$(cd "<target>" && pwd -P)"` — STOP if not a directory.
-2. Require `"$REPO/data/candidate.yaml"` and `"$REPO/data/job_search.yaml"`;
-   else STOP (same two-file probe as Route).
+2. Require `"$REPO/data/job_search.yaml"`; else STOP (same profile probe as
+   Route).
 3. Resolve `HOST_HOME`: if `$HOME` ends with `/.aside/runtime/home`, strip
    that suffix; else `HOST_HOME=$HOME`.
 4. Resolve `HOST_DEFAULT=$HOST_HOME/.config/job-kit` and this-env
    `JOB_KIT_CONFIG` (non-empty `$XDG_CONFIG_HOME` → `$XDG_CONFIG_HOME/job-kit`,
    else `HOST_DEFAULT`). Path-convention branch when `REPO` equals
    `HOST_DEFAULT` **and** `JOB_KIT_CONFIG` either equals `HOST_DEFAULT` or
-   fails the two-file probe. Host-default needs no pointer except the
+   fails the profile probe. Host-default needs no pointer except the
    fall-through cases below.
    - **Do not write** a host/Aside pointer naming `REPO` in the pure-convention
      case.
@@ -30,7 +30,7 @@
    - `REPO` is `$XDG_CONFIG_HOME/job-kit` and that path differs from
      `HOST_DEFAULT` (Aside often lacks XDG), or
    - `REPO` is `HOST_DEFAULT` but `JOB_KIT_CONFIG` differs **and** passes the
-     two-file probe — a durable pointer is required so claimed activation
+     profile probe — a durable pointer is required so claimed activation
      outranks the valid XDG convention path (Activate already confirmed Yes;
      treat as intentional switch from that XDG profile).
 5. Host / Aside registration conflicts (when writing pointers — includes

@@ -6,7 +6,7 @@ Interpolate `[role]` from positions (file order), `[industry]` from the card.
 Drop an empty leftover token. Build every formulation × position before opening
 a surface.
 
-`worldwide` → each formulation once, location unfiltered: location control unset, nonempty `locations` ignored for coverage. `listed` → cycle named `locations`. `Anywhere` is a keep token, never a query. A pack with `location: keep-only` runs under `listed` as under `worldwide`: each formulation once, location control unset, named `locations` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
+`worldwide` → each formulation once, location unfiltered: location control unset. A `search_in` list → cycle its entries. A pack with `location: keep-only` runs under a `search_in` list as under `worldwide`: each formulation once, location control unset, `search_in` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
 
 When a pack has `route`, consume it before any DOM search, except a
 `kind: board` pack first runs `site:{entry host} {formulation}` on a
@@ -19,7 +19,7 @@ still GETs stored slugs (2) and list slugs (3); it does not stop the pack or mar
 GETs unsubmitted. A `kind: json` pack runs once
 per expanded formulation; a `kind: board` pack runs once per board
 slug. Location remains a keep filter instead of repeating the same
-routed URL for every named location.
+routed URL for every `search_in` entry.
 
 - `kind: json` and `kind: board` are supported. Open `entry` to establish its browser origin,
   substitute the percent-encoded formulation and 1-based page into `url`, then
@@ -112,7 +112,7 @@ is unsubmitted, and the verdict is `defect: surface_interrupted`. A
 GETs still run. A query that
 never kept cards in the run and is contradicted by no re-test stays a zero.
 
-Drop a card whose company slug (schema-dossier "Filename" rule) is in `exclude_companies`. Keep a card whose work_model intersects kit-true flags (unknown → keep; no kit-true flag → keep) and that matches Constraints `job_types` and `date_posted`. Location keep (first match): remote or hybrid-with-remote that already prints a hire-from country (printed location or a title country tag — never the company name) that matches no Yes-authorization (a `legal_authorization.jurisdictions[]` row with `legally_allowed_to_work: Yes`, a `direct_regions` token, or when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us` / `_eu` / `_canada` / `_uk` Yes for that country per `job-apply/references/contracts/contract-screening.md`) → drop; `worldwide` → keep; `locations` contains `Anywhere` → keep; remote or hybrid-with-remote → keep; onsite or location-restricted → keep only if it matches named `locations` (synonym OK); location unknown → keep (gate re-applies after extract). Cap 40 per pack: the cap counts kept candidates at search time, and a row extract later marks `dead` is not refilled. Under `listed` only, when `locations` is nonempty and every named entry that names a country comparable to a jurisdiction matches no such Yes, record `defect: locations_unauthorized` and scan nothing — not on `worldwide`, a `location: keep-only` pack, empty `locations`, empty authorization, or a list of city tokens that name no country. Normalize URL per `job-store/references/schemas/schema-dossier.md`.
+Drop a card whose company slug (schema-dossier "Filename" rule) is in `exclude_companies`. Keep a card whose work_model intersects kit-true flags (unknown → keep; no kit-true flag → keep) and that matches Constraints `job_types` and `date_posted`. Location keep (first match): remote or hybrid-with-remote that already prints a hire-from country (printed location or a title country tag — never the company name) that matches no Yes-authorization (a `legal_authorization.jurisdictions[]` row with `legally_allowed_to_work: Yes`, a `location.also_eligible_from` region, or when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us` / `_eu` / `_canada` / `_uk` Yes for that country per `job-apply/references/contracts/contract-screening.md`) → drop; `worldwide` → keep; remote or hybrid-with-remote → keep; onsite or location-restricted → keep only if it matches a `search_in` entry (synonym OK); location unknown → keep (gate re-applies after extract). Cap 40 per pack: the cap counts kept candidates at search time, and a row extract later marks `dead` is not refilled. Normalize URL per `job-store/references/schemas/schema-dossier.md`.
 
 `channel` ∈ `direct_email` | `dm_request` | `founder` | `ats`. Unknown = `—`.
 
@@ -123,7 +123,7 @@ Every pack prints `### Candidates` then `### Defect log`:
 `source` is the pack `id` (an ad-hoc pack's id is its host), never the surface label or the posting host.
 
 `pack | formulations_run | zero_result_runs | unsubmitted_runs | verdict`
-`zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A DOM run is one expanded formulation, per named location under `listed`, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under `listed`, every run for one named location zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
+`zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A DOM run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under a `search_in` list, every run for one entry zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
 `verdict` ∈ `pass` | `auth_gate` | `defect: {name}`. No defect and no auth gate is `pass`. `unsubmitted_runs` above `0` is always `defect: surface_interrupted`; `query_not_submitted` names a pack fault (unknown `location` value, incomplete route, missing echo), never an interrupt.
 
 ## 2 Merge

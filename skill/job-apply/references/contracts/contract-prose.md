@@ -9,7 +9,8 @@ verbatim as `CONTRACT` when loading `job-humanize` with `Surface: letter`.
 `data/stories/*.md` frontmatter only (`claim`, `evidence.*`, `impact_numbers`,
 `never_say`, `covers`, `status`), `data/experiences.yml`, `data/skills.yaml`,
 `data/education.yaml`, and the live ad. Story bodies stay closed.
-`data/basics.yaml` and `data/candidate.yaml` feed slot 6 only. Every sentence
+`data/basics.yaml`, `data/job_search.yaml`, and `data/answers.yaml` feed slot 6
+only. Every sentence
 traces to one source or to the ad; a sentence that traces to nothing is cut.
 A `draft` story is never a source.
 

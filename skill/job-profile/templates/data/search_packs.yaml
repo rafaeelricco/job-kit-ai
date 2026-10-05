@@ -22,10 +22,10 @@
 #                 Absent means true.
 #
 #   location      keep-only when the surface location control cannot express
-#                 kit locations (absent, non-persisting, inert, or a taxonomy
-#                 that hides remote-worldwide cards). Under listed, scout runs
-#                 each formulation once with the control unset and applies
-#                 locations at the keep gate only. Absent = scout sets the
+#                 kit search_in (absent, non-persisting, inert, or a taxonomy
+#                 that hides remote-worldwide cards). Under a search_in list,
+#                 scout runs each formulation once with the control unset and
+#                 applies search_in at the keep gate only. Absent = scout sets the
 #                 surface location control. Only the operator writes this key.
 #
 #   route         Optional. Use when DOM search is not viable (route_required:

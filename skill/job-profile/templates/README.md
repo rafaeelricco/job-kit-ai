@@ -22,7 +22,7 @@ YAML frontmatter.
 `/job-profile` offers **Activate** at the end of the flow. Registration
 runs only when the operator answers **Yes**. **No** leaves a data-only tree
 (not allowed when the target is host-default / `JOB_KIT_CONFIG`, which would
-auto-activate from the probe files alone).
+auto-activate from the probe file alone).
 
 To register manually, or to switch the active profile later, re-run
 `/job-profile` against this path and answer **Activate: Yes**.
