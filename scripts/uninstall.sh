@@ -161,17 +161,18 @@ refuse_profile_path() {
 }
 
 # profile_probe_missing DIR — first required profile file DIR lacks, or empty.
-# The profile probe activation runs before it writes a pointer, and every skill
-# re-runs before it trusts one. An unreadable dir reports the same as a missing
-# file: both mean this was not proven to be a profile.
+# A profile holds data/job_search.yaml plus data/answers.yaml (every emit copies
+# it from templates) or, on a profile older than answers.yaml, data/candidate.yaml.
+# job_search.yaml alone does not prove a profile, and this probe guards `rm -rf`.
+# An unreadable dir reports the same as a missing file: both mean this was not
+# proven to be a profile.
 profile_probe_missing() {
-  local dir="$1" rel
-  for rel in data/job_search.yaml; do
-    if [ ! -f "${dir}/${rel}" ]; then
-      printf '%s\n' "${rel}"
-      return 0
-    fi
-  done
+  local dir="$1"
+  if [ ! -f "${dir}/data/job_search.yaml" ]; then
+    printf '%s\n' "data/job_search.yaml"
+  elif [ ! -f "${dir}/data/answers.yaml" ] && [ ! -f "${dir}/data/candidate.yaml" ]; then
+    printf '%s\n' "data/answers.yaml or data/candidate.yaml"
+  fi
 }
 
 # paths_equal A B — same string or same physical directory.
@@ -525,7 +526,7 @@ delete ${target} yourself, or remove the link"
     missing="$(profile_probe_missing "${path}")"
     [ -z "${missing}" ] \
       || die "refusing to delete profile root named by ${file}: ${path}
-missing or unreadable: ${missing} (the probe activation requires before writing that pointer)
+missing or unreadable: ${missing} (a profile holds data/job_search.yaml plus data/answers.yaml or data/candidate.yaml)
 fix or remove the pointer, or delete ${path} yourself"
   done <<EOF
 $(profile_pointer_files)

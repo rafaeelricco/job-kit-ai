@@ -171,10 +171,12 @@ function Assert-ProfilePath {
 
 function Get-ProfileProbeMissing {
   param([string]$Dir)
-  foreach ($rel in @('data\job_search.yaml')) {
-    if (-not (Test-Path -LiteralPath (Join-Path $Dir $rel) -PathType Leaf)) {
-      return ($rel -replace '\\', '/')
-    }
+  if (-not (Test-Path -LiteralPath (Join-Path $Dir 'data\job_search.yaml') -PathType Leaf)) {
+    return 'data/job_search.yaml'
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $Dir 'data\answers.yaml') -PathType Leaf) -and
+      -not (Test-Path -LiteralPath (Join-Path $Dir 'data\candidate.yaml') -PathType Leaf)) {
+    return 'data/answers.yaml or data/candidate.yaml'
   }
   return ''
 }
@@ -687,7 +689,7 @@ delete $target yourself, or remove the link
       if ($missing) {
         Write-KitDie @"
 refusing to delete profile root named by ${file}: $path
-missing or unreadable: $missing (the probe activation requires before writing that pointer)
+missing or unreadable: $missing (a profile holds data/job_search.yaml plus data/answers.yaml or data/candidate.yaml)
 fix or remove the pointer, or delete $path yourself
 "@
       }
