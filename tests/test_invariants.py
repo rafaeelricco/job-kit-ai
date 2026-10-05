@@ -470,6 +470,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("names worldwide / anywhere / global, a country or region with", gate)
         self.assertIn("or a `location.also_eligible_from` region → `confirmed`", gate)
         self.assertNotIn("a named `locations` entry", gate)
+        self.assertIn("when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us`", gate)
         rank = instruction_text(FLOW_RANK)
         self.assertIn("or `eligibility` is `confirmed` → `direct`", rank)
         self.assertNotIn("direct_regions", rank)
