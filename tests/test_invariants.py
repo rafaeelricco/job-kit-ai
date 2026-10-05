@@ -479,7 +479,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us`", gate)
         rank = instruction_text(FLOW_RANK)
         self.assertIn(
-            "each printed route is one the kit refuses (eor, kit eor not yes; contractor/b2b, kit contractor not yes) → `unbucketed`; `eligibility` is `confirmed` → `direct`",
+            "each printed route is one the kit refuses (eor, kit eor not yes; contractor/b2b, kit contractor not yes; local employment, kit local employment no) → `unbucketed`; `eligibility` is `confirmed` → `direct`",
             rank,
         )
         self.assertNotIn("direct_regions", rank)
