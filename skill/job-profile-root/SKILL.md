@@ -7,7 +7,7 @@ description: "Print the absolute job-kit Profile root path. Read-only."
 
 Print the absolute path before returning. STOP if none. Do not invent a path.
 
-**Probe** (all must pass): dir exists, readable, has `data/candidate.yaml` and `data/job_search.yaml`. Unreadable (sandbox `Operation not permitted`, missing path) → fail that candidate; next step.
+**Probe** (all must pass): dir exists, readable, has `data/job_search.yaml`. Unreadable (sandbox `Operation not permitted`, missing path) → fail that candidate; next step.
 
 1. `$PROFILE_ROOT` if set and probe passes.
 2. `$HOME/.config/profile-root` (one absolute path line); probe if non-empty.

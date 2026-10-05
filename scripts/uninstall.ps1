@@ -171,7 +171,7 @@ function Assert-ProfilePath {
 
 function Get-ProfileProbeMissing {
   param([string]$Dir)
-  foreach ($rel in @('data\candidate.yaml', 'data\job_search.yaml')) {
+  foreach ($rel in @('data\job_search.yaml')) {
     if (-not (Test-Path -LiteralPath (Join-Path $Dir $rel) -PathType Leaf)) {
       return ($rel -replace '\\', '/')
     }

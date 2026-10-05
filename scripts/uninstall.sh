@@ -161,12 +161,12 @@ refuse_profile_path() {
 }
 
 # profile_probe_missing DIR — first required profile file DIR lacks, or empty.
-# The two-file probe activation runs before it writes a pointer, and every skill
+# The profile probe activation runs before it writes a pointer, and every skill
 # re-runs before it trusts one. An unreadable dir reports the same as a missing
 # file: both mean this was not proven to be a profile.
 profile_probe_missing() {
   local dir="$1" rel
-  for rel in data/candidate.yaml data/job_search.yaml; do
+  for rel in data/job_search.yaml; do
     if [ ! -f "${dir}/${rel}" ]; then
       printf '%s\n' "${rel}"
       return 0
