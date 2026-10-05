@@ -53,6 +53,9 @@ FLOW_MATCH_GATE: Path = (
     harness.SKILL / "job-scout" / "references" / "flows" / "flow-match-gate.md"
 )
 FLOW_PREP: Path = harness.SKILL / "job-prep" / "references" / "flows" / "flow-prep.md"
+CONTRACT_MATCH: Path = (
+    harness.SKILL / "job-match" / "references" / "contracts" / "contract-match.md"
+)
 
 
 @dataclass(frozen=True)
@@ -469,6 +472,14 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         rank = instruction_text(FLOW_RANK)
         self.assertIn("or `eligibility` is `confirmed` → `direct`", rank)
         self.assertNotIn("direct_regions", rank)
+
+    def test_search_in_drop_never_reads_remote_postings(self):
+        clause = "onsite or hybrid-without-remote place that matches no `location.search_in` entry"
+        for path in (FLOW_GATE, CONTRACT_MATCH):
+            text = instruction_text(path)
+            with self.subTest(path=path.name):
+                self.assertIn(clause, text)
+                self.assertNotIn("location-restricted", text)
 
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
