@@ -127,18 +127,29 @@ class _Source:
         self.raw = raw
         self.raw_nfc = unicodedata.normalize("NFC", raw)
         marked = self.raw_nfc
-        # Use a fresh private-use marker. A literal private-use character in
+        # Use fresh private-use markers. A literal private-use character in
         # PDF text must remain source text and must never be mistaken for a
-        # marker inserted for a line-wrap hyphen.
+        # marker inserted for a line wrap. Keep literal Unicode dash wraps
+        # distinct from potentially discretionary ASCII hyphen wraps.
         self.marker = next(
             chr(codepoint)
             for codepoint in range(0xF0000, 0xFFFFE)
             if chr(codepoint) not in marked
         )
+        self.dash_marker = next(
+            chr(codepoint)
+            for codepoint in range(0xF0000, 0xFFFFE)
+            if chr(codepoint) not in marked and chr(codepoint) != self.marker
+        )
         marked = marked.replace("-\r\n", "-" + self.marker)
         marked = marked.replace("-\n", "-" + self.marker)
         marked = marked.replace("-\r", "-" + self.marker)
         marked = marked.replace("-\f", "-" + self.marker)
+        marked = re.sub(
+            r"([–—])(?:\r\n|[\n\r\f])",
+            lambda match: match.group(1) + self.dash_marker,
+            marked,
+        )
         self.canonical = normalize(marked)
         self.nfc_raw_spans = self._map_spans(self.raw, self.raw_nfc)
         self.canonical_raw_spans = []
@@ -204,7 +215,7 @@ class _Source:
 
     def relaxed_source(self):
         """Return source with whitespace removed and canonical offsets retained."""
-        regular = self.canonical.replace(self.marker, " ")
+        regular = self.canonical.replace(self.marker, " ").replace(self.dash_marker, " ")
         text = []
         mapping = []
         for index, char in enumerate(regular):
@@ -355,10 +366,10 @@ def _relaxed_term_occurrence(source, term):
 def _match_flexible_at(source, start, needle):
     """Match one body part while deciding each source line-wrap hyphen.
 
-    A source ``-`` followed by the inserted line-wrap marker can contribute a
-    literal hyphen or can be omitted for a discretionary word wrap. The
-    expected part controls that choice character by character, which permits a
-    part containing both real and discretionary hyphens.
+    An ASCII hyphen wrap can retain its hyphen or omit a discretionary one.
+    Unicode dash wraps must retain the dash. The expected part controls each
+    choice and any folded space after a retained dash, which permits a part
+    containing both real and discretionary hyphens.
     """
     index = start
     expected_index = 0
@@ -373,14 +384,17 @@ def _match_flexible_at(source, start, needle):
         if (
             char == "-"
             and index + 1 < len(canonical)
-            and canonical[index + 1] == source.marker
+            and canonical[index + 1] in (source.marker, source.dash_marker)
         ):
             wrapped_hyphen = True
             if needle[expected_index] == "-":
                 expected_index += 1
+                if expected_index < len(needle) and needle[expected_index] == " ":
+                    expected_index += 1
             else:
                 if (
-                    expected_index == 0
+                    canonical[index + 1] == source.dash_marker
+                    or expected_index == 0
                     or not _is_word_char(needle[expected_index - 1])
                     or not _is_word_char(needle[expected_index])
                 ):
@@ -553,7 +567,7 @@ def evaluate_text(text, expected):
 
     source = _Source(text)
     issues = _source_anomaly_issues(source)
-    if not source.canonical.replace(source.marker, " ").strip():
+    if not source.canonical.replace(source.marker, " ").replace(source.dash_marker, " ").strip():
         issues.append(_issue("error", "empty_extraction", "pdftotext returned no text"))
 
     cursor = 0
@@ -627,7 +641,7 @@ def evaluate_text(text, expected):
             elif item["wrapped_hyphen"]:
                 issues.append(_issue(
                     "warning", "source_hyphen_wrap",
-                    "body match retained a source hyphen across a line break",
+                    "body match retained a source dash across a line break",
                     block_id=block["id"], **location
                 ))
 

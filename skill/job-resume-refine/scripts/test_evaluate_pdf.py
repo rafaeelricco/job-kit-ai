@@ -191,6 +191,66 @@ class ContentTests(unittest.TestCase):
         self.assertTrue(wrapped["issues"])
         self.assertEqual(evaluator.evaluate_text("Built a fullstack product.", expected)["verdict"], "FAIL")
 
+    def test_wrapped_dash_body_content(self):
+        cases = [
+            ("Software Engineer -", "Backend", "Software Engineer - Backend"),
+            ("systems—", "reducing", "systems—reducing"),
+            ("2019–", "2021", "2019–2021"),
+        ]
+        for left, right, expected in cases:
+            for newline in ("\n", "\r\n", "\r", "\f"):
+                for indent in ("", "  ", "\t"):
+                    with self.subTest(left=left, newline=newline, indent=indent):
+                        result = evaluator.evaluate_text(
+                            left + newline + indent + right, manifest(expected))
+                        self.assertEqual(result["verdict"], "PASS")
+                        wraps = [
+                            issue for issue in result["issues"]
+                            if issue["code"] == "source_hyphen_wrap"
+                        ]
+                        self.assertTrue(wraps)
+                        self.assertTrue(all("page" in issue and issue.get("excerpt")
+                                            for issue in wraps))
+                        self.assertFalse(any(
+                            issue["code"] == "source_dehyphenation"
+                            for issue in result["issues"]))
+
+    def test_wrapped_dash_cannot_drop_literal_punctuation(self):
+        for text, expected in [
+            ("systems—\nreducing", "systemsreducing"),
+            ("2019–\n2021", "20192021"),
+            ("Software Engineer -\nBackend", "Software Engineer Backend"),
+        ]:
+            with self.subTest(text=text):
+                result = evaluator.evaluate_text(text, manifest(expected))
+                self.assertEqual(result["verdict"], "FAIL")
+
+    def test_wrapped_dash_body_recovery_does_not_establish_exact_terms(self):
+        for text, expected in [
+            ("systems—\nreducing", "systems—reducing"),
+            ("2019–\n2021", "2019–2021"),
+            ("full-\nstack", "full-stack"),
+            ("interna-\ntionalization", "internationalization"),
+        ]:
+            with self.subTest(text=text):
+                result = evaluator.evaluate_text(text, manifest(expected, terms=[expected]))
+                self.assertEqual(result["blocks"], {"recovered": 1, "total": 1})
+                self.assertEqual(result["terms"], {"matched": 0, "total": 1})
+                self.assertEqual(result["verdict"], "FAIL")
+
+    def test_private_use_characters_cannot_masquerade_as_wrap_markers(self):
+        for char in ("\U000F0000", "\U000F0001"):
+            for dash in ("-", "–", "—"):
+                text = "full" + dash + char + "stack"
+                result = evaluator.evaluate_text(text, manifest("full" + dash + "stack"))
+                self.assertEqual(result["verdict"], "FAIL")
+                self.assertTrue(any(issue["code"] == "private_use_character"
+                                    for issue in result["issues"]))
+        result = evaluator.evaluate_text(
+            "\U000F0000\U000F0001 systems—\nreducing",
+            manifest("systems—reducing"))
+        self.assertEqual(result["verdict"], "PASS")
+
     def test_compound_wrap_does_not_manufacture_term_boundaries(self):
         for term in ("AWS", "SDK", "AWS-SDK"):
             result = evaluator.evaluate_text("AWS-\nSDK", manifest("AWS-SDK", terms=[term]))
@@ -321,6 +381,27 @@ class PdfAndCliTests(unittest.TestCase):
             self.assertEqual(mode["terms"], {"matched": 4, "total": 4})
         self.assertEqual([call.kwargs["layout"] for call in extract.call_args_list],
                          [False, True])
+
+    def test_wrapped_dash_cases_pass_both_modes_and_cli(self):
+        for text, expected in [
+            ("Software Engineer -\nBackend", "Software Engineer - Backend"),
+            ("systems—\nreducing", "systems—reducing"),
+            ("2019–\n2021", "2019–2021"),
+        ]:
+            with self.subTest(text=text):
+                out = io.StringIO()
+                with mock.patch("evaluate_pdf.extract", return_value=text) as extract, \
+                        mock.patch("sys.argv", ["evaluate_pdf.py", str(self.pdf)]), \
+                        mock.patch("sys.stdin", io.StringIO(json.dumps(manifest(expected)))), \
+                        contextlib.redirect_stdout(out):
+                    self.assertEqual(evaluator.main(), 0)
+                report = json.loads(out.getvalue())
+                self.assertEqual(report["verdict"], "PASS")
+                self.assertEqual(set(report["modes"]), {"default", "layout"})
+                self.assertTrue(all(mode["verdict"] == "PASS"
+                                    for mode in report["modes"].values()))
+                self.assertEqual([call.kwargs["layout"] for call in extract.call_args_list],
+                                 [False, True])
 
     def test_mode_disagreement_and_shared_damage_fail(self):
         for outputs in ([TEXT, TEXT.replace("Node.js", "Node . js")],
