@@ -58,7 +58,7 @@ When Edit `continue fill`:
 | Class                                                                                                 | SoT present                                                                                                                                                                              | SoT silent                                                                                 |
 | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Salary, notice, work auth, visa, sponsorship, EOR                                                     | Propose only verbatim / clear synonym, then require questionnaire confirmation                                                                                                           | Ask explicitly; skip leaves empty and may produce a Gap                                    |
-| Routes (non-EOR), relocation, remote / in-person prefs (`in_person_work*`)                            | Propose only when SoT prints a clear answer, then require confirmation                                                                                                                   | Ask explicitly; skip leaves empty; **do not** list under Gaps                              |
+| Routes (non-EOR), relocation (`availability.open_to_relocation`)                                      | Propose only when SoT prints a clear answer, then require confirmation                                                                                                                   | Ask explicitly; skip leaves empty; **do not** list under Gaps                              |
 | Positions, `location.search_in`                                                                       | Propose from SoT only; questionnaire confirmation is required                                                                                                                            | Ask explicitly; skip → `[]`; Gaps per the allowlist below                                  |
 | `location.also_eligible_from`, `location.exclude_hire_from`, `market_currencies`, `exclude_companies` | Propose only from SoT; confirm                                                                                                                                                           | Ask; skip → `[]`                                                                           |
 | Search filters (`work_model`, `job_types`, `date_posted`)                                             | Propose only from SoT or template as **proposals**; require confirm/keep/edit                                                                                                            | Ask; skip → empty/`false` — **not** Gaps; never retain shipped template trues without keep |
@@ -77,7 +77,7 @@ Use the source buffer when available, but explicit questionnaire values always
 win over extracted or template-provided proposals. Apply only confirmed values,
 explicit skips, and confirmed pack enablement choices.
 
-- Write all confirmed candidate, basics, collection (experiences, skills, projects, languages, education), and job-search fields.
+- Write all confirmed job-search (search and fact keys), basics, and collection (experiences, skills, projects, languages, education) fields.
 - On Edit, write confirmed LinkedIn/GitHub usernames (and derived URLs) into
   `data/profiles.yaml`.
 - Write `adapt_per_vacancy` and `base` on `data/cvs.yaml`.
@@ -152,7 +152,7 @@ Partial fill is OK. **Gaps allowlist only** — omit a line when that key is fil
 - `job_search` `positions`
 - `job_search` `location.search_in` when empty
 
-**Never Gaps:** remote / in-person prefs (`in_person_work*`),
+**Never Gaps:** `availability.open_to_relocation`,
 `direct_contractor`, `local_employment`, empty
 `projects.yml` / `languages.yaml` / `education.yaml` / experience `url.*`, `data/stories/`,
 or CV (use **### CV**).

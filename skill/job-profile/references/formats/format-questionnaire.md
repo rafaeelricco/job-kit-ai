@@ -4,13 +4,15 @@ Ask every user-owned field before profile Approve.
 
 ## Fields
 
-Ask identity, basics, every `candidate.yaml` key, every experience/project/
-language/skill/education row, and every `job_search.yaml` key:
+Ask identity, basics, every experience/project/language/skill/education row,
+and every `job_search.yaml` key:
 
 - work model, job types, date filters
 - positions, `location.search_in` (list | `worldwide`),
   `location.also_eligible_from`, `location.exclude_hire_from`,
   `market_currencies`, `exclude_companies`
+- salary, notice, relocation, `legal_authorization.jurisdictions[]`,
+  `employment_routes.*`, `screening_defaults.*`
 
 Ask each `search_packs.yaml` `packs[].enabled` flag. Never offer to enable a
 `route_required: true` pack that carries no `route` — name it as unavailable and

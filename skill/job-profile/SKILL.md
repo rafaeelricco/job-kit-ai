@@ -48,8 +48,8 @@ Resolve every `data/*` path against Profile root (not CWD, not skill dir).
 Do not read `scout/jobs/*.md`.
 Skill-local files: `./references/**` only.
 
-Mutate write-set: `data/job_search.yaml`, `data/profile_card.yaml`, `data/search_packs.yaml`,
-`data/cvs.yaml`, `data/candidate.yaml` (`screening_defaults.qa[]` only), and their
+Mutate write-set: `data/job_search.yaml` (search keys), `data/answers.yaml` (`qa[]`),
+`data/profile_card.yaml`, `data/search_packs.yaml`, `data/cvs.yaml`, and their
 `*.yaml.tmp` staging siblings during atomic rename. Continuation fill writes the
 `./references/flows/flow-fill.md` set instead.
 
