@@ -1,7 +1,10 @@
 # One object per role.
 # Keys: company, position, location, date, summary, url.label, url.href
-# summary = canonical role bullets; CV tailoring may select or condense them without changing facts.
+# summary = canonical role bullets. Resume refinement preserves every printed
+# base bullet verbatim and in order, and never rewrites these stored Facts.
 # job-apply may also use these claims as letter evidence.
+# Optional role-specific skill evidence is read from data/skills-by-company.yml
+# when that file exists; a global skill alone cannot establish an employer.
 #
 # How a bullet is written, and why:
 #

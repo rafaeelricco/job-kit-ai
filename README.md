@@ -73,6 +73,12 @@ Aside needs filesystem access to that directory.
 
 Resume tailoring requires a base CV PDF and its matching `.tex` source under
 `cv/`. Use `/job-profile cv set` to select the base or disable per-vacancy tailoring.
+When enabled, refinement preserves every base role and raw LaTeX bullet
+byte-for-byte and in original order. It adapts only supported visible ATS
+surfaces, compiles against a run baseline, and checks the final PDF with both
+Poppler extraction modes plus visual review. See the [refinement contract](skill/job-resume-refine/references/contracts/contract-refine.md),
+[extraction contract](skill/job-resume-refine/references/contracts/contract-extraction.md),
+and [report format](skill/job-resume-refine/references/formats/format-report.md).
 
 `/job-match --typesafe` fills fit scores with TypeSafe's Jev model instead of
 the LLM match worker; high or low-confidence rows are still re-checked by the
@@ -94,7 +100,7 @@ Each skill contains its usage and detailed workflow:
 | [job-match](skill/job-match/SKILL.md)                 | Assess fit and get resume guidance.                       |
 | [job-prep](skill/job-prep/SKILL.md)                   | Prepare applications without submitting.                  |
 | [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                           |
-| [job-resume-refine](skill/job-resume-refine/SKILL.md) | Tailor a one-page resume.                                 |
+| [job-resume-refine](skill/job-resume-refine/SKILL.md) | Refine a base resume for a posting.                       |
 | [job-inbox](skill/job-inbox/SKILL.md)                 | Track Gmail replies.                                      |
 | [job-stories](skill/job-stories/SKILL.md)             | Build interview stories, scripts, and experience bullets. |
 

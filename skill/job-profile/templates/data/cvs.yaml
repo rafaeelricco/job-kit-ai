@@ -9,8 +9,11 @@
 #                      PDF, never a .tex. The LaTeX source job-resume-refine
 #                      copies is the same stem with .tex.
 #   adapt_per_vacancy  true → job-apply chains job-resume-refine on a
-#                      status:new dossier and attaches the tailored PDF.
-#                      false → attach base unchanged. Absent means true.
+#                      status:new dossier and attaches a verified PDF, keeping
+#                      every base role/bullet and the compiled base page ceiling.
+#                      false → no new refinement; job-apply still honors its
+#                      prepared-plan precedence and each caller keeps its own
+#                      fallback before attaching the base. Absent means true.
 #
 #   Rules: empty base → job-apply falls back to cv/en-us-resume.pdf.
 #   Never generate LaTeX here.
