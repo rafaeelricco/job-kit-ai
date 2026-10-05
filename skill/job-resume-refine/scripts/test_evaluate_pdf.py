@@ -117,6 +117,32 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(result["verdict"], "PASS")
         self.assertEqual(result["terms"], {"matched": 5, "total": 5})
 
+    def test_slash_separated_technical_terms(self):
+        for text, terms in [
+            ("React/Redux", ["React", "Redux"]),
+            ("AWS/GCP", ["AWS", "GCP"]),
+            ("React / Redux", ["React", "Redux"]),
+            ("AWS / GCP", ["AWS", "GCP"]),
+            ("CI/CD", ["CI/CD"]),
+        ]:
+            with self.subTest(text=text):
+                result = evaluator.evaluate_text(text, manifest(text, terms=terms))
+                self.assertEqual(result["verdict"], "PASS")
+                self.assertEqual(result["terms"]["matched"], len(terms))
+        result = evaluator.evaluate_text(
+            "CI CD", manifest("CI CD", terms=["CI/CD"]))
+        self.assertEqual(result["verdict"], "FAIL")
+
+    def test_slash_separator_keeps_technical_compound_guards(self):
+        for text, term in [("AWS-SDK", "AWS"), ("AWS-SDK", "SDK"),
+                           ("R&D", "R"), ("C++", "C"), ("C#", "C"),
+                           ("Node.js", "Node"), ("AWS_SDK", "AWS"),
+                           ("ReactRedux", "React"), ("Google", "Go")]:
+            with self.subTest(text=text, term=term):
+                result = evaluator.evaluate_text(text, manifest(text, terms=[term]))
+                self.assertEqual(result["verdict"], "FAIL")
+                self.assertEqual(result["terms"]["matched"], 0)
+
     def test_term_deduplication_and_empty_terms(self):
         result = evaluator.evaluate_text("AWS", manifest("AWS", terms=["AWS", "aws", "AWS"]))
         self.assertEqual(result["terms"], {"matched": 1, "total": 1})
@@ -277,6 +303,24 @@ class PdfAndCliTests(unittest.TestCase):
         )
         self.assertEqual(result["pdf_sha256"], hashlib.sha256(self.pdf.read_bytes()).hexdigest())
         self.assertEqual(result["expected"], EXPECTED)
+
+    def test_slash_list_passes_both_modes_and_cli(self):
+        text = "React/Redux AWS/GCP"
+        expected = manifest(text, terms=["React", "Redux", "AWS", "GCP"])
+        out = io.StringIO()
+        with mock.patch("evaluate_pdf.extract", return_value=text) as extract, \
+                mock.patch("sys.argv", ["evaluate_pdf.py", str(self.pdf)]), \
+                mock.patch("sys.stdin", io.StringIO(json.dumps(expected))), \
+                contextlib.redirect_stdout(out):
+            self.assertEqual(evaluator.main(), 0)
+        report = json.loads(out.getvalue())
+        self.assertEqual(report["verdict"], "PASS")
+        self.assertEqual(set(report["modes"]), {"default", "layout"})
+        for mode in report["modes"].values():
+            self.assertEqual(mode["verdict"], "PASS")
+            self.assertEqual(mode["terms"], {"matched": 4, "total": 4})
+        self.assertEqual([call.kwargs["layout"] for call in extract.call_args_list],
+                         [False, True])
 
     def test_mode_disagreement_and_shared_damage_fail(self):
         for outputs in ([TEXT, TEXT.replace("Node.js", "Node . js")],

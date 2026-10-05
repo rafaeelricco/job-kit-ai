@@ -486,9 +486,9 @@ def _term_boundary(hay, start, end):
         return False
     if after and after in "+#":
         return False
-    if before and before in "&/-" and start >= 2 and _is_word_char(hay[start - 2]):
+    if before and before in "&-" and start >= 2 and _is_word_char(hay[start - 2]):
         return False
-    if after and after in "&/-" and end + 1 < len(hay) and _is_word_char(hay[end + 1]):
+    if after and after in "&-" and end + 1 < len(hay) and _is_word_char(hay[end + 1]):
         return False
     # A line wrap cannot turn a compound's prefix or suffix into a term hit.
     if after == "-" and hay[end + 1:].lstrip()[:1].isalnum():
