@@ -13,8 +13,8 @@ format.
 
 `README.md` and any `_`-prefixed basename under `data/stories/` are not stories.
 Story bodies are rehearsal text written for a different room; read frontmatter only.
-`data/basics.yaml` and `data/candidate.yaml` are not in the read set — see the
-personal-information refuse.
+`data/basics.yaml`, `data/job_search.yaml`, and `data/answers.yaml` are not in
+the read set — see the personal-information refuse.
 
 ## The number firewall
 
