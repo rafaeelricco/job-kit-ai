@@ -449,8 +449,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             search,
         )
         self.assertIn("legally_allowed_to_work_in_us", search)
-        self.assertIn("a `direct_regions` token", search)
-        self.assertIn("under `listed` only", search)
+        self.assertIn("a `location.also_eligible_from` region", search)
+        self.assertIn("under a `search_in` list only", search)
+        self.assertNotIn("`anywhere` → keep", search)
         self.assertIn("defect: locations_unauthorized", search)
         self.assertIn("city tokens that name no country", search)
         self.assertIn("location unknown → keep", search)
@@ -459,6 +460,15 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("`/embed/job_app`", search)
         self.assertIn("the `for` query value", search)
         self.assertIn("jobs.eu.lever.co", search)
+
+    def test_eligibility_and_direct_bucket_never_read_search_markets(self):
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("names worldwide / anywhere / global, a country or region with", gate)
+        self.assertIn("or a `location.also_eligible_from` region → `confirmed`", gate)
+        self.assertNotIn("a named `locations` entry", gate)
+        rank = instruction_text(FLOW_RANK)
+        self.assertIn("or `eligibility` is `confirmed` → `direct`", rank)
+        self.assertNotIn("direct_regions", rank)
 
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
@@ -479,10 +489,10 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         search = instruction_text(FLOW_SEARCH)
         self.assertIn("`zero_result_runs` = runs that kept no card", search)
         self.assertIn("a routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter", search)
-        self.assertIn("a dom run is one expanded formulation, per named location under `listed`, or once under `worldwide`", search)
-        self.assertIn("for dom runs under `listed`, every run for one named location zero-keep", search)
+        self.assertIn("a dom run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide`", search)
+        self.assertIn("for dom runs under a `search_in` list, every run for one entry zero-keep", search)
         self.assertIn("→ `defect: zero_results`", search)
-        self.assertIn("a pack with `location: keep-only` runs under `listed` as under `worldwide`", search)
+        self.assertIn("a pack with `location: keep-only` runs under a `search_in` list as under `worldwide`", search)
         self.assertIn("a `location: keep-only` pack has no per-location runs", search)
         self.assertNotIn("empty and clean is `pass`", search)
 

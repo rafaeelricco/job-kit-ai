@@ -46,21 +46,29 @@ Print `Profile root: /abs/path` before the first diff of the session.
 
 ## `job_search.yaml` — writable keys
 
-| Key                                              | Shape                                       |
-| ------------------------------------------------ | ------------------------------------------- |
-| `positions`                                      | list of strings                             |
-| `locations`                                      | list of strings                             |
-| `location_scope`                                 | `worldwide` \| `listed`, only when explicit |
-| `direct_regions`                                 | list of strings                             |
-| `market_currencies`                              | list of strings                             |
-| `exclude_locations`                              | list of strings                             |
-| `exclude_companies`                              | list of strings                             |
-| `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                    |
+| Key                                              | Shape                                              |
+| ------------------------------------------------ | -------------------------------------------------- |
+| `positions`                                      | list of strings                                    |
+| `location.search_in`                             | list of strings, or `worldwide` only when explicit |
+| `location.also_eligible_from`                    | list of strings                                    |
+| `location.exclude_hire_from`                     | list of strings                                    |
+| `market_currencies`                              | list of strings                                    |
+| `exclude_companies`                              | list of strings                                    |
+| `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                           |
 
 Nothing else in this file is written. When scout preflight (or the operator) names
 a key still present in `job_search.yaml` that is not in the writable table above,
 delete that key only — show the deletion in the same confirm cycle as any other
 write. Never invent a replacement value for a deleted key.
+
+Legacy location keys are moved, not deleted, in one confirm cycle:
+
+| Legacy                                | Becomes                                                              |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `location_scope: worldwide`           | `location.search_in: worldwide` (old `locations` dropped)            |
+| `locations` (scope `listed` or empty) | `location.search_in` list, minus `Anywhere`                          |
+| `direct_regions`                      | `location.also_eligible_from`, minus `worldwide`/`anywhere`/`global` |
+| `exclude_locations`                   | `location.exclude_hire_from`                                         |
 
 After a yes that writes `positions`: if `data/profile_card.yaml` exists, also
 clear `primary_role` in that file in the **same** confirm cycle (show it empty

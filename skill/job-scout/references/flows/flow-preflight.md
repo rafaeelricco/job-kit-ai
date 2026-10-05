@@ -2,8 +2,8 @@
 
 Print `Profile root:`, `Deck:` (`data/search_packs.yaml`), `Runtime: workers` if spawn works, else `inline`.
 
-`job_search.yaml` keys: `work_model`, `job_types`, `date_posted`, `positions`, `locations`, `location_scope`, `direct_regions`, `market_currencies`, `exclude_locations`, `exclude_companies`, `prune_score_max` (job-prune's threshold; scout ignores it). Any other valued key → stop; migrate via `/job-profile`.
-`location_scope` is `worldwide` or `listed`. `listed` needs a named location (not only `Anywhere`).
+`job_search.yaml` keys: `work_model`, `job_types`, `date_posted`, `positions`, `location` (`search_in`, `also_eligible_from`, `exclude_hire_from`), `market_currencies`, `exclude_companies`, `prune_score_max` (job-prune's threshold; scout ignores it). Any other valued key, top-level or under `location` → stop; migrate via `/job-profile`.
+`location.search_in` is `worldwide` or a nonempty list of places; empty → stop. Below, `worldwide` and "a `search_in` list" name these two cases.
 
 Enabled packs empty and no URL token → STOP; enable via `/job-profile`. `enabled: false` is unlisted.
 Tokens after `/job-scout` bind the run set (enabled deck `id:`). A token that

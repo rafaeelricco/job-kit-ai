@@ -8,14 +8,14 @@ Packs **list** only (list my boards / packs): print `### Packs` and stop — no 
 
 ## Read set (all under Profile root)
 
-| Path                                                    | Supplies                                                                                                                                          |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/job_search.yaml`                                  | work_model, job_types, date_posted, positions, locations, location_scope, direct_regions, market_currencies, exclude_locations, exclude_companies |
-| `data/candidate.yaml`                                   | salary_range_usd, notice_period, `legal_authorization.*`, `employment_routes.*`, `work_preferences_from_resume.*`, `screening_defaults.qa[]`      |
-| `data/skills.yaml`, `experiences.yml`, `languages.yaml` | card                                                                                                                                              |
-| `data/profile_card.yaml`                                | card, when present — else derive in memory                                                                                                        |
-| `data/search_packs.yaml`                                | deck: pack ids, `entry`, `enabled`, route requirement, route, tokens — one pack is one surface                                                    |
-| `data/cvs.yaml`                                         | CV: `adapt_per_vacancy` (absent → true) and `base`                                                                                                |
+| Path                                                    | Supplies                                                                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `data/job_search.yaml`                                  | work_model, job_types, date_posted, positions, location (search_in, also_eligible_from, exclude_hire_from), market_currencies, exclude_companies |
+| `data/candidate.yaml`                                   | salary_range_usd, notice_period, `legal_authorization.*`, `employment_routes.*`, `work_preferences_from_resume.*`, `screening_defaults.qa[]`     |
+| `data/skills.yaml`, `experiences.yml`, `languages.yaml` | card                                                                                                                                             |
+| `data/profile_card.yaml`                                | card, when present — else derive in memory                                                                                                       |
+| `data/search_packs.yaml`                                | deck: pack ids, `entry`, `enabled`, route requirement, route, tokens — one pack is one surface                                                   |
+| `data/cvs.yaml`                                         | CV: `adapt_per_vacancy` (absent → true) and `base`                                                                                               |
 
 Glob `data/*.{yaml,yml}`. A missing optional file is a blank field, never a stop.
 An unreadable file → stop and name it.
@@ -26,8 +26,8 @@ Print `### Profile card`, then `### Constraints` — this Blocks law is the
 owner; job-scout preflight derives its card and constraints from it:
 
 - Profile card: primary role · top skills · industries · languages
-- Constraints: work model · job types · positions · locations ·
-  date_posted · location_scope · direct_regions · market_currencies · exclude_locations · exclude_companies · salary_range_usd ·
+- Constraints: work model · job types · positions · search_in ·
+  date_posted · also_eligible_from · exclude_hire_from · market_currencies · exclude_companies · salary_range_usd ·
   work auth · employment_routes · relocation
 
 `### Packs` third when `data/search_packs.yaml` is readable: `id · entry host ·
@@ -68,10 +68,9 @@ Print **only** these — this skill's own Gaps allowlist:
 - `legal_authorization.*` when empty
 - `employment_routes.employer_of_record`
 - `job_search` `positions` when empty
-- `job_search` `location_scope` when empty; `locations` when `location_scope` is
-  `listed` and the list is empty
+- `job_search` `location.search_in` when empty
 
 Never Gaps: remote / in-person prefs (`in_person_work*`),
 `direct_contractor`, `local_employment`, empty `projects.yml` / `languages.yaml` /
-experience `url.*`, `job_search.locations` except the `listed`+empty pair above, CV.
+experience `url.*`, CV.
 Nothing outstanding → `Gaps: none`.

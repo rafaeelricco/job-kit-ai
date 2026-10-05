@@ -148,7 +148,7 @@ SENIORITY = Question(
 LOCATION = Question(
     "location",
     "Compare job.work_model and job.location with candidate.constraints"
-    " work_model flags and locations.",
+    " work_model flags and location.search_in.",
     (
         Option(
             "full",
