@@ -81,6 +81,7 @@ with the location moves above when those keys are present too:
 | `legal_authorization`, `employment_routes`, `salary_expectations` | same keys in `job_search.yaml`, verbatim            |
 | `availability.notice_period`                                      | `job_search.yaml` `availability.notice_period`      |
 | `work_preferences_from_resume.open_to_relocation`                 | `job_search.yaml` `availability.open_to_relocation` |
+| `work_preferences_from_resume.willing_to_*`                       | `job_search.yaml` `screening_defaults`, same keys   |
 | `screening_defaults` keys but `qa`                                | `job_search.yaml` `screening_defaults`, same keys   |
 | `screening_defaults.qa[]`                                         | `answers.yaml` `qa[]`, appended verbatim            |
 

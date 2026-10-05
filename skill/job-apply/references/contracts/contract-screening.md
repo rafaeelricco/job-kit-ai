@@ -28,7 +28,9 @@ the package prints the rule as `source`. Nothing waits for the operator.
 1. A Fact file above prints it → that file.
 2. "Derived answers" below computes it → `derived`.
 3. `data/job_search.yaml` `screening_defaults` prints it (`on_call`,
-   `hours_overlap`, `timezone`, `consent_to_data_processing`) →
+   `hours_overlap`, `timezone`, `consent_to_data_processing`, and the legacy
+   `willing_to_complete_assessments`, `willing_to_undergo_drug_tests`, and
+   `willing_to_undergo_background_checks` the `candidate.yaml` move carries) →
    `data/job_search.yaml`, or a `data/answers.yaml` `qa[]` row does →
    `data/answers.yaml`. A `qa[]` row applies when its
    `question` equals the form label after normalizing both — lowercase,

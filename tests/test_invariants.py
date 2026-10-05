@@ -505,6 +505,16 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         mutate = instruction_text(FLOW_MUTATE)
         self.assertIn("legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle", mutate)
         self.assertIn("| `screening_defaults.qa[]` | `answers.yaml` `qa[]`, appended verbatim |", mutate)
+        self.assertIn(
+            "| `work_preferences_from_resume.willing_to_*` | `job_search.yaml` `screening_defaults`, same keys |",
+            mutate,
+        )
+        screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
+        self.assertIn(
+            "`willing_to_complete_assessments`, `willing_to_undergo_drug_tests`, and "
+            "`willing_to_undergo_background_checks` the `candidate.yaml` move carries) →",
+            screening,
+        )
         self.assertIn("create it from `./templates/data/answers.yaml`", mutate)
         self.assertIn("after every rename succeeds, delete `data/candidate.yaml`", mutate)
         self.assertIn("moved `qa[]` rows keep their `confirmed_at`", mutate)
