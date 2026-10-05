@@ -17,13 +17,15 @@ leave it disabled.
 
 Ask CV policy after packs and before Stories:
 
-- `adapt_per_vacancy`: **yes (Recommended)** | no. Yes → for each posting,
-  job-resume-refine tailors roles, bullets, Skills, and the Summary from
-  profile Facts and compiles a one-page PDF. No → the base CV
-  goes out unchanged. Write `true`/`false`.
+- `adapt_per_vacancy`: **yes (Recommended)** | no. Yes → preserve all roles and
+  bullets, adapt supported Summary and Skills wording, and optionally add
+  role-specific technology lines. Keep within the compiled base's page count
+  and check PDF extraction and appearance. No → use the base CV unless the
+  caller selects an existing prepared package. Write `true`/`false`.
 
 Then, only when adapt is yes and `cv/` holds no `.tex`: ask for an existing
-`.tex` path to copy in as the base. Never generate LaTeX.
+`.tex` path to copy in as the base. Never generate LaTeX. Refinement never
+writes the profile Facts; it writes only the per-vacancy application package.
 
 Do not ask pack `entry` URLs, pack implementation metadata, or derived
 profile URLs. Do not collect demographic/EEO data.

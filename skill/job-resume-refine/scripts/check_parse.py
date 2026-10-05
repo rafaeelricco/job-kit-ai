@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Assert Fact strings round-trip through pdftotext on the compiled resume.
+"""Legacy Fact-string checks plus a reusable pdftotext extraction boundary.
 
 argv[1]: absolute path of the compiled PDF.
 stdin: {"identity": [str], "roles": [{"company", "position", "date"}], "skills": [str]}
 stdout: {"verdict": "PASS" | "FAIL", "missing": [{"kind", "token"}],
          "order": [str], "error": str | null}
 
-Contract: references/contracts/contract-refine.md Check 10. This file owns text
-normalization and the whole-token and order tests; the prose owns which strings
-are expected. A token matches only where it is not glued to another letter or
+The legacy ``check`` function owns its text normalization, whole-token, and
+order semantics; the strict PDF evaluator reuses only ``extract`` and
+``normalize``. A token matches only where it is not glued to another letter or
 digit, so a one-letter skill such as `C` never matches inside another word.
+
+``extract`` is also the small reusable pdftotext boundary used by the strict
+PDF evaluator. The legacy ``check`` flow below deliberately retains its
+existing matching semantics and output contract.
 """
 import json
 import re
@@ -102,11 +106,30 @@ def _shape_error(expected):
     return None
 
 
-def extract(pdf_path):
-    """Return pdftotext's default-mode text for the PDF."""
-    result = subprocess.run(
-        ["pdftotext", pdf_path, "-"], capture_output=True, text=True
-    )
+def extract(pdf_path, layout=False):
+    """Return pdftotext text for the PDF, optionally using ``-layout``.
+
+    Keep the subprocess boundary explicit and bounded so callers can safely
+    reuse it for diagnostics. ``FileNotFoundError`` remains distinct for the
+    legacy CLI's existing message; decode and timeout failures are represented
+    as ``RuntimeError`` and are handled by that same CLI.
+    """
+    command = ["pdftotext", "-enc", "UTF-8", "-eol", "unix"]
+    if layout:
+        command.append("-layout")
+    command.extend([pdf_path, "-"])
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError("pdftotext timed out") from error
+    except UnicodeDecodeError as error:
+        raise RuntimeError("invalid UTF-8 output") from error
     if result.returncode != 0:
         raise RuntimeError(f"pdftotext failed: {result.stderr.strip()}")
     return result.stdout

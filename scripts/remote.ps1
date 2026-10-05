@@ -101,6 +101,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-match\scripts\typesafe_match.py',
   'skill\job-match\scripts\years.py',
   'skill\job-resume-refine\scripts\check_parse.py',
+  'skill\job-resume-refine\scripts\evaluate_pdf.py',
   'skill\job-store\scripts\normalize_url.py',
   'skill\job-store\scripts\validate_extract.py',
   'skill\job-store\scripts\validate_dossier.py',
