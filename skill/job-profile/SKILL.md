@@ -46,7 +46,8 @@ Edit an existing profile.
 
 Resolve every `data/*` path against Profile root (not CWD, not skill dir).
 Do not read `scout/jobs/*.md`.
-Skill-local files: `./references/**` only.
+Skill-local files: `./references/**`, plus `./templates/data/answers.yaml` for
+the legacy `candidate.yaml` move.
 
 Mutate write-set: `data/job_search.yaml` (search keys, plus the fact keys the
 legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`),
@@ -55,8 +56,9 @@ legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`),
 deleted by that move only. Continuation fill writes the
 `./references/flows/flow-fill.md` set instead.
 
-When `data/candidate.yaml` exists, read `./references/flows/flow-mutate.md` now
-and offer its legacy `candidate.yaml` move first; after that cycle ends,
+When the operator runs `/job-profile` itself (not a skill loading this edit
+path) and `data/candidate.yaml` exists, read `./references/flows/flow-mutate.md`
+now and offer its legacy `candidate.yaml` move first; after that cycle ends,
 continue with the route below.
 
 When the operator asks to find jobs / scout openings, hand off `job-scout`, then

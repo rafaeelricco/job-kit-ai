@@ -89,9 +89,13 @@ with the location moves above when those keys are present too:
 `work_model`, so the diff shows them removed beside the current `work_model`
 flags. A key `job_search.yaml` already values keeps that value, and the diff
 shows the `candidate.yaml` value dropped. Any other valued key is shown removed,
-never moved. `answers.yaml` absent → create it from `./templates/data/answers.yaml`
-in the same cycle. After every rename succeeds, delete `data/candidate.yaml`; a
-failed delete names the path and leaves the moved keys in place.
+never moved. Moved `qa[]` rows keep their `confirmed_at`; a row whose `question`
+(lowercase, non-alphanumeric runs → one space, trim) and `scope` already sit in
+`qa[]` is skipped. `answers.yaml` absent → create it from
+`./templates/data/answers.yaml` in the same cycle. Steps 5 and 8 hold and re-read
+`data/candidate.yaml` with the other targets. After every rename succeeds, delete
+`data/candidate.yaml` and print `deleted <abs path>`; a failed delete names the
+path and leaves the moved keys in place.
 
 After a yes that writes `positions`: if `data/profile_card.yaml` exists, also
 clear `primary_role` in that file in the **same** confirm cycle (show it empty

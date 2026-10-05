@@ -507,6 +507,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("| `screening_defaults.qa[]` | `answers.yaml` `qa[]`, appended verbatim |", mutate)
         self.assertIn("create it from `./templates/data/answers.yaml`", mutate)
         self.assertIn("after every rename succeeds, delete `data/candidate.yaml`", mutate)
+        self.assertIn("moved `qa[]` rows keep their `confirmed_at`", mutate)
+        profile = instruction_text(harness.SKILL / "job-profile" / "SKILL.md")
+        self.assertIn("when the operator runs `/job-profile` itself (not a skill loading this edit path)", profile)
         stop = "`data/candidate.yaml` present → stop; migrate via `/job-profile`."
         readers = (
             harness.SKILL / "job-apply" / "SKILL.md",
