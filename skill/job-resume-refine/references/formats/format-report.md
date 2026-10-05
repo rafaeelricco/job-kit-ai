@@ -38,7 +38,7 @@ forbidden.
 | change             | what                                 | why                                                                                            |
 | ------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
 | Skills             | `{term}` in/out/exact spelling       | supported requirement / ad-silent fit removal / supported alias                                |
-| Summary            | sentence `1` or `3`                  | supported requirement, truthful duration, or recent Fact proof |
+| Summary            | sentence `1` or `3`                  | supported requirement, truthful duration, or recent Fact proof                                 |
 | Technologies       | `{company}` · `{term}`               | role-specific `skills-by-company` or matching Fact evidence                                    |
 | title/date display | `{company}` · `{before}` → `{after}` | truthful source-grounded expansion preserving seniority, progression, endpoints, and precision |
 | extraction repair  | `{surface}` · `{diagnostic code}`    | demonstrated final-PDF extraction failure; source and visual checks rerun                      |
