@@ -1,8 +1,13 @@
 import copy
+import contextlib
+import io
+import json
+import subprocess
 import unittest
 from unittest import mock
+from types import SimpleNamespace
 
-from check_parse import check, extract
+from check_parse import check, extract, main
 
 # Shaped like pdftotext default-mode output of the real base: a table row
 # splits into blocks, bullets wrap, "--" renders as an en dash.
@@ -145,6 +150,39 @@ class ParseCheckTests(unittest.TestCase):
         with mock.patch("check_parse.subprocess.run", side_effect=FileNotFoundError):
             with self.assertRaises(FileNotFoundError):
                 extract("/nonexistent.pdf")
+
+    def test_extract_modes_explicit_encoding_and_timeout(self):
+        for layout in (False, True):
+            with mock.patch("check_parse.subprocess.run", return_value=SimpleNamespace(
+                    returncode=0, stdout="Resume", stderr="")) as run:
+                self.assertEqual(extract("/resume.pdf", layout=layout), "Resume")
+            args, kwargs = run.call_args
+            self.assertEqual("-layout" in args[0], layout)
+            self.assertIn("UTF-8", args[0])
+            self.assertIn("unix", args[0])
+            self.assertEqual(args[0][-2:], ["/resume.pdf", "-"])
+            self.assertEqual(kwargs["encoding"].lower(), "utf-8")
+            self.assertGreater(kwargs["timeout"], 0)
+            self.assertLessEqual(kwargs["timeout"], 60)
+            self.assertFalse(kwargs.get("shell", False))
+
+    def test_new_extraction_errors_preserve_legacy_json_and_exit(self):
+        for error in (subprocess.TimeoutExpired("pdftotext", 30),
+                      UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid")):
+            out = io.StringIO()
+            with mock.patch("check_parse.subprocess.run", side_effect=error), \
+                    mock.patch("sys.argv", ["check_parse.py", "/resume.pdf"]), \
+                    mock.patch("sys.stdin", io.StringIO(json.dumps(self.expected))), \
+                    contextlib.redirect_stdout(out):
+                self.assertEqual(main(), 0)
+            result = json.loads(out.getvalue())
+            self.assertEqual(set(result), {"verdict", "missing", "order", "error"})
+            self.assertEqual(result["verdict"], "FAIL")
+            self.assertTrue(result["error"])
+
+    def test_legacy_boundary_semantics_are_unchanged(self):
+        for text, token in (("C++", "C"), ("R&D", "R")):
+            self.assertEqual(check(text, {"identity": [token], "roles": [], "skills": []})["verdict"], "PASS")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+  "script": "skill/job-resume-refine/scripts/evaluate_pdf.py",
+  "argv": ["/missing/resume.pdf"],
+  "stdin": {"schema_version": 1, "blocks": [], "terms": []},
+  "exit": 2,
+  "stdout": {
+    "schema_version": 1,
+    "verdict": "ERROR",
+    "pdf_sha256": null,
+    "expected": {"schema_version": 1, "blocks": [], "terms": []},
+    "tool": {"name": "pdftotext", "version": null},
+    "modes": {},
+    "issues": [
+      {
+        "severity": "error",
+        "code": "evaluation_error",
+        "message": "blocks must be a non-empty array"
+      }
+    ]
+  }
+}
