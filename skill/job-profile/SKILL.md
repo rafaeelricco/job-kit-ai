@@ -48,10 +48,16 @@ Resolve every `data/*` path against Profile root (not CWD, not skill dir).
 Do not read `scout/jobs/*.md`.
 Skill-local files: `./references/**` only.
 
-Mutate write-set: `data/job_search.yaml` (search keys), `data/answers.yaml` (`qa[]`),
+Mutate write-set: `data/job_search.yaml` (search keys, plus the fact keys the
+legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`),
 `data/profile_card.yaml`, `data/search_packs.yaml`, `data/cvs.yaml`, and their
-`*.yaml.tmp` staging siblings during atomic rename. Continuation fill writes the
+`*.yaml.tmp` staging siblings during atomic rename; `data/candidate.yaml` is
+deleted by that move only. Continuation fill writes the
 `./references/flows/flow-fill.md` set instead.
+
+When `data/candidate.yaml` exists, read `./references/flows/flow-mutate.md` now
+and offer its legacy `candidate.yaml` move first; after that cycle ends,
+continue with the route below.
 
 When the operator asks to find jobs / scout openings, hand off `job-scout`, then
 end this skill.

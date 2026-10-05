@@ -22,6 +22,7 @@ Unreadable Profile root, or a present but unreadable `data/cvs.yaml` → stop an
 say so; an absent `data/cvs.yaml` falls back per `flow-apply.md` §3. A dossier
 that will not read or parse is one posting's failure, not the run's —
 `flow-apply.md` §2.
+`data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
 Write-set: `scout/jobs/` — a confirmed submission (`flow-record.md`), one
 `posting dead` log line when the ad reads dead (`flow-apply.md` §2), or one

@@ -3,6 +3,7 @@
 Print `Profile root:`, `Deck:` (`data/search_packs.yaml`), `Runtime: workers` if spawn works, else `inline`.
 
 `job_search.yaml` keys: `work_model`, `job_types`, `date_posted`, `positions`, `location` (`search_in`, `also_eligible_from`, `exclude_hire_from`), `market_currencies`, `exclude_companies`, `prune_score_max` (job-prune's threshold; scout ignores it), and the job-apply fact keys `legal_authorization`, `employment_routes`, `salary_expectations`, `availability`, `screening_defaults`. Any other valued key, top-level or under `location` → stop; migrate via `/job-profile`.
+`data/candidate.yaml` present → stop; migrate via `/job-profile`.
 `location.search_in` is `worldwide` or a nonempty list of places; empty → stop. Below, `worldwide` and "a `search_in` list" name these two cases.
 
 Enabled packs empty and no URL token → STOP; enable via `/job-profile`. `enabled: false` is unlisted.

@@ -33,9 +33,11 @@ Load `./references/schemas/schema-profile-card.md` when the verb is `card refres
    operator re-runs the verb against the fresh content. `job-apply`'s
    `flow-learn.md` appends `answers.yaml` `qa[]` unattended, so a step-2
    read goes stale while step 4 waits. All unchanged → rename each over its
-   original. Rename is the only step that mutates a live file.
+   original. Rename, and the legacy `candidate.yaml` delete after it, are the
+   only steps that mutate a live file.
 9. A rename that fails after an earlier one succeeded → restore those originals
-   from the step-5 contents and report the cycle rolled back. Never print
+   from the step-5 contents, remove any file this cycle created, and report the
+   cycle rolled back. Never print
    `wrote` for a cycle that did not complete: the card-clear and its
    `job_search.yaml` edit stand or fall together.
 10. All renames done → print `wrote <abs path>` per file and re-print only the
@@ -56,11 +58,11 @@ Print `Profile root: /abs/path` before the first diff of the session.
 | `exclude_companies`                              | list of strings                                    |
 | `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                           |
 
-Nothing else in this file is written. When scout preflight (or the operator) names
-a key still present in `job_search.yaml` that is in neither the writable table
-above nor the Refuse table's fact keys, delete that key only — show the deletion in
-the same confirm cycle as any other write. Never invent a replacement value for a
-deleted key.
+Nothing else in this file is written, except by the legacy moves below. When
+scout preflight (or the operator) names a key still present in `job_search.yaml`
+that is in neither the writable table above nor the Refuse table's fact keys,
+delete that key only — show the deletion in the same confirm cycle as any other
+write. Never invent a replacement value for a deleted key.
 
 Legacy location keys are moved, not deleted, in one confirm cycle:
 
@@ -70,6 +72,26 @@ Legacy location keys are moved, not deleted, in one confirm cycle:
 | `locations` (scope `listed` or empty) | `location.search_in` list, minus `Anywhere`                          |
 | `direct_regions`                      | `location.also_eligible_from`, minus `worldwide`/`anywhere`/`global` |
 | `exclude_locations`                   | `location.exclude_hire_from`                                         |
+
+Legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle,
+with the location moves above when those keys are present too:
+
+| `candidate.yaml`                                                  | Becomes                                             |
+| ----------------------------------------------------------------- | --------------------------------------------------- |
+| `legal_authorization`, `employment_routes`, `salary_expectations` | same keys in `job_search.yaml`, verbatim            |
+| `availability.notice_period`                                      | `job_search.yaml` `availability.notice_period`      |
+| `work_preferences_from_resume.open_to_relocation`                 | `job_search.yaml` `availability.open_to_relocation` |
+| `screening_defaults` keys but `qa`                                | `job_search.yaml` `screening_defaults`, same keys   |
+| `screening_defaults.qa[]`                                         | `answers.yaml` `qa[]`, appended verbatim            |
+
+`work_preferences_from_resume` `remote_work`, `in_person_work`, and
+`in_person_work_note` are not moved: job-apply answers remote and in-person from
+`work_model`, so the diff shows them removed beside the current `work_model`
+flags. A key `job_search.yaml` already values keeps that value, and the diff
+shows the `candidate.yaml` value dropped. Any other valued key is shown removed,
+never moved. `answers.yaml` absent → create it from `./templates/data/answers.yaml`
+in the same cycle. After every rename succeeds, delete `data/candidate.yaml`; a
+failed delete names the path and leaves the moved keys in place.
 
 After a yes that writes `positions`: if `data/profile_card.yaml` exists, also
 clear `primary_role` in that file in the **same** confirm cycle (show it empty

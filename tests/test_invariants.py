@@ -59,6 +59,12 @@ CONTRACT_MATCH: Path = (
 FLOW_JOB_MATCH: Path = (
     harness.SKILL / "job-match" / "references" / "flows" / "flow-match.md"
 )
+FLOW_MUTATE: Path = (
+    harness.SKILL / "job-profile" / "references" / "flows" / "flow-mutate.md"
+)
+FLOW_PREFLIGHT: Path = (
+    harness.SKILL / "job-scout" / "references" / "flows" / "flow-preflight.md"
+)
 
 
 @dataclass(frozen=True)
@@ -494,6 +500,23 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             "with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`",
             flow,
         )
+
+    def test_legacy_candidate_yaml_moves_before_any_fact_reader_runs(self):
+        mutate = instruction_text(FLOW_MUTATE)
+        self.assertIn("legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle", mutate)
+        self.assertIn("| `screening_defaults.qa[]` | `answers.yaml` `qa[]`, appended verbatim |", mutate)
+        self.assertIn("create it from `./templates/data/answers.yaml`", mutate)
+        self.assertIn("after every rename succeeds, delete `data/candidate.yaml`", mutate)
+        stop = "`data/candidate.yaml` present → stop; migrate via `/job-profile`."
+        readers = (
+            harness.SKILL / "job-apply" / "SKILL.md",
+            harness.SKILL / "job-prep" / "SKILL.md",
+            harness.SKILL / "job-match" / "SKILL.md",
+            FLOW_PREFLIGHT,
+        )
+        for path in readers:
+            with self.subTest(path=str(path.relative_to(harness.SKILL))):
+                self.assertIn(stop, instruction_text(path))
 
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
