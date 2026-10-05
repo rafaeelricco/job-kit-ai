@@ -83,7 +83,7 @@ Before staging any prose, enforce every `never_say` ban below.
 
 - Language level is the printed self-assessment, paired with the language name. Never assert a certification, test score, or bare letter grade.
 - Never name an employer's client. Use only a domain phrase already present in a Fact file.
-- Remote is `Yes` when `work_model.remote` is true, else `No`. In-person is `Yes` when `work_model.onsite` or `work_model.hybrid` is true, else `No`. No `work_model` flag true → neither is an answer. Relocation uses `availability.open_to_relocation` verbatim; an empty key is no answer.
+- Remote is `Yes` when `work_model.remote` or `work_model.hybrid` is true, else `No`. In-person is `Yes` when `work_model.onsite` or `work_model.hybrid` is true, else `No`. No `work_model` flag true → neither is an answer. Relocation uses `availability.open_to_relocation` verbatim; an empty key is no answer.
 - Demographic and EEO questions are answered only by declining; never invent, recall, or read them from a file.
 - Disqualifying questions get the truthful answer, even when it disqualifies.
 - Every `never_say` entry is a run-global ban on outbound free-text, exact or semantically equivalent.

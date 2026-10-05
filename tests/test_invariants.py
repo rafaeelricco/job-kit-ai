@@ -531,6 +531,13 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             with self.subTest(path=str(path.relative_to(harness.SKILL))):
                 self.assertIn(stop, instruction_text(path))
 
+    def test_hybrid_work_model_answers_remote_and_in_person_yes(self):
+        screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
+        self.assertIn("remote is `yes` when `work_model.remote` or `work_model.hybrid` is true, else `no`.", screening)
+        self.assertIn("in-person is `yes` when `work_model.onsite` or `work_model.hybrid` is true, else `no`.", screening)
+        state = instruction_text(harness.SKILL / "job-match" / "references" / "schemas" / "schema-state.md")
+        self.assertIn("| `preferences.remote` | `job_search.yaml` `work_model.remote` or `work_model.hybrid` true → `yes`", state)
+
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
         self.assertIn("equivalent of scout/jobs/{other}", schema)
