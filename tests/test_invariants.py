@@ -472,7 +472,10 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertNotIn("a named `locations` entry", gate)
         self.assertIn("when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us`", gate)
         rank = instruction_text(FLOW_RANK)
-        self.assertIn("or `eligibility` is `confirmed` → `direct`", rank)
+        self.assertIn(
+            "each printed route is one the kit refuses (eor, kit eor not yes; contractor/b2b, kit contractor not yes) → `unbucketed`; `eligibility` is `confirmed` → `direct`",
+            rank,
+        )
         self.assertNotIn("direct_regions", rank)
 
     def test_search_in_drop_never_reads_remote_postings(self):
