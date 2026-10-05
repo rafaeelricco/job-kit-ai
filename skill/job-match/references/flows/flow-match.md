@@ -29,6 +29,7 @@ Load `./references/schemas/schema-state.md` and `./references/contracts/contract
 ## profile
 
 Derive `state.candidate` per schema-state CandidateProfile. Unreadable required file → stop and name it.
+`data/job_search.yaml` with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`.
 
 ## candidates
 

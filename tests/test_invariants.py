@@ -56,6 +56,9 @@ FLOW_PREP: Path = harness.SKILL / "job-prep" / "references" / "flows" / "flow-pr
 CONTRACT_MATCH: Path = (
     harness.SKILL / "job-match" / "references" / "contracts" / "contract-match.md"
 )
+FLOW_JOB_MATCH: Path = (
+    harness.SKILL / "job-match" / "references" / "flows" / "flow-match.md"
+)
 
 
 @dataclass(frozen=True)
@@ -478,6 +481,15 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 self.assertIn(clause, text)
                 self.assertNotIn("location-restricted", text)
+
+    def test_job_match_guards_empty_and_legacy_location(self):
+        contract = instruction_text(CONTRACT_MATCH)
+        self.assertIn("(never under `worldwide` or an empty `search_in`)", contract)
+        flow = instruction_text(FLOW_JOB_MATCH)
+        self.assertIn(
+            "with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`",
+            flow,
+        )
 
     def test_equivalent_posting_is_a_log_not_a_merge(self):
         schema = instruction_text(SCHEMA_DOSSIER)
