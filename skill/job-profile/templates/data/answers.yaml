@@ -1,0 +1,18 @@
+# Reusable screening answers job-apply fills forms from.
+# Keys: qa
+# job-profile `qa` and job-apply's learn leg write qa[]; nothing else does.
+#
+# How a qa row answers a form question, and why:
+#
+#   [question] + [scope] → answer, verbatim
+#
+#   question      Form label as printed, one line. Matched after normalizing.
+#   answer        Used verbatim. Empty marks a question seen but not yet answered.
+#   scope         Optional {country} | {ats} | {company}. Absent → every form.
+#   source        Where the row came from.
+#   confirmed_at  Date of the last write; latest wins between equal rows.
+#
+#   Rules: a Fact file always wins over a qa row. Never invent visa, salary,
+#   or notice. No EEO or demographic data.
+
+qa: [] # each: {question, answer, scope?, source, confirmed_at}
