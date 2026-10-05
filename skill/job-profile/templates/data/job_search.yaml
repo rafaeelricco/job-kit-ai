@@ -21,9 +21,8 @@
 #   location           where scout searches and who can hire you:
 #     search_in          markets to search, one run each, or `worldwide` for one
 #                        unfiltered run. An onsite posting must sit in one. This is
-#                        not where you may work (legal_authorization is). A list
-#                        whose every country is unauthorized scans nothing on
-#                        packs with a location control. Empty → scout STOP.
+#                        not where you may work (legal_authorization is).
+#                        Empty → scout STOP.
 #     also_eligible_from regions that include you when a posting says "hiring
 #                        from X", on top of your Yes jurisdictions (e.g. LATAM).
 #                        Worldwide / anywhere / global postings always qualify.
