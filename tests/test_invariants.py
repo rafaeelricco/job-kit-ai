@@ -492,6 +492,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
         self.assertIn("`citizenships` plus `basics.yaml` `permits`", screening)
         self.assertIn("| every result `false`", screening)
+        self.assertIn("name the asked jurisdiction by its full country name or `eu`", screening)
+        self.assertIn("never a bare two-letter code", screening)
         self.assertIn(
             "| a permit `true` and no citizenship `true` | `yes` | not derived | not derived |", screening
         )

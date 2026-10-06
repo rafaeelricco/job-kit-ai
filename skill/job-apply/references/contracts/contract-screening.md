@@ -172,8 +172,9 @@ A midpoint of `ours` answers no row.
 
 Classify the question before answering.
 Authorized countries are `basics.yaml` `citizenships` plus `basics.yaml`
-`permits`. Name the asked jurisdiction by code or clear
-synonym (`us`, `eu`, `uk`, `br`), then run `job-profile/scripts/geography.py`
+`permits`. Name the asked jurisdiction by its full country name or `EU`
+(`United States`, `United Kingdom`, `Brazil`, `EU`), never a bare two-letter
+code, then run `job-profile/scripts/geography.py`
 once per authorized country with `{"country": "<authorized country>",
 "places": ["<asked jurisdiction>"]}`. Only a country or the EU is a
 jurisdiction; any other region (`LATAM`, `Americas`, `worldwide`) gets no answer.
