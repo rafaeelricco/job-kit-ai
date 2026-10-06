@@ -1,33 +1,15 @@
-# One object per public portfolio project.
-# Keys: name, description, date, url.label, url.href
-# description = canonical project bullets; CV tailoring may select or condense them without changing facts.
-# job-apply may also use these claims as letter evidence.
-# Employment roles live in experiences.yml, not here.
+# Public portfolio projects. Paid work goes in experiences.yml.
+# Read by job-apply.
 #
-# How a bullet is written, and why:
+#   name             Project name.
 #
-#   [Action and scope] + [how] + [outcome] + [ownership or pace when useful]
+#   date             "Mon. YYYY", or a range.
 #
-#   Action    Lead with the strongest relevant fact and an accurate verb, using implied first person.
-#             "Built" and "Implemented" are valid; vary openings only to improve precision or emphasis.
+#   description[]    Your bullets, kept verbatim.
+#                    How to write them: data/stories/README.md.
 #
-#   How       Explain the relevant mechanism, decision, or constraint. Include rejected alternatives
-#             and failure modes when they clarify the work, not as mandatory parts of every bullet.
+#   url              Link: label and href.
 #
-#   Outcome   Show an observed improvement, adoption, verified behavior, or delivered capability.
-#             Use metrics when meaningful and supported; do not turn intended benefits into results.
-#             Activity counts establish scope or pace, not impact by themselves.
-#
-#   Ownership Make the personal contribution clear and distinguish it from team outcomes.
-#             Scope may be expressed within the action; avoid repeating it in a separate clause.
-#
-#   Pace      Include delivery time or a deadline when it adds meaningful evidence.
-#
-#   Rules: use facts supplied or approved by the profile owner, or supported by repositories.
-#   Never invent metrics, adoption, ownership, or outcomes. Preserve uncertainty and measurement scope.
-#   Keep one main claim per bullet, with enough context to stand alone; avoid code identifiers and
-#   file names in prose. Use past tense for completed work and consistent punctuation within a project.
-#   Treat the structure as a checklist, not mandatory clauses. CV length follows the rendered layout,
-#   without a fixed two-line requirement or an obligation to retain every source detail.
+# Never invent metrics, ownership, or outcomes.
 
 []

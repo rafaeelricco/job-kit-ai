@@ -10,8 +10,9 @@ Omit empty optional placeholders (GAPS_LINE / CV_LINE); never print them blank.
 
 {{GAPS_LINE}}
 
-- Day-2 edits: `/job-profile` — show your profile, change positions,
-  locations, or boards without hand-editing YAML.
+- Day-2 edits: `/job-profile` — show your profile, change positions, search
+  locations, or boards without hand-editing YAML. Edit residence or citizenship
+  facts with `/job-profile continue fill basics`.
 - Scout packs live in your profile (`data/search_packs.yaml`); tune formulations
   there or via `/job-profile packs`.
 

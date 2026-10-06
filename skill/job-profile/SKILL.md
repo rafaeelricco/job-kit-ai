@@ -46,11 +46,12 @@ Edit an existing profile.
 
 Resolve every `data/*` path against Profile root (not CWD, not skill dir).
 Do not read `scout/jobs/*.md`.
-Skill-local files: `./references/**`, plus `./templates/data/answers.yaml` for
-the legacy `candidate.yaml` move.
+Skill-local files: `./references/**`, `./scripts/geography.py` and its bundled
+`./scripts/geography.json`, plus `./templates/data/answers.yaml` for the legacy
+`candidate.yaml` move.
 
 Mutate write-set: `data/job_search.yaml` (search keys, plus the fact keys the
-legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`),
+legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`, `pending[]`),
 `data/profile_card.yaml`, `data/search_packs.yaml`, `data/cvs.yaml`, and their
 `*.yaml.tmp` staging siblings during atomic rename; `data/candidate.yaml` is
 deleted by that move only. Continuation fill writes the
@@ -60,6 +61,16 @@ When the operator runs `/job-profile` itself (not a skill loading this edit
 path) and `data/candidate.yaml` exists, read `./references/flows/flow-mutate.md`
 now and offer its legacy `candidate.yaml` move first; after that cycle ends,
 continue with the route below.
+
+When the operator runs `/job-profile` itself for ordinary display or explicitly
+requests the deprecated hiring-region migration, and `data/job_search.yaml` has
+such a field, read `./references/flows/flow-mutate.md` and offer its
+residence-dependent migration before display. If residence is absent or
+unresolved, stop and direct them to `/job-profile continue fill basics.country`;
+that continue-fill request always routes to `flow-fill.md` without repeating
+this migration offer. After the migration confirm cycle ends, continue with the
+route below. Read-only skills that load `flow-show.md` do not enter this
+mutation path.
 
 When the operator asks to find jobs / scout openings, hand off `job-scout`, then
 end this skill.
@@ -83,6 +94,7 @@ Load each additional reference only when that flow names it.
 - Templates: `./templates/`
 - Questionnaire: `./references/formats/format-questionnaire.md`
 - Profile card: `./references/schemas/schema-profile-card.md`
+- Hiring geography: `./references/contracts/contract-geography.md`
 
 ## Hard refuses
 

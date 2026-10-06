@@ -1,16 +1,20 @@
-# One object per credential.
-# Keys: institution, credential, field, location, date
+# One entry per degree or certificate.
+# Read by job-apply, job-resume-review.
 #
-# How a credential is written, and why:
+#   institution    School or issuer, as printed.
 #
-#   [institution] + [credential / field] + [date]
+#   credential     Degree or certificate name.
 #
-#   institution  School or issuer, as printed.
-#   credential   Degree or certificate name.
-#   field        Field of study when the credential names one.
-#   location     Optional place.
-#   date         start -- end when both known, else the printed end only.
+#   level          Level as forms list it, e.g. "Bachelor's degree".
 #
-#   Rules: never guess a start date. Empty list is allowed.
+#   grade          Final grade, if you want it given.
+#
+#   field          Field of study.
+#
+#   date           "Mon. YYYY -- Mon. YYYY", or just the end date.
+#
+#   coursework[]   Graded course projects: name, date, description[].
+#
+# Empty means unknown. Never invent a value or guess a start date.
 
 []

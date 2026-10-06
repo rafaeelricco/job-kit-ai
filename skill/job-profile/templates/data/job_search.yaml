@@ -1,54 +1,41 @@
-# Job search profile: what job-scout searches for, and the screening facts
-# job-apply answers forms from.
-# Keys: work_model, job_types, date_posted, positions, location,
-#   market_currencies, exclude_companies, prune_score_max,
-#   legal_authorization, employment_routes, salary_expectations,
-#   availability, screening_defaults
-# Scout preflight stops on any other valued key. job-profile may write the
-# search keys; every other key is continue fill. Reusable form answers live in
-# answers.yaml.
+# What job-scout searches for, and the facts job-apply answers forms with.
+# Read by job-scout, job-match, job-apply, job-profile.
 #
-# How a search is constrained, and why:
+#   work_model               remote, hybrid, onsite (true | false).
 #
-#   [positions × formulations] + [location.search_in] + [work_model / job_types / date_posted]
+#   job_types                full_time, contract, part_time, … (true | false).
 #
-#   work_model         remote / hybrid / onsite flags. Scout keep uses kit-true
-#                      flags; job-apply answers remote and in-person from them.
-#   job_types          full_time, contract, and the other printed types.
-#   date_posted        one window: 24_hours, week, month, or all_time.
-#   positions          title strings; [role] and board title-match use this list,
-#                      file order.
-#   location           where scout searches and who can hire you:
-#     search_in          markets to search, one run each, or `worldwide` for one
-#                        unfiltered run. An onsite posting must sit in one. This is
-#                        not where you may work (legal_authorization is).
-#                        Empty → scout STOP.
-#     also_eligible_from regions that include you when a posting says "hiring
-#                        from X", on top of your Yes jurisdictions (e.g. LATAM).
-#                        Worldwide / anywhere / global postings always qualify.
-#     exclude_hire_from  hire-from places to drop. Empty → drop none.
-#   market_currencies  salary currencies the gate keeps (USD, EUR, GBP).
-#   exclude_companies  company names dropped at search and gate, slug-compared.
-#                      Empty → drop none.
-#   prune_score_max    job-prune threshold; scout ignores it.
+#   date_posted              One window: 24_hours, week, month, or all_time.
 #
-# How a screening answer is chosen, and why:
+#   positions                Job titles to search, in priority order.
 #
-#   [Fact file] then [derived] then [qa row] then [authored] — never invent
+#   location.search_in       Markets to search, or worldwide.
 #
-#   legal_authorization  One row per country. Apply reads the matching country
-#                        only; never copy a row onto another country.
-#   employment_routes    employer_of_record, direct_contractor, local_employment.
-#   salary_range_usd     Yearly USD band. Printed job USD numbers win; this band
-#                        decides only when the job prints none. Never convert non-USD.
-#   availability         notice_period (earliest start is today plus this) and
-#                        open_to_relocation, verbatim.
-#   screening_defaults   on_call, hours_overlap, timezone, consent_to_data_processing.
-#                        Absent key → later apply rules.
-#   qa row               An answers.yaml row whose question matches the label.
+#   location.exclude_hire_from
+#                            Hiring places to skip, e.g. ["United States"].
 #
-#   Rules: bool maps are explicit. Empty is absent. A Fact file always wins over
-#   a qa row. Never invent visa, salary, or notice. No EEO or demographic data.
+#   market_currencies        Salary currencies to keep, e.g. [USD, EUR].
+#
+#   exclude_companies        Companies to never show.
+#
+#   prune_score_max          Dossiers scoring at or below this are trashed.
+#
+#   employment_routes.*      How you can be hired: employer_of_record,
+#                            direct_contractor, local_employment (Yes | No),
+#                            contractor_entity (free text).
+#
+#   salary_expectations.*    salary_range_usd (yearly, "min-max"), bonus, equity.
+#
+#   salary_history.last      Last pay: amount, currency, period, basis.
+#
+#   availability.*           notice_period, open_to_relocation, and Yes | No
+#                            answers: on_call, travel, drug_test, …
+#
+#   consents.*               Optional checkboxes (Yes | No). Required privacy
+#                            boxes are always ticked.
+#
+# Empty means unknown. Never invent a value.
+# Scout stops on any key not listed here.
 
 work_model:
   remote: false
@@ -70,7 +57,6 @@ positions: [] # confirm target titles; empty → Gap until set
 
 location:
   search_in: [] # markets to search, or worldwide; empty → scout STOP until set
-  also_eligible_from: [] # hire-from regions that include you (e.g. LATAM); empty → jurisdictions only
   exclude_hire_from: [] # hire-from places to drop (e.g. Brazil); empty → none
 market_currencies: [] # e.g. USD, EUR, GBP; empty → no markets prose
 exclude_companies: [] # company names to drop at search and gate, slug-compared; empty → none
@@ -80,23 +66,36 @@ prune_score_max: 5 # job-prune: dossiers scored at or below this move to scout/j
 # voluntary and per-employer; answer them in the ATS form at apply time.
 # No kit skill stages protected-class data from a file.
 
-legal_authorization:
-  jurisdictions: [] # TODO each: {country, work_authorization, legally_allowed_to_work, requires_visa, requires_sponsorship}
-
 employment_routes:
   employer_of_record: "" # Yes | No: gates EOR report eligibility
   direct_contractor: ""
-  local_employment: ""
+  local_employment: "" # Yes | No: hired onto a local payroll in the posting's country
+  contractor_entity: "" # e.g. Yes | No | Can open one if required; never the number
 
 salary_expectations:
   salary_range_usd: "" # TODO e.g. "80000-120000"
+  bonus: ""
+  equity: ""
+
+salary_history:
+  last: { amount: "", currency: "", period: "", basis: "" } # e.g. 82000 USD year base
 
 availability:
   notice_period: "" # TODO e.g. "2 weeks"
   open_to_relocation: ""
-
-screening_defaults:
   on_call: ""
   hours_overlap: ""
-  timezone: ""
-  consent_to_data_processing: ""
+  working_hours: ""
+  background_check: ""
+  technical_assessment: ""
+  drug_test: ""
+  in_person_interview: ""
+  travel: ""
+  own_equipment: ""
+  equipment_os: []
+
+consents:
+  recruiter_messages: ""
+  data_retention: ""
+  interview_recording: ""
+  marketing_use: ""

@@ -1,14 +1,8 @@
-# Human-provided details not represented by structured profile fields.
-# Keys: observations
-# job-scout and job-apply do not consume this file.
+# Free notes for yourself that fit no other file.
+# No skill uses these as facts.
 #
-# How an observation is stored, and why:
+#   observations[]    One note per item.
 #
-#   [free text the other Fact files cannot hold]
-#
-#   observations  Notes for the owner and for fill. Not a claim source for
-#                 letters, resumes, or screening answers.
-#
-#   Rules: never move a structured Fact here to hide it. Empty list is normal.
+# Never hide a fact here that belongs in another file.
 
 observations: []

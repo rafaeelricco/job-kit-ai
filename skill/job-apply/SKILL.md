@@ -27,7 +27,7 @@ that will not read or parse is one posting's failure, not the run's —
 Write-set: `scout/jobs/` — a confirmed submission (`flow-record.md`), one
 `posting dead` log line when the ad reads dead (`flow-apply.md` §2), or one
 `submit unconfirmed` log line after an ambiguous submit (`flow-apply.md` §5) —
-and `data/answers.yaml` `qa[]`, appended once per run
+and `data/answers.yaml` `pending[]`, appended once per run
 under `flow-learn.md`, plus its `data/answers.yaml.{run token}.tmp`
 staging sibling during atomic rename. A chained `job-resume-refine` writes
 `scout/applications/{slug}/` under its own law.
@@ -56,12 +56,11 @@ Load each additional reference only when that flow names it.
   or an answer; a missing part is named as not on record, never estimated
 - Read a story body, or ship a `never_say` claim or a process number
 - Write `cv/`, any `data/` path but `data/answers.yaml`
-  `qa[]` and its `{run token}.tmp` staging sibling, or —
+  `pending[]` and its `{run token}.tmp` staging sibling, or —
   before a confirmed submission — `scout/jobs/`, except the one
   `posting dead` or `submit unconfirmed` log line `flow-apply.md` appends
-- Write an `answer` value, a scope guess, a password, a one-time code, or an
-  authentication link into `qa[]`; only a question and an empty `answer`
-  belong there
+- Write `qa[]`, an answer, a scope guess, a password, a one-time code, or an
+  authentication link; only a question, source, and date belong in `pending[]`
 - Type, invent, persist, or reuse a password; create a password account; sign
   in as any identity but `data/basics.yaml` `email`
 - Stage protected-class data: demographic and EEO questions are declined,

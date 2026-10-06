@@ -1,35 +1,17 @@
-# One object per role.
-# Keys: company, position, location, date, summary, url.label, url.href
-# summary = canonical role bullets. Resume refinement preserves every printed
-# base bullet verbatim and in order, and never rewrites these stored Facts.
-# job-apply may also use these claims as letter evidence.
-# Optional role-specific skill evidence is read from data/skills-by-company.yml
-# when that file exists; a global skill alone cannot establish an employer.
+# One entry per job, newest first.
+# Read by job-apply, job-resume-refine, job-match, job-stories.
 #
-# How a bullet is written, and why:
+#   company, position, location    As printed on your CV.
 #
-#   [Action and scope] + [how] + [outcome] + [ownership or pace when useful]
+#   date          "Mon. YYYY -- Mon. YYYY", or "… -- Present".
 #
-#   Action    Lead with the strongest relevant fact and an accurate verb, using implied first person.
-#             "Built" and "Implemented" are valid; vary openings only to improve precision or emphasis.
+#   industries    Domain labels, e.g. ["Fintech"].
 #
-#   How       Explain the relevant mechanism, decision, or constraint. Include rejected alternatives
-#             and failure modes when they clarify the work, not as mandatory parts of every bullet.
+#   summary[]     Your bullets, kept verbatim and in order.
+#                 How to write them: data/stories/README.md.
 #
-#   Outcome   Show an observed improvement, adoption, verified behavior, or delivered capability.
-#             Use metrics when meaningful and supported; do not turn intended benefits into results.
-#             Activity counts establish scope or pace, not impact by themselves.
+#   url           Link to the work: label and href.
 #
-#   Ownership Make the personal contribution clear and distinguish it from team outcomes.
-#             Scope may be expressed within the action; avoid repeating it in a separate clause.
-#
-#   Pace      Include delivery time or a deadline when it adds meaningful evidence.
-#
-#   Rules: use facts supplied or approved by the profile owner, or supported by repositories.
-#   Never invent metrics, adoption, ownership, or outcomes. Preserve uncertainty and measurement scope.
-#   Keep one main claim per bullet, with enough context to stand alone; avoid code identifiers and
-#   file names in prose. Use past tense for completed work and consistent punctuation within a role.
-#   Treat the structure as a checklist, not mandatory clauses. CV length follows the rendered layout,
-#   without a fixed two-line requirement or an obligation to retain every source detail.
+# Never invent metrics, ownership, or outcomes.
 
 []

@@ -29,7 +29,9 @@ Load `./references/schemas/schema-state.md` and `./references/contracts/contract
 ## profile
 
 Derive `state.candidate` per schema-state CandidateProfile. Unreadable required file → stop and name it.
-`data/job_search.yaml` with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`.
+`data/job_search.yaml` with a valued `locations`, `location_scope`, `exclude_locations`, `screening_defaults`, or `work_authorization` key → stop; migrate via `/job-profile`.
+Presence of `location.also_eligible_from` or `direct_regions`, including empty values, → stop; migrate via `/job-profile`.
+Load `job-profile/references/contracts/contract-geography.md`; missing or unresolved `data/basics.yaml` `country` → stop; run `/job-profile continue fill basics.country`.
 
 ## candidates
 

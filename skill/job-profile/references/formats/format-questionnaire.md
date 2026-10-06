@@ -7,12 +7,19 @@ Ask every user-owned field before profile Approve.
 Ask identity, basics, every experience/project/language/skill/education row,
 and every `job_search.yaml` key:
 
+- Basics: ask for the country of residence as an application form lists it
+  (`basics.country`), confirmed citizenship country names
+  (`basics.citizenships`), permit countries (`basics.permits`), `timezone`,
+  `legal_name`, `phone_whatsapp`, `address.*`, and an optional `birth_date`.
+  Residence is required for scouting; citizenships
+  drive authorization answers and must never be inferred from residence.
+
 - work model, job types, date filters
 - positions, `location.search_in` (list | `worldwide`),
-  `location.also_eligible_from`, `location.exclude_hire_from`,
+  `location.exclude_hire_from`,
   `market_currencies`, `exclude_companies`
-- salary, notice, relocation, `legal_authorization.jurisdictions[]`,
-  `employment_routes.*`, `screening_defaults.*`
+- salary, `bonus`, `equity`, `salary_history.last`, notice, relocation,
+  `availability.*` commitments, `consents.*`, `employment_routes.*`
 
 Ask each `search_packs.yaml` `packs[].enabled` flag. Never offer to enable a
 `route_required: true` pack that carries no `route` — name it as unavailable and
@@ -42,11 +49,10 @@ Template bool maps (`work_model`, `job_types`) and `date_posted` are convenience
 shells, not facts — require `keep` or `edit`; on `skip` write empty/`false`,
 never retain shipped trues.
 Never infer legal authorization or language levels.
-Ask which countries need stored answers, then ask the four authorization
-answers once per country. Write each as one `legal_authorization.jurisdictions[]`
-row (`country`, `work_authorization`, `legally_allowed_to_work`, `requires_visa`,
-`requires_sponsorship`). Never copy one country's answers onto another. An empty
-list means no stored answer for any jurisdiction.
+Ask for countries, beyond citizenships, where the user holds a work visa, work
+permit, or permanent residence; write them as `basics.permits`.
+Never infer a permit from residence, relocation, or employment routes. Every
+other jurisdiction is answered as unauthorized and needing visa and sponsorship.
 
 ## Stories
 

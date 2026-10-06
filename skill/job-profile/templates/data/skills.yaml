@@ -1,18 +1,17 @@
-# One object per skill category.
-# Keys: category, items
-# job-apply and job-resume-refine read items as the skill inventory, file order.
-# Optional data/skills-by-company.yml, when present, is read after this file.
+# Your skills, grouped. Order matters: earlier skills count as stronger.
+# Read by job-apply, job-match, job-scout, job-resume-refine.
+# data/skills-by-company.yml, when present, adds per-employer skills.
 #
-# How a skill is listed, and why:
+#   primary[]               Main programming languages. A "pick one" form
+#                           question takes the first.
 #
-#   [category] + [items as printed tokens]
+#   skills[].category       Group name. "Core Stack" is used by job-stories.
 #
-#   category  Group label. Order is file order; never re-ranked by judgement.
-#   items     Skill tokens as the owner spells them. Resume refine may use the
-#             ad's spelling when it names the same Fact.
+#   skills[].items          Skill names as you spell them.
 #
-#   Rules: never invent a skill. Empty items is a category with nothing in it.
+# Never invent a skill.
 
+primary: []
 skills:
   - category: "Programming Languages"
     items: [] # TODO

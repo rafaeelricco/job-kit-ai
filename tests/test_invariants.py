@@ -457,21 +457,15 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn(window, instruction_text(FLOW_GATE))
         self.assertIn(window, instruction_text(FLOW_SEARCH))
 
-    def test_search_keep_skips_printed_unauthorized_hire_from(self):
+    def test_search_keep_uses_residence_and_keeps_unknowns(self):
         search = instruction_text(FLOW_SEARCH)
-        self.assertIn(
-            "remote or hybrid-with-remote that already prints a hire-from country",
-            search,
-        )
+        self.assertIn("job-profile/references/contracts/contract-geography.md", search)
+        self.assertIn("printed permitted candidate locations incompatible with residence", search)
+        self.assertIn("known unmet explicit authorization requirement", search)
         self.assertIn("→ drop; `worldwide` → keep", search)
-        self.assertIn(
-            "legal_authorization.jurisdictions[]` row with `legally_allowed_to_work: yes",
-            search,
-        )
-        self.assertIn("legally_allowed_to_work_in_us", search)
-        self.assertIn("a `location.also_eligible_from` region", search)
-        self.assertNotIn("`anywhere` → keep", search)
-        self.assertNotIn("locations_unauthorized", search)
+        self.assertIn("unknown geographic membership or authorization stays unknown", search)
+        self.assertNotIn("also_eligible_from", search)
+        self.assertNotIn("legally_allowed_to_work_in_us", search)
         self.assertIn("location unknown → keep", search)
         self.assertIn("no kit-true flag → keep", search)
         self.assertIn("still gets stored slugs (2)", search)
@@ -479,12 +473,51 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("the `for` query value", search)
         self.assertIn("jobs.eu.lever.co", search)
 
+    def test_shared_geography_separates_residence_and_authorization(self):
+        path = harness.SKILL / "job-profile" / "references" / "contracts" / "contract-geography.md"
+        geography = instruction_text(path)
+        self.assertIn("`data/basics.yaml` country", geography)
+        self.assertIn("explicit country exclusions override broader included regions", geography)
+        self.assertIn("missing hiring-location requirements stay unknown", geography)
+        self.assertIn("never infer an authorization requirement from a remote country label alone", geography)
+        self.assertIn("job-apply/references/contracts/contract-screening.md", geography)
+        for path in (FLOW_SEARCH, FLOW_GATE, CONTRACT_MATCH):
+            text = instruction_text(path)
+            with self.subTest(path=path):
+                self.assertIn("job-profile/references/contracts/contract-geography.md", text)
+                self.assertNotIn("also_eligible_from", text)
+                self.assertNotIn("remote bound to a country the kit has no authorization for", text)
+
+    def test_authorization_derives_from_citizenships_and_permits(self):
+        screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
+        self.assertIn("`citizenships` plus `basics.yaml` `permits`", screening)
+        self.assertIn("| every result `false`", screening)
+        self.assertIn("name the asked jurisdiction by its full country name or `eu`", screening)
+        self.assertIn("never a bare two-letter code", screening)
+        self.assertIn(
+            "| a permit `true` and no citizenship `true` | `yes` | not derived | not derived |", screening
+        )
+        self.assertIn("a permit match never answers visa or sponsorship", screening)
+        self.assertNotIn("| any `true`", screening)
+        self.assertIn("only a country or the eu is a jurisdiction; any other region", screening)
+        self.assertIn("eu free movement comes from citizenships only; a permit covers its own country", screening)
+        self.assertIn('`"places": ["eu"]` once per citizenship and once for an asked country', screening)
+        state = instruction_text(harness.SKILL / "job-match" / "references" / "schemas" / "schema-state.md")
+        self.assertIn('"work_authorization": { "citizenships": [], "permits": [] }', state)
+        self.assertNotIn("authorized_in", state)
+        for path in harness.SKILL.rglob("*.md"):
+            with self.subTest(path=path):
+                text = path.read_text(encoding="utf-8")
+                self.assertNotIn("legal_authorization", text)
+                self.assertNotIn("requires_us_sponsorship", text)
+
     def test_eligibility_and_direct_bucket_never_read_search_markets(self):
         gate = instruction_text(FLOW_GATE)
-        self.assertIn("names worldwide / anywhere / global, a country or region with", gate)
-        self.assertIn("or a `location.also_eligible_from` region → `confirmed`", gate)
+        self.assertIn("residence matches the printed permitted candidate locations", gate)
+        self.assertIn("no explicit authorization requirement remains unmet or unknown → `confirmed`", gate)
+        self.assertIn("never match from search markets, citizenship, timezone, or the company's country", gate)
+        self.assertIn("`work_model: remote` alone", gate)
         self.assertNotIn("a named `locations` entry", gate)
-        self.assertIn("when no jurisdictions list exists, a legacy `legally_allowed_to_work_in_us`", gate)
         rank = instruction_text(FLOW_RANK)
         self.assertIn(
             "each printed route is one the kit refuses (eor, kit eor not yes; contractor/b2b, kit contractor not yes; local employment, kit local employment no) → `unbucketed`; `eligibility` is `confirmed` → `direct`",
@@ -503,26 +536,29 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
     def test_job_match_guards_empty_and_legacy_location(self):
         contract = instruction_text(CONTRACT_MATCH)
         self.assertIn("(never under `worldwide` or an empty `search_in`)", contract)
-        flow = instruction_text(FLOW_JOB_MATCH)
-        self.assertIn(
-            "with a valued `locations`, `location_scope`, `direct_regions`, or `exclude_locations` key → stop; migrate via `/job-profile`",
-            flow,
-        )
+        for path in (FLOW_JOB_MATCH, FLOW_PREFLIGHT):
+            text = instruction_text(path)
+            with self.subTest(path=path):
+                self.assertIn("presence of `location.also_eligible_from` or `direct_regions`, including empty values", text)
+                self.assertIn("/job-profile continue fill basics.country", text)
+                self.assertIn("missing or unresolved", text)
+        state = instruction_text(harness.SKILL / "job-match" / "references" / "schemas" / "schema-state.md")
+        self.assertIn('"residence": { "country": null, "regions": [] }', state)
+        self.assertNotIn("country_code", state)
+        self.assertNotIn("also_eligible_from", state)
 
     def test_legacy_candidate_yaml_moves_before_any_fact_reader_runs(self):
         mutate = instruction_text(FLOW_MUTATE)
         self.assertIn("legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle", mutate)
         self.assertIn("| `screening_defaults.qa[]` | `answers.yaml` `qa[]`, appended verbatim |", mutate)
         self.assertIn(
-            "| `work_preferences_from_resume.willing_to_*` | `job_search.yaml` `screening_defaults`, same keys |",
+            "| `work_preferences_from_resume.willing_to_*` | `job_search.yaml` `availability`: assessments → "
+            "`technical_assessment`, drug tests → `drug_test`, background checks → `background_check` |",
             mutate,
         )
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
-        self.assertIn(
-            "`willing_to_complete_assessments`, `willing_to_undergo_drug_tests`, and "
-            "`willing_to_undergo_background_checks` the `candidate.yaml` move carries) →",
-            screening,
-        )
+        self.assertIn("`job_search.yaml` `availability` prints them", screening)
+        self.assertNotIn("screening_defaults", screening)
         self.assertIn("create it from `./templates/data/answers.yaml`", mutate)
         self.assertIn("after every rename succeeds, delete `data/candidate.yaml`", mutate)
         self.assertIn("moved `qa[]` rows keep their `confirmed_at`", mutate)
