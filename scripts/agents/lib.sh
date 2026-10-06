@@ -4,7 +4,7 @@
 
 # Skill folder names under skill/ for coding agents.
 CORE_SKILL_NAMES="job-profile-root job-store"
-SKILL_NAMES="job-profile job-list job-match job-stories job-inbox job-humanize job-resume-refine ${CORE_SKILL_NAMES}"
+SKILL_NAMES="job-profile job-list job-match job-stories job-inbox job-humanize job-resume-refine job-resume-review ${CORE_SKILL_NAMES}"
 # Browser-channel skills: same agent homes, installed only by the `browser-use`
 # target, which needs the browser-use CLI to drive a real browser.
 BROWSER_SKILL_NAMES="job-scout job-apply job-prep"

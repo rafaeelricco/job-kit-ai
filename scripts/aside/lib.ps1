@@ -3,7 +3,7 @@
 
 $script:AsideCoreSkillNames = @('job-profile-root', 'job-store')
 $script:AsideSkillNames = @(
-  'job-scout', 'job-apply', 'job-prep', 'job-resume-refine',
+  'job-scout', 'job-apply', 'job-prep', 'job-resume-refine', 'job-resume-review',
   'job-profile', 'job-list', 'job-match', 'job-stories',
   'job-inbox', 'job-humanize'
 ) + $script:AsideCoreSkillNames

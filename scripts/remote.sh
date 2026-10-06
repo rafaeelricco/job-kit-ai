@@ -133,6 +133,12 @@ skill/captcha-solver/SKILL.md
 skill/job-apply/SKILL.md
 skill/job-prep/SKILL.md
 skill/job-resume-refine/SKILL.md
+skill/job-resume-review/SKILL.md
+skill/job-resume-review/references/rubric.md
+skill/job-resume-review/references/report.md
+skill/job-resume-review/references/research.md
+skill/job-resume-review/scripts/review_score.py
+skill/job-resume-review/scripts/scan_cv.py
 skill/job-list/SKILL.md
 skill/job-match/SKILL.md
 skill/job-match/scripts/score.py

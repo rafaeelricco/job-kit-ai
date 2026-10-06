@@ -245,8 +245,8 @@ Usage: uninstall.sh                 # interactive menu (TTY required)
        uninstall.sh -h|--help
 
 Targets:
-  aside     Aside skills (job-scout, job-apply, job-prep, job-resume-refine, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
-  agents    Coding-agent skills (job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store, job-resume-refine)
+  aside     Aside skills (job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
+  agents    Coding-agent skills (job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store, job-resume-refine, job-resume-review)
   browser-use  Browser skills (job-scout, job-apply, job-prep) in coding-agent homes, plus
                the browser-use driver: its skill, its CLI, its state directory.
                Never a browser app bundle
