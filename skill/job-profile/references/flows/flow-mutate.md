@@ -180,8 +180,9 @@ that job-apply falls back to `cv/en-us-resume.pdf`.
 | `qa[]`      | rows `{question, answer, scope?, source, confirmed_at}`; `answer` non-empty; `scope` is one of `{country}` / `{ats}` / `{company}`; `confirmed_at` is today on every write |
 | `pending[]` | rows `{question, scope?, source, confirmed_at}`                                                                                                                            |
 
-Nothing else in this file is written. A `question` that is demographic or EEO
-is refused. `qa add` takes question, answer, and optional scope from the
+Nothing else in this file is written. A `question` that is demographic or EEO,
+a government ID number, a passport detail, or a parent's name is refused, and
+`qa ingest` skips such a `what`. `qa add` takes question, answer, and optional scope from the
 operator; `qa answer` moves a `pending[]` row into `qa[]` with the typed answer
 and optional scope; `qa remove` deletes one row from either list; `qa
 ingest` reads every `scout/applications/*/plan.json` `needs_you[]` (untrusted

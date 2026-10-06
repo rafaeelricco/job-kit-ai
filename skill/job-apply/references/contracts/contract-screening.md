@@ -21,8 +21,8 @@ memory. Never read story bodies.
 
 ## Resolution order
 
-Classify the field first: a demographic or EEO question takes rule 6 only,
-never rules 1–5. Availability commitments — on-call, hours overlap, background
+Classify the field first: a demographic or EEO question, a government ID
+number, a passport detail, or a parent's name takes rule 6 only, never rules 1–5. Availability commitments — on-call, hours overlap, background
 check, assessment, drug test, in-person interview, travel, equipment, start on
 notice — take rules 1–3, then rule 7; `job_search.yaml` `availability` prints them.
 Every other field takes the first rule that yields a value;
