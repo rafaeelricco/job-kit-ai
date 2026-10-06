@@ -51,6 +51,9 @@ REGION_ALIASES = {
     "eu": "european union",
 }
 WORLDWIDE_LABELS = {"worldwide", "anywhere", "global"}
+# Countries M49 files under one continent that also lie in Europe or Asia.
+TRANSCONTINENTAL = {"AM", "AZ", "CY", "GE", "KZ", "RU", "TR"}
+TRANSCONTINENTAL_LABELS = {"europe", "asia"}
 PARENTHETICAL = re.compile(r"\s*\([^)]*\)")
 
 
@@ -104,6 +107,10 @@ def _place_match(
     }
     if canonical_region in residence_regions:
         return True
+    if canonical_region == "europe" and residence_code in groups["european union"]:
+        return True
+    if canonical_region in TRANSCONTINENTAL_LABELS and residence_code in TRANSCONTINENTAL:
+        return None
     if any(
         canonical_region == region.casefold()
         for country in countries.values()

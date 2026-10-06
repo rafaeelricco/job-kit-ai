@@ -28,6 +28,9 @@ stays unknown.
 LATAM / Latin America means the M49 Latin America and the Caribbean group.
 Worldwide / anywhere / global includes every resolved residence country.
 EU / European Union means the bundled EU member-state group.
+Europe also includes every EU member (Cyprus). Europe and Asia stay unknown
+for a transcontinental residence M49 files under the other continent
+(Russia vs Asia; Georgia, Armenia, Azerbaijan, Kazakhstan, or Türkiye vs Europe).
 Unmapped labels, including EMEA / APAC, stay unknown; never guess a map.
 
 Compare only posting evidence describing permitted candidate locations.

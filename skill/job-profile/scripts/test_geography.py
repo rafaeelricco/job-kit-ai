@@ -42,6 +42,12 @@ class GeographyTests(unittest.TestCase):
         self.assertEqual(result["matches"], [None, None, None, None, True, False, False])
         self.assertEqual(geography_payload({"country": "Canada", "places": ["CA"]})[1]["matches"], [True])
 
+    def test_continents_cover_eu_members_and_leave_transcontinental_unknown(self):
+        self.assertEqual(geography_payload({"country": "Cyprus", "places": ["Europe", "Asia", "EU"]})[1]["matches"], [True, True, True])
+        self.assertEqual(geography_payload({"country": "Georgia", "places": ["Europe", "Asia", "Eastern Europe"]})[1]["matches"], [None, True, False])
+        self.assertEqual(geography_payload({"country": "Russia", "places": ["Asia", "Europe"]})[1]["matches"], [None, True])
+        self.assertEqual(geography_payload({"country": "France", "places": ["Asia"]})[1]["matches"], [False])
+
     def test_unmapped_labels_are_unknown(self):
         result = geography_payload({"country": "Brazil", "places": ["EMEA", "APAC", "somewhere", ""]})[1]
         self.assertEqual(result["matches"], [None] * 4)
