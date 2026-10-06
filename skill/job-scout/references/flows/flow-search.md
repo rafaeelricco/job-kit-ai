@@ -2,9 +2,9 @@
 
 One pack at a time; never two on the same host.
 
-Interpolate `[role]` from positions (file order), `[industry]` from the card.
-Drop an empty leftover token. Build every formulation × position before opening
-a surface.
+A pack without `formulations` runs `["[role]"]`. Interpolate `[role]` from
+positions (file order), `[industry]` from the card. Drop an empty leftover
+token. Build every formulation × position before opening a surface.
 
 `worldwide` → each formulation once, location unfiltered: location control unset. A `search_in` list → cycle its entries. A pack with `location: keep-only` runs under a `search_in` list as under `worldwide`: each formulation once, location control unset, `search_in` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
 

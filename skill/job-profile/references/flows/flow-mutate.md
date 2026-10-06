@@ -56,7 +56,8 @@ Print `Profile root: /abs/path` before the first diff of the session.
 | `location.exclude_hire_from`                     | list of strings                                    |
 | `market_currencies`                              | list of strings                                    |
 | `exclude_companies`                              | list of strings                                    |
-| `work_model.*` / `job_types.*` / `date_posted.*` | bool, only when explicit                           |
+| `work_model.*` / `job_types.*`                   | bool, only when explicit                           |
+| `date_posted`                                    | one of `24_hours`, `week`, `month`, `all_time`     |
 
 Nothing else in this file is written, except by the legacy moves below. When
 scout preflight (or the operator) names a key still present in `job_search.yaml`
@@ -109,17 +110,20 @@ that is `card refresh`.
 - `enable` / `disable` — flip `enabled` on a named `id`. No id match → say so.
   Enabling must satisfy the route invariant before the staged file is renamed.
 - `formulations` — replace the list on one pack with strings the user typed. Never
-  compose a formulation, never widen one, never look a term up. Empty list → refuse.
+  compose a formulation, never widen one, never look a term up. Empty list →
+  refuse; removing the key restores the `[role]` default.
   A typed line that contains `[industry]` → warn (scout drops an empty
   `[industry]` token), then let the user decide.
 - `location` — `packs location <id> keep-only` writes `location: keep-only` on one
   pack; `packs location <id> surface` removes the key. No id match → say so. Only
   the operator declares keep-only; scout never infers it from the surface.
-- `add` / `remove` a pack — require `id`, `surface`, `entry`, and ≥1 formulation
-  from the user. `surface` is a label (`linkedin-jobs`, `open-web`, `social`, or
+- `add` / `remove` a pack — require `id`, `surface`, and `entry` from the user;
+  `formulations` is optional (absent → `[role]`). `surface` is a label
+  (`linkedin-jobs`, `open-web`, `social`, `careers`, or
   another); scout opens `entry`, it does not load a playbook file. `entry` is one
   `http(s)` URL. Accept optional `route_required`, `route`, and `location` only
-  when supplied by the user. A pack is a surface; an employer board is a slug, never a pack.
+  when supplied by the user. A pack is a surface; an employer board is a slug,
+  never a pack, except a `surface: careers` pack, which must carry `location: keep-only`.
 
 Route invariant: `route_required`, when present, is boolean. A present route is
 a mapping that is either `kind: json` with a `url` containing `{formulation}` and `{page}` and
