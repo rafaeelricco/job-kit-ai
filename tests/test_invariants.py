@@ -492,6 +492,11 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
         self.assertIn("`citizenships` plus `basics.yaml` `permits`", screening)
         self.assertIn("| every result `false`", screening)
+        self.assertIn(
+            "| a permit `true` and no citizenship `true` | `yes` | not derived | not derived |", screening
+        )
+        self.assertIn("a permit match never answers visa or sponsorship", screening)
+        self.assertNotIn("| any `true`", screening)
         self.assertIn("only a country or the eu is a jurisdiction; any other region", screening)
         self.assertIn("eu free movement comes from citizenships only; a permit covers its own country", screening)
         self.assertIn('`"places": ["eu"]` once per citizenship and once for an asked country', screening)

@@ -186,9 +186,14 @@ citizenship results count; a permit result there is `null`.
 
 | Result                                         | Authorized / legally allowed / permit | Requires visa | Requires sponsorship |
 | ---------------------------------------------- | ------------------------------------- | ------------- | -------------------- |
-| any `true`                                     | `Yes`                                 | `No`          | `No`                 |
+| a citizenship `true`                           | `Yes`                                 | `No`          | `No`                 |
+| a permit `true` and no citizenship `true`      | `Yes`                                 | not derived   | not derived          |
 | every result `false`                           | `No`                                  | `Yes`         | `Yes`                |
 | no authorized country, or `null` and no `true` | no answer (rule 7)                    | no answer     | no answer            |
+
+A permit proves present authorization only. A visa or work permit can be
+time-limited or employer-sponsored, so a permit match never answers visa or
+sponsorship; those asks take rule 3, then rule 7.
 
 A free-text status is `Citizen` when a citizenship matched, else `Work permit`.
 Working remotely or engagement model → `employment_routes`.
