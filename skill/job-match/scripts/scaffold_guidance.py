@@ -5,16 +5,18 @@ stdin: {"candidate": CandidateProfile, "jobs": [JobProfile]}
 stdout: [ResumeGuidance] — one row per JobProfile, every requirement present
 once, under its source kind, in source order. A requirement with a direct
 candidate skill hold is already `held`; every other requirement is `unknown`
-for the worker to classify. `priority_roles` is empty and `warnings` carries
-the two codes that emptiness alone decides.
+for the worker to classify. `priority_roles` lists every candidate role the
+sources support (experience order, one per company/position, `matched_on`
+sorted), and `warnings` carries every code the sources decide, `no_relevant_role`
+included. The worker changes only `status` (never to `held`); it never adds,
+drops, or reorders requirements.
 
-Contract: references/contracts/contract-resume-guidance.md. The worker changes only
-`status` (never to `held`) and `priority_roles`, and may add `no_relevant_role`;
-it never adds, drops, or reorders requirements.
+Contract: references/contracts/contract-resume-guidance.md.
 """
 import json
+import re
 import sys
-from typing import Tuple
+from typing import Dict, FrozenSet, List, Optional, Tuple
 
 from models import (
     CandidateProfile,
@@ -24,6 +26,66 @@ from models import (
     ResumeGuidance,
     direct_skill_hold,
 )
+from score import role_type_points
+
+SENIORITY_LADDER = ("intern", "junior", "mid", "senior", "staff", "principal")
+
+
+def _seniority_rank(value: Optional[str]) -> Optional[int]:
+    if value is None:
+        return None
+    words = frozenset(re.findall(r"[a-z0-9]+", value.casefold()))
+    return next(
+        (index for index, level in enumerate(SENIORITY_LADDER) if level in words),
+        None,
+    )
+
+
+def _role_match_reasons(job: "JobProfile", position: str) -> FrozenSet[str]:
+    """Return the source-supported reasons that make one candidate role relevant."""
+    reasons = set()
+    if role_type_points(job.title, (position,)) == 15:
+        reasons.add("role_type")
+
+    job_rank = _seniority_rank(job.seniority)
+    role_rank = _seniority_rank(position)
+    if (
+        job_rank is not None
+        and role_rank is not None
+        and abs(job_rank - role_rank) <= 1
+    ):
+        reasons.add("seniority")
+    return frozenset(reasons)
+
+
+def _has_relevant_role(job: "JobProfile", candidate: "CandidateProfile") -> bool:
+    """Return whether candidate experience contains a source-supported role."""
+    return any(
+        _role_match_reasons(job, role.position)
+        for role in candidate.experience
+    )
+
+
+def priority_roles(
+    candidate: CandidateProfile, job: JobProfile
+) -> Tuple[Dict[str, object], ...]:
+    """Return each source-supported candidate role once, in experience order."""
+    roles: List[Dict[str, object]] = []
+    seen = set()
+    for role in candidate.experience:
+        pair = (role.company, role.position)
+        reasons = _role_match_reasons(job, role.position)
+        if not reasons or pair in seen:
+            continue
+        seen.add(pair)
+        roles.append(
+            {
+                "company": role.company,
+                "position": role.position,
+                "matched_on": sorted(reasons),
+            }
+        )
+    return tuple(roles)
 
 
 def requirement(
@@ -59,8 +121,12 @@ def scaffold(candidate: CandidateProfile, job: JobProfile) -> ResumeGuidance:
         requirement("preferred", term, candidate.skills)
         for term in job.preferred_skills
     )
+    roles = priority_roles(candidate, job)
+    warnings = source_warnings(candidate, job) + (
+        () if roles else ("no_relevant_role",)
+    )
     return ResumeGuidance(
-        job.url, requirements, warnings=source_warnings(candidate, job)
+        job.url, requirements, priority_roles=roles, warnings=warnings
     )
 
 

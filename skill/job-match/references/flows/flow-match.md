@@ -13,8 +13,8 @@ bind → profile → candidates → filter₁ → extract → filter₂ → matc
 report ◄─ advise ◄─ select ◄─ order ◄─ validate ◄──────────────┘
 ```
 
-Fan-out only on extract, match, validate, and advise. Same `state.candidate` + same policy on every worker that takes them. Batch ~10 when Runtime=workers; else inline sequential. A node with 3 rows or fewer
-runs inline even when Runtime=workers — except validate, which spawns whenever it
+Fan-out only on extract, match, validate, and advise. Same `state.candidate` + same policy on every worker that takes them. Batch ~10 when the harness can spawn a worker; else inline sequential. A node with 3 rows or fewer
+runs inline even when spawning works — except validate, which spawns whenever it
 can so the review stays independent of the pass that wrote the row.
 Hand each worker one slice file in the run directory — exactly its batch, plus
 `state.candidate` for match, validate, and advise — and the paths of the worker and contract files it obeys. Never paste JSON
@@ -81,7 +81,7 @@ on stdin. It sends that CandidateProfile and each JobProfile to
 `match_error`, or its stderr when stdout is not JSON, and end. Every row
 carrying `match_error` → print the first one and end. Otherwise a row carrying
 `match_error` → `state.gaps` and drop it; write the rest to `state.matches[]`.
-A cell Jev answered below its confidence floor arrives as `null` — the
+A cell TypeSafe answered below its confidence floor arrives as `null` — the
 contract's `—` — so **score** lowers that row's `confidence` and **validate**
 re-checks it. An uncertain answer is never scored `0`.
 
@@ -97,7 +97,7 @@ scorer → name the dependency and end.
 
 Run the resolved launcher and absolute scorer path with one JSON object on
 stdin: `{"candidate": state.candidate, "jobs": state.jobs, "matches": state.matches}`.
-It returns the matches array with `experience` and `role_type` derived,
+It returns the matches array with `primary_stack`, `experience`, and `role_type` derived,
 `match_score`, `decision`, and `confidence` filled from each `score_breakdown`,
 and unquoted `strengths` / `gaps` / `blockers` items moved to `evidence_dropped`.
 A row carrying `score_error` → `state.gaps` and drop that row; a row carrying
@@ -127,8 +127,9 @@ the rest are reported without guidance.
 
 Run `./scripts/scaffold_guidance.py` (same launcher as **score**) with
 `{"candidate": state.candidate, "jobs": <selected JobProfiles>}` on stdin; it
-emits one ResumeGuidance skeleton per job with every requirement in place and
-exact-token holds already `held`. Load `./references/contracts/contract-resume-guidance.md` and
+emits one ResumeGuidance skeleton per job with every requirement in place,
+exact-token holds already `held`, and `priority_roles` and `warnings` filled
+from the sources. Load `./references/contracts/contract-resume-guidance.md` and
 `./references/workers/worker-resume-guidance.md`. Pass CandidateProfile, selected JobProfiles, the
 skeletons, and the Skill hold law—never dossier prose or MatchResult claims.
 Validate the batch with `./scripts/validate_guidance.py`. Add valid rows to

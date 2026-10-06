@@ -109,7 +109,7 @@ Load `./references/formats/format-summary.md` before drafting the Summary.
 
 ## 5. Summary humanization
 
-Load `job-humanize` and obey it end-to-end once for the Summary surface only.
+Load `job-humanize` and obey it end-to-end once, with `Surface: summary`.
 Paste `contract-refine.md` verbatim as `CONTRACT`. The `DRAFT` is Summary
 sentences 1 and 3, including any selected exact terms and acronyms. The
 contract locks those terms while humanizing; they must remain in the returned

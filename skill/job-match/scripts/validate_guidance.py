@@ -9,14 +9,12 @@ from dataclasses import dataclass
 from typing import Dict, FrozenSet, List, Mapping, Optional, Sequence, Tuple
 
 from models import CandidateProfile, Experience, JobProfile, direct_skill_hold
-from scaffold_guidance import source_warnings
-from score import role_type_points
+from scaffold_guidance import _has_relevant_role, _role_match_reasons, source_warnings
 
 
 ALLOWED_STATUS = frozenset({"held", "not_evidenced", "unknown"})
 ALLOWED_KIND = frozenset({"required", "preferred"})
 ALLOWED_ROLE_MATCH = frozenset({"role_type", "seniority"})
-SENIORITY_LADDER = ("intern", "junior", "mid", "senior", "staff", "principal")
 ALLOWED_WARNINGS = frozenset(
     {"candidate_skills_empty", "no_required_skills", "no_relevant_role"}
 )
@@ -29,41 +27,6 @@ REQUIREMENT_KEYS = frozenset(
     {"kind", "job_term", "status", "profile_term"}
 )
 PRIORITY_ROLE_KEYS = frozenset({"company", "position", "matched_on"})
-
-
-def _seniority_rank(value: Optional[str]) -> Optional[int]:
-    if value is None:
-        return None
-    words = frozenset(re.findall(r"[a-z0-9]+", value.casefold()))
-    return next(
-        (index for index, level in enumerate(SENIORITY_LADDER) if level in words),
-        None,
-    )
-
-
-def _role_match_reasons(job: "JobProfile", position: str) -> FrozenSet[str]:
-    """Return the source-supported reasons that make one candidate role relevant."""
-    reasons = set()
-    if role_type_points(job.title, (position,)) == 15:
-        reasons.add("role_type")
-
-    job_rank = _seniority_rank(job.seniority)
-    role_rank = _seniority_rank(position)
-    if (
-        job_rank is not None
-        and role_rank is not None
-        and abs(job_rank - role_rank) <= 1
-    ):
-        reasons.add("seniority")
-    return frozenset(reasons)
-
-
-def _has_relevant_role(job: "JobProfile", candidate: "CandidateProfile") -> bool:
-    """Return whether candidate experience contains a source-supported role."""
-    return any(
-        _role_match_reasons(job, role.position)
-        for role in candidate.experience
-    )
 
 
 @dataclass(frozen=True)

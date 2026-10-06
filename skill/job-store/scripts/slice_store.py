@@ -35,6 +35,17 @@ FILTER_KEYS = (
     "eligibility_evidence",
     "salary",
 )
+JOB_FACT_KEYS = (
+    "seniority",
+    "work_model",
+    "location",
+    "salary",
+    "years_experience",
+    "work_auth",
+    "hiring_route",
+    "eligibility",
+    "eligibility_evidence",
+)
 LOG_LINE = re.compile(r"^- \d{4}-\d{2}-\d{2} · (.+) — (\S+)$")
 CLOSERS = ("job-scout", "job-prep", "job-apply", "job-application")
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
@@ -159,18 +170,44 @@ def filter_row(dossier: Dict[str, Any]) -> Dict[str, str]:
     return row
 
 
+def job_profile(fields: Dict[str, str], facts: Dict[str, str], score: Optional[int]) -> Dict[str, Any]:
+    """JobProfile keys a dossier fixes; the extract worker adds the judged rest."""
+
+    def value(key: str) -> Optional[str]:
+        return None if facts.get(key, UNKNOWN) == UNKNOWN else facts[key]
+
+    skills = value("required_skills") or ""
+    profile: Dict[str, Any] = {
+        "url": fields["url"],
+        "company": fields["company"],
+        "title": fields["title"],
+        "scout_score": score,
+    }
+    for key in JOB_FACT_KEYS:
+        profile[key] = value(key)
+    profile["required_skills"] = [s.strip() for s in skills.split(",") if s.strip()]
+    profile["preferred_skills"] = []
+    profile["languages_required"] = []
+    profile["languages_preferred"] = []
+    profile["domain"] = None
+    return profile
+
+
 def excerpt(dossier: Dict[str, Any]) -> Dict[str, Any]:
     fields = dossier["fields"]
-    score = fields.get("score", UNKNOWN)
+    raw = fields.get("score", UNKNOWN)
+    score = int(raw) if raw.isdigit() else None
+    facts = posting_facts(dossier["lines"])
     return {
         "file": dossier["file"],
         "url": fields["url"],
         "company": fields["company"],
         "title": fields["title"],
-        "score": int(score) if score.isdigit() else None,
+        "score": score,
         "status": fields["status"],
-        "facts": posting_facts(dossier["lines"]),
+        "facts": facts,
         "role": role(dossier["lines"]),
+        "job": job_profile(fields, facts, score),
     }
 
 

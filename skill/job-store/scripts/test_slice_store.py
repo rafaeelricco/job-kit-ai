@@ -174,6 +174,29 @@ class SliceStore(unittest.TestCase):
         self.assertEqual(one["status"], "new")
         self.assertEqual(one["facts"]["location"], "Portugal")
         self.assertEqual(
+            one["job"],
+            {
+                "url": "https://example.com/jobs/A",
+                "company": "A",
+                "title": "Engineer A",
+                "scout_score": 8,
+                "seniority": None,
+                "work_model": "Remote",
+                "location": "Portugal",
+                "salary": None,
+                "years_experience": None,
+                "work_auth": None,
+                "hiring_route": None,
+                "eligibility": None,
+                "eligibility_evidence": None,
+                "required_skills": [],
+                "preferred_skills": [],
+                "languages_required": [],
+                "languages_preferred": [],
+                "domain": None,
+            },
+        )
+        self.assertEqual(
             one["role"],
             {"snapshot": "Build things.", "do": ["Ship code", "Review PRs"], "must": ["TypeScript"]},
         )
@@ -213,6 +236,17 @@ class SliceStore(unittest.TestCase):
             item = json.load(handle)["excerpts"][0]
         self.assertEqual(item["role"], {"snapshot": None, "do": [], "must": []})
         self.assertIsNone(item["score"])
+        self.assertIsNone(item["job"]["scout_score"])
+
+    def test_job_splits_required_skills(self) -> None:
+        facts = {"required_skills": "TypeScript, Python ,, Go", "eligibility": "confirmed"}
+        self.write("r.md", dossier("R", facts=facts))
+        out = os.path.join(self.outside, "run")
+        result = self.run_slice(select="new", out=out)
+        with open(result["batches"][0], encoding="utf-8") as handle:  # type: ignore
+            job = json.load(handle)["excerpts"][0]["job"]
+        self.assertEqual(job["required_skills"], ["TypeScript", "Python", "Go"])
+        self.assertEqual(job["eligibility"], "confirmed")
 
     def test_partial_role(self) -> None:
         text = dossier("R", role=False).replace(

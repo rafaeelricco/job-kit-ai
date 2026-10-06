@@ -32,7 +32,8 @@ diagnostics, and output schema.
 
 When chained from `job-apply` or `job-prep`, defer CV selection to the caller's
 flow. `job-apply` retains its prepared-plan, refinement, prior-PASS, and base
-rules; `job-prep` retains its own prepared workflow. When the flag is false,
+rules; `job-prep` retains its own prepared workflow. When `cvs.yaml`
+`adapt_per_vacancy` is false,
 this child performs no refinement and does not delete or rewrite a prepared
 package or the user's profile.
 

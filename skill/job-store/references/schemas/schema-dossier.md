@@ -1,6 +1,6 @@
 # Job store — dossier schema
 
-Main writes; a spawned search/extract subagent never does.
+Main writes; a spawned worker never does.
 
 ## Layout (under Profile root)
 

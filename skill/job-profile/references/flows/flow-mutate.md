@@ -111,7 +111,8 @@ A moved row with an empty `answer` goes to `pending[]` without it. Legacy
 `screening_defaults` `timezone` and `consent_to_data_processing`, and a legacy
 `job_search.yaml` `screening_defaults` or `work_authorization` block, are shown
 removed: the time zone and permits are re-entered with
-`/job-profile continue fill basics`, and consent is contract rule 5.
+`/job-profile continue fill basics`, and consent is
+`job-apply/references/contracts/contract-screening.md` rule 5.
 
 `work_preferences_from_resume` `remote_work`, `in_person_work`, and
 `in_person_work_note` are not moved: job-apply answers remote and in-person from

@@ -98,7 +98,6 @@ class ScaffoldCase:
 # The two ResumeGuidance fields scaffold_guidance leaves for the worker to fill.
 # Validation errors naming these are expected on a raw skeleton; anything else
 # means the scaffold got a field it owns wrong.
-WORKER_OWNED_FIELDS: Tuple[str, ...] = ("priority_roles", "warnings")
 
 
 SCAFFOLD_CASES: Tuple[ScaffoldCase, ...] = (
@@ -399,29 +398,12 @@ class PolicyAgreementTests(unittest.TestCase):
         self.assertEqual(from_validate, DUPLICATE_MESSAGE)
         self.assertEqual(from_score, from_validate)
 
-    def test_scaffold_errors_are_confined_to_worker_fields(self):
-        """A raw scaffold is a skeleton, so validation is expected to reject it —
-        but only ever for the two fields the worker owns. Every field the
-        scaffold itself fills (url, schema_version, and the requirement list's
-        contents, kinds and order) must already be correct, for any pair."""
+    def test_raw_scaffold_validates(self):
+        """The scaffold fills every source-decided field, so a raw skeleton validates."""
         for case in SCAFFOLD_CASES:
             with self.subTest(case=case.name):
                 result = validate_guidance.validate_payload(guidance_payload(case))
-                errors = tuple(
-                    error
-                    for row in result["invalid"]
-                    for error in row["errors"]
-                )
-                scaffold_owned = tuple(
-                    error
-                    for error in errors
-                    if not error.startswith(WORKER_OWNED_FIELDS)
-                )
-                self.assertEqual(
-                    scaffold_owned,
-                    (),
-                    f"scaffold produced errors outside the worker's fields: {scaffold_owned}",
-                )
+                self.assertEqual(result["invalid"], [])
 
     def test_direct_skill_hold_is_directional(self):
         cases = (

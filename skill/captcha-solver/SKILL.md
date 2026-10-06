@@ -28,8 +28,7 @@ For screenshot steps, include `from pathlib import Path` and
 Prefer helpers already on that
 surface (`click_at_xy`, `js`, `wait`, `page_info`, `capture_screenshot`,
 `fill_input`, `cdp`). When stuck on a mechanic (iframes, screenshots, drag),
-open the matching file under browser-use’s Interaction Skills list — do not
-copy those docs into this skill.
+open the matching file under browser-use’s Interaction Skills list.
 
 **Split with browser-use:** not yet browsing / scraping where blocking is
 likely → follow browser-use (cloud). Widget already on the user’s attached
@@ -39,8 +38,7 @@ tab and the user wants it solved → this skill.
 
 1. Locate the widget iframe bounds with `js(...)` (vendor `src` substrings:
    `recaptcha`, `hcaptcha`, `challenges.cloudflare`). If AX already exposes
-   the checkbox, use browser-use’s AX → box → `click_at_xy` path instead —
-   do not restate it.
+   the checkbox, use browser-use’s AX → box → `click_at_xy` path instead.
 2. Click left-center of the iframe: `click_at_xy(bounds["x"] + 12, bounds["y"] + bounds["height"] / 2)`.
 3. `wait(3)`.
 4. Verify with `page_info()`, a short `js("document.body.innerText.slice(0, 500)")`,
@@ -103,9 +101,8 @@ print(capture_screenshot(str(Path(gettempdir()) / "captcha-drag.png"), max_dim=1
 4. Submit it — the form's own control, or Enter. Filling the field does not submit.
 5. Verify as in Checkbox step 4.
 
-Measure clicks from the image only after converting device px → CSS px — that
-rule lives in browser-use’s screenshots interaction skill; point at it, do not
-copy it.
+Measure clicks from the image only after converting device px → CSS px; the
+conversion rule lives in browser-use’s screenshots interaction skill.
 
 ## Image grid
 

@@ -118,12 +118,82 @@ class CliContractTests(unittest.TestCase):
             ],
         )
         self.assertEqual(output[0]["requirements"][0]["profile_term"], "TypeScript")
-        self.assertEqual(output[1]["warnings"], ["no_required_skills"])
+        self.assertEqual(output[1]["warnings"], ["no_required_skills", "no_relevant_role"])
         self.assertEqual(output[2]["requirements"][0]["status"], "held")
         self.assertEqual(output[2]["requirements"][0]["profile_term"], "React.js")
         self.assertEqual(
             json.loads(warnings_result.stdout)[0]["warnings"],
-            ["candidate_skills_empty", "no_required_skills"],
+            ["candidate_skills_empty", "no_required_skills", "no_relevant_role"],
+        )
+
+    def test_scaffold_fills_priority_roles(self):
+        result = run_script(
+            "scaffold_guidance.py",
+            {
+                "candidate": {
+                    "skills": ["React"],
+                    "experience": [
+                        {"company": "Acme", "position": "Senior Frontend Engineer"},
+                        {"company": "Acme", "position": "Senior Frontend Engineer"},
+                        {"company": "Beta", "position": "Sales Manager"},
+                        {"company": "Gamma", "position": "Staff Engineer"},
+                    ],
+                },
+                "jobs": [
+                    {
+                        "url": "u",
+                        "title": "Senior Frontend Engineer",
+                        "seniority": "senior",
+                        "required_skills": ["React"],
+                    }
+                ],
+            },
+        )
+        row = json.loads(result.stdout)[0]
+        self.assertEqual(
+            row["priority_roles"],
+            [
+                {
+                    "company": "Acme",
+                    "position": "Senior Frontend Engineer",
+                    "matched_on": ["role_type", "seniority"],
+                },
+                {
+                    "company": "Gamma",
+                    "position": "Staff Engineer",
+                    "matched_on": ["seniority"],
+                },
+            ],
+        )
+        self.assertNotIn("no_relevant_role", row["warnings"])
+
+    def test_scaffold_matches_seniority_one_step_either_way(self):
+        experience = [
+            {"company": "Z", "position": position}
+            for position in ("Intern Analyst", "Junior Analyst", "Staff Analyst")
+        ]
+        result = run_script(
+            "scaffold_guidance.py",
+            {
+                "candidate": {"skills": ["SQL"], "experience": experience},
+                "jobs": [
+                    {"url": level, "title": "Designer", "seniority": level}
+                    for level in ("junior", "mid", "principal")
+                ],
+            },
+        )
+        self.assertTrue(result.stdout.startswith('[\n  {\n    "schema_version"'))
+        positions = {
+            row["url"]: [role["position"] for role in row["priority_roles"]]
+            for row in json.loads(result.stdout)
+        }
+        self.assertEqual(
+            positions,
+            {
+                "junior": ["Intern Analyst", "Junior Analyst"],
+                "mid": ["Junior Analyst"],
+                "principal": ["Staff Analyst"],
+            },
         )
 
     def test_validator_preserves_valid_rows_and_exit_codes(self):

@@ -73,8 +73,8 @@ it does not track `last_seen`, and a `-2` suffix means two dossiers share one ba
 told apart only by `url`. `uncertain` rows and `dead` rows never seen live have no
 dossier. `score` ≤ 7 and unscored rows get no new dossier; files from before this gate may still exist.
 
-## Known contradiction, do not resolve it
+## `last_seen` on a dead job
 
-Scout re-run rules bump `last_seen` on a live re-see and leave the body on dead;
-whether a dead re-run bumps `last_seen` is undefined. Report the stored value and
-the latest scout posting-state log line; never reconcile them.
+Scout bumps `last_seen` on every non-dead re-read; a dead re-read appends only
+the closure line, so `last_seen` stays at the last live sighting. Report the
+stored value beside the latest posting-state log line.

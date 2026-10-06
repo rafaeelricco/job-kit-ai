@@ -21,10 +21,10 @@ Profile root.
 
 extract → JobProfile. Malformed → Gaps, drop.
 HF8 (`contract-match.md` hard filter 8, language) → Gaps `match blocked`, drop. Do not re-run Gate 1–7.
-match → MatchResult. With `TYPESAFE_API_KEY` set, run
+match → MatchResult. When the run carried `--typesafe`, run
 `job-match/scripts/typesafe_match.py` (same launcher) with
 `{"candidate": <CandidateProfile>, "jobs": <JobProfiles>}` on stdin instead of
-the match worker; unset, run the match worker. A row carrying
+the match worker; otherwise run the match worker. A row carrying
 `match_error` → Gaps `match unavailable`, drop.
 Then invoke the resolved scorer with
 `{"candidate": <CandidateProfile>, "jobs": <JobProfiles>, "matches": <MatchResults>}`

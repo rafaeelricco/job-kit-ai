@@ -80,7 +80,7 @@ Poppler extraction modes plus visual review. See the [refinement contract](skill
 [extraction contract](skill/job-resume-refine/references/contracts/contract-extraction.md),
 and [report format](skill/job-resume-refine/references/formats/format-report.md).
 
-`/job-match --typesafe` fills fit scores with TypeSafe's Jev model instead of
+`/job-match --typesafe` (or `/job-scout … --typesafe`) fills fit scores with TypeSafe's Jev model instead of
 the LLM match worker; high or low-confidence rows are still re-checked by the
 validate worker. Set `TYPESAFE_API_KEY` (from
 https://console.typesafe.ai/settings/keys) first. It sends each job and your
