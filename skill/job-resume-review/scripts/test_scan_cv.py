@@ -102,6 +102,24 @@ class DocxTests(unittest.TestCase):
                 path = docx(tmp, PARA.format(f"Alex Doe {phone}"), header1="alex.doe@example.com")
                 self.assertEqual(scan_docx(path), [], phone)
 
+    def test_vanished_runs_are_hidden_text(self):
+        for vanish in ("<w:vanish/>", '<w:vanish w:val="true"/>', '<w:vanish w:val="1" />'):
+            body = (f'<w:p><w:r w:rsidR="00A1"><w:rPr><w:b/>{vanish}</w:rPr><w:t>alex.doe@example.com</w:t></w:r>'
+                    "<w:r><w:t>Alex Doe</w:t></w:r></w:p>")
+            with tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(codes(scan_docx(docx(tmp, body))), [("hidden_text", "blocking", None)], vanish)
+
+    def test_vanish_turned_off_is_visible(self):
+        body = '<w:p><w:r><w:rPr><w:vanish w:val="false"/></w:rPr><w:t>alex.doe@example.com</w:t></w:r></w:p>'
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(scan_docx(docx(tmp, body, header1="alex.doe@example.com")), [])
+
+    def test_hidden_body_contact_does_not_count(self):
+        body = '<w:p><w:r><w:rPr><w:vanish/></w:rPr><w:t>+55 11 90000-0000</w:t></w:r><w:r><w:t>Alex</w:t></w:r></w:p>'
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(codes(scan_docx(docx(tmp, body, header1="alex.doe@example.com"))), [
+                ("hidden_text", "blocking", None), ("contact_in_header_footer", "blocking", None)])
+
     def test_text_box_table_image_and_empty_body(self):
         with tempfile.TemporaryDirectory() as tmp:
             found = codes(scan_docx(docx(tmp, "<w:tbl><w:txbxContent/></w:tbl><w:drawing/>")))

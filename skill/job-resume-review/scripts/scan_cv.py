@@ -28,6 +28,8 @@ PHONE = re.compile(r"\+?(?:\(\d+\)|\d+)(?:[ .-]?(?:\(\d+\)|\d+))*")  # " - " or 
 NOT_PHONE = re.compile(r"\d{1,3}(?:\.\d{3}){2,}|(?:\d\d?[./])?(?:19|20)\d\d-(?:\d\d?[./])?(?:19|20)\d\d")
 MIN_PHONE_DIGITS = 9  # a year range such as 2019-2024 has 8 digits
 DOCX_TEXT = re.compile(r"<w:t(?: [^>]*)?>([^<]*)</w:t>")
+DOCX_RUN_START = re.compile(r"(?=<w:r[ >])")
+DOCX_VANISH = re.compile(r'<w:r[ >][^<]*<w:rPr>(?:(?!</w:rPr>).)*?<w:vanish(?: w:val="(?:true|1|on)")?\s*/>', re.S)
 DOCX_HEADER_FOOTER = re.compile(r"word/(?:header|footer)\d+\.xml")
 CHAR_CODES = (  # code, severity, test — order is output order
     ("replacement_character", "major", lambda ch: ch == "\ufffd"),
@@ -77,10 +79,17 @@ def has_contact(text: str) -> bool:
         for match in PHONE.finditer(text))
 
 
-def docx_text(xml: str) -> str:
+def docx_text(xml: str) -> Tuple[str, str]:
+    # (visible, hidden): a run with <w:vanish/> is not rendered, so its text is hidden, not visible;
     # runs join within a paragraph so a contact split across runs still matches; paragraphs join by newline;
     # unescape so a code point stored as a character reference (&#xFB01;) is checked like a literal one
-    return html.unescape("\n".join("".join(DOCX_TEXT.findall(paragraph)) for paragraph in xml.split("</w:p>")))
+    visible: List[str] = []
+    hidden: List[str] = []
+    for paragraph in xml.split("</w:p>"):
+        runs = DOCX_RUN_START.split(paragraph)
+        visible.append("".join("".join(DOCX_TEXT.findall(run)) for run in runs if not DOCX_VANISH.match(run)))
+        hidden.append("".join("".join(DOCX_TEXT.findall(run)) for run in runs if DOCX_VANISH.match(run)))
+    return html.unescape("\n".join(visible)), html.unescape("\n".join(hidden))
 
 
 def read_parts(archive: zipfile.ZipFile, names: List[str]) -> List[str]:
@@ -106,13 +115,15 @@ def scan_docx(path: Path) -> List[Dict[str, Any]]:
         body, *xmls = read_parts(archive, [main_part(archive)] + parts)
         headers = list(zip(parts, xmls))
     issues: List[Dict[str, Any]] = []
-    text = docx_text(body)
+    text, hidden = docx_text(body)
     if not text.strip():
         issues.append(issue("no_text_layer", "blocking", None, "document body has no text"))
+    if hidden.strip():
+        issues.append(issue("hidden_text", "blocking", None, f"{len(hidden.split())} words in vanished runs"))
     issues.extend(char_issues(text, None))
     if not has_contact(text):  # header/footer contact counts only when the body has none
         for name, xml in headers:
-            if has_contact(docx_text(xml)):
+            if has_contact(docx_text(xml)[0]):
                 issues.append(issue("contact_in_header_footer", "blocking", None, f"{name}; body has no email or phone"))
     if "<w:txbxContent" in body:
         issues.append(issue("text_box", "major", None, "text box content can be skipped by parsers"))
