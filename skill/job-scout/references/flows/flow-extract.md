@@ -26,7 +26,7 @@ folded URL so the dossier the aggregator URL owns keeps its filename and log.
 A family host with any other path (a board root or listing) stays in
 `apply_url` only; the row's URL is unchanged.
 
-`### Verified`: search columns plus schema Posting facts keys except `blocker`, `eligibility`, `ats`, `match_score`, `match_decision`, and `match_confidence`, and `status_reason`, `role_snapshot`, `role_do`, `role_must`. `eligibility_evidence` is the one printed sentence that says where the hire may live or be employed from (`Remote, anywhere in Canada`, `must reside in South America`); `—` when none is printed. Never compose it from two places.
+`### Verified`: search columns plus schema Posting facts keys except `eligibility`, `ats`, `match_score`, `match_decision`, and `match_confidence`, and `status_reason`, `role_snapshot`, `role_do`, `role_must`. `eligibility_evidence` is the one printed sentence that says where the hire may live or be employed from (`Remote, anywhere in Canada`, `must reside in South America`); `—` when none is printed. Never compose it from two places.
 
 Before gate, run `job-store/scripts/validate_extract.py` from the job-store skill root — launcher as `job-store/references/schemas/schema-dossier.md` "URL normalize" — with `{"rows": [<one object per Verified row, url plus every Posting facts key>]}` on stdin. It prints `{"rows": [{"url", "errors": [...]}]}` in the same order, or `{"validate_error": …}` with exit 1. A row with a non-empty `errors` list → Gaps `extract invalid: {first error}`, drop; the remaining rows continue. A `validate_error` or unreadable script → name it and end; write nothing this run.
 

@@ -27,12 +27,11 @@ line, or sentence the CONTRACT marks verbatim stays as written.
 | Surface    | Register | In                                 | Out                                                           |
 | ---------- | -------- | ---------------------------------- | ------------------------------------------------------------- |
 | summary    | written  | Summary sentences 1 and 3          | sentence 2, bullets, Skills tokens, rest of `.tex`            |
-| resume     | written  | reworded resume bullets            | the Summary block, Skills tokens, headings, role fields       |
 | script     | spoken   | Opener and timed speech blocks     | `Do not say`, Gaps, numbers list, headings                    |
 | experience | written  | S.T.A.R.T. bullets                 | `position`, tech tags, Gaps, each bullet's `**Label** —` lead |
 | letter     | written  | letter prose and free-text answers | the question text, lines the CONTRACT marks verbatim          |
 
-Unknown surface → stop and name `summary|resume|script|experience|letter`.
+Unknown surface → stop and name `summary|script|experience|letter`.
 
 ## Facts
 
@@ -56,7 +55,7 @@ Written: the same plainness without imitating speech.
 
 `letter` and `script`: split any sentence over about 25 words, keeping the
 order of ideas, unless the CONTRACT fixes that slot's sentence count.
-`summary`, `resume`, and `experience` keep their sentence shape.
+`summary` and `experience` keep their sentence shape.
 
 Keep what already sounds natural, and keep human detail: odd specifics and
 uneven sentence length. Don't add roughness to seem human: forced fragments, a
@@ -70,9 +69,7 @@ facts instead of swapping words.
 
 `scripts/detect.py` matches every quoted phrase below in English text; a single
 word also matches its longer forms (leverage, leveraging), and X, Y, Z, and …
-stand for any words. After editing this list, run the kit's unit stage
-(`bash scripts/test.sh --only unit`): its `test_detect.py` checks that each
-phrase is caught.
+stand for any words.
 
 - Stacked self-labels (passionate, results-driven expert). Give the example instead.
 - Inflated significance: "stands as", "serves as", "testament", "pivotal", "key role", "landscape", "underscore", "marks a shift".
@@ -100,7 +97,7 @@ or answers. Pass its path to `./scripts/detect.py`, then delete the file. Don't
 pipe or redirect it through a shell: Windows PowerShell turns dashes and curly
 quotes into `?`. Use the first working Python 3 launcher: `python3`; on
 Windows, `py -3`; otherwise `python` only when its major version is 3. Add
-`--max-words 0` for `summary`, `resume`, and `experience`.
+`--max-words 0` for `summary` and `experience`.
 Missing launcher or script → stop and name it. Fix each hit; a hit inside a
 name, quotation, technical term, or text the Surface or CONTRACT keeps as
 written stays. Then reread it once: every claim in the draft is present,

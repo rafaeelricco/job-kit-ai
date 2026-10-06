@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Flag job-humanize tells. Phrases and the sentence limit are read from ../SKILL.md: one home.
 
+After editing that list, run `bash scripts/test.sh --only unit`: test_detect.py checks that each phrase is caught.
+
 Usage: python3 detect.py [--allow-dashes] [--max-words N] [FILE ...]   (no FILE reads stdin)
 Exit: 0 clean, 1 tells found, 2 usage error.
 """

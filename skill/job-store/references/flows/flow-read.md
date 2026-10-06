@@ -55,7 +55,7 @@ dead-by-log; an earlier closure above it is superseded, body is live.
 ## Ownership boundary
 
 Opening `---` down to the ownership marker is scout-owned and rewritten every
-run. `status:` and every line under the marker belong to the operator, job-prep, job-apply, and job-inbox.
+run. Every line under the marker belongs to the operator, job-prep, job-apply, and job-inbox; `status:` to the operator, job-apply, and job-inbox.
 Marker line, byte-exact: `<!-- scout never writes below this line -->`.
 
 ## A file in scout/jobs/ is not necessarily a dossier
