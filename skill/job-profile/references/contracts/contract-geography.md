@@ -24,7 +24,8 @@ English names (Netherlands, South Korea, Russia, Vietnam), and ISO identifiers
 resolve ignoring case and accents. A bare two-letter place label matches only
 the residence's own code (`US` for a United States residence); any other
 two-letter label (`CA`, `CO`, `NA`) may be a state or region abbreviation and
-stays unknown.
+stays unknown. For a United States residence the name Georgia may be the state
+and stays unknown.
 LATAM / Latin America means the M49 Latin America and the Caribbean group.
 Worldwide / anywhere / global includes every resolved residence country.
 EU / European Union means the bundled EU member-state group.

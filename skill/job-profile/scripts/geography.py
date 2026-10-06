@@ -92,6 +92,9 @@ def _place_match(
     normalized = _normalize(place)
     if normalized in WORLDWIDE_LABELS:
         return True
+    # Georgia is also a US state; a US residence cannot tell which one a label means.
+    if residence_code == "US" and normalized == "georgia":
+        return None
 
     country_code = _country_code(place, country_lookup)
     if country_code is not None:
