@@ -37,6 +37,11 @@ class GeographyTests(unittest.TestCase):
             with self.subTest(country=country):
                 self.assertEqual(geography_payload({"country": country, "places": [region]})[1]["matches"], [True])
 
+    def test_bare_two_letter_places_match_only_the_residence_code(self):
+        result = geography_payload({"country": "United States", "places": ["CA", "co", "NA", "GA", "US", "Canada", "CAN"]})[1]
+        self.assertEqual(result["matches"], [None, None, None, None, True, False, False])
+        self.assertEqual(geography_payload({"country": "Canada", "places": ["CA"]})[1]["matches"], [True])
+
     def test_unmapped_labels_are_unknown(self):
         result = geography_payload({"country": "Brazil", "places": ["EMEA", "APAC", "somewhere", ""]})[1]
         self.assertEqual(result["matches"], [None] * 4)

@@ -84,8 +84,10 @@ Before staging any prose, enforce every `never_say` ban below.
 - City / state / country: `basics.yaml` `country` when present; else
   `location` split on commas, the last part taken as the country only when it
   names one (a form option or a country `job-profile/scripts/geography.py`
-  resolves) and the first part as the city. A `location` with one part or a
-  non-country last part (`London`, `Austin, TX`) yields no country → rule 7.
+  resolves by name or three-letter code; a bare two-letter part is a state or
+  province abbreviation, never a country) and the first part as the city. A
+  `location` with one part or a non-country last part (`London`, `Austin, TX`,
+  `Denver, CO`) yields no country → rule 7.
   Country of residence is that country. State / province is `location`'s middle
   comma part when it has three parts.
 - Citizenship: answer only from `basics.yaml` `citizenships`, verbatim, when a

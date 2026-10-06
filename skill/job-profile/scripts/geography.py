@@ -92,6 +92,8 @@ def _place_match(
 
     country_code = _country_code(place, country_lookup)
     if country_code is not None:
+        if normalized == country_code.casefold() and country_code != residence_code:
+            return None
         return country_code == residence_code
 
     canonical_region = REGION_ALIASES.get(normalized, normalized)
