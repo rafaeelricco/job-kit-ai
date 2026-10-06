@@ -28,7 +28,7 @@ class GeographyTests(unittest.TestCase):
                 self.assertEqual(geography_payload({"country": country, "places": [place]})[1]["matches"], [True])
 
     def test_common_and_accented_country_names_resolve(self):
-        for country, name in (("Netherlands", "Netherlands (Kingdom of the)"), ("South Korea", "Republic of Korea"), ("Vietnam", "Viet Nam"), ("Russia", "Russian Federation"), ("Turkey", "Türkiye"), ("Turkiye", "Türkiye"), ("Czech Republic", "Czechia"), ("Bolivia", "Bolivia (Plurinational State of)"), ("Iran", "Iran (Islamic Republic of)"), ("Tanzania", "United Republic of Tanzania"), ("México", "Mexico"), ("Cote d'Ivoire", "Côte d’Ivoire")):
+        for country, name in (("Netherlands", "Netherlands (Kingdom of the)"), ("South Korea", "Republic of Korea"), ("Vietnam", "Viet Nam"), ("Russia", "Russian Federation"), ("Turkey", "Türkiye"), ("Turkiye", "Türkiye"), ("Czech Republic", "Czechia"), ("Bolivia", "Bolivia (Plurinational State of)"), ("Iran", "Iran (Islamic Republic of)"), ("Tanzania", "United Republic of Tanzania"), ("México", "Mexico"), ("Cote d'Ivoire", "Côte d’Ivoire"), ("Hong Kong", "China, Hong Kong Special Administrative Region"), ("Macau", "China, Macao Special Administrative Region"), ("Macao", "China, Macao Special Administrative Region")):
             with self.subTest(country=country):
                 self.assertEqual(geography_payload({"country": country})[1]["country"], name)
 

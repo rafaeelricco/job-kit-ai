@@ -44,6 +44,9 @@ COUNTRY_ALIASES = {
     "dr congo": "CD",
     "drc": "CD",
     "republic of the congo": "CG",
+    "hong kong": "HK",
+    "macau": "MO",
+    "macao": "MO",
 }
 REGION_ALIASES = {
     "latam": "latin america and the caribbean",
