@@ -60,6 +60,18 @@ class DocxTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(scan_docx(docx(tmp, PARA.format("Alex Doe"))), [])
 
+    def test_character_anomalies(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(codes(scan_docx(docx(tmp, PARA.format("\ufb01nance \ufffd \uf0e0 bell\x85")))), [
+                ("replacement_character", "major", None), ("ligature_code_point", "major", None),
+                ("private_use_character", "minor", None), ("control_character", "major", None)])
+
+    def test_character_references_are_decoded(self):
+        for ref in ("&#xFB01;", "&#64257;"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = docx(tmp, PARA.format(f"{ref}nance"))
+                self.assertEqual(codes(scan_docx(path)), [("ligature_code_point", "major", None)], ref)
+
     def test_contact_only_in_header_is_blocking(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = docx(tmp, PARA.format("Alex Doe"), header1="alex.doe@example.com")

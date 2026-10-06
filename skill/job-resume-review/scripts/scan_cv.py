@@ -9,6 +9,7 @@ file, or missing pdftotext. PDF text comes from Poppler pdftotext in default mod
 flags as job-resume-refine/scripts/check_parse.py extract(); no OCR, no installs.
 """
 from __future__ import annotations
+import html
 import json
 import re
 import subprocess
@@ -47,6 +48,15 @@ def extract_pdf(path: Path) -> str:
     return proc.stdout.decode("utf-8")  # strict: a decode fallback would fake U+FFFD hits
 
 
+def char_issues(text: str, page: Optional[int]) -> List[Dict[str, Any]]:
+    found: List[Dict[str, Any]] = []
+    for code, severity, test in CHAR_CODES:
+        hits = [ch for ch in text if test(ch)]
+        if hits:
+            found.append(issue(code, severity, page, f"{len(hits)} x U+{ord(hits[0]):04X}"))
+    return found
+
+
 def scan_pdf_text(text: str) -> Tuple[int, List[Dict[str, Any]]]:
     pages = text.split("\f")
     if pages and not pages[-1].strip():  # pdftotext ends every page with \f
@@ -56,10 +66,7 @@ def scan_pdf_text(text: str) -> Tuple[int, List[Dict[str, Any]]]:
         return len(pages), [issue("no_text_layer", "blocking", None, "no page has extractable text")]
     issues = [issue("no_text_layer", "major", n, "page has no extractable text") for n in blank]
     for n, page in enumerate(pages, 1):
-        for code, severity, test in CHAR_CODES:
-            hits = [ch for ch in page if test(ch)]
-            if hits:
-                issues.append(issue(code, severity, n, f"{len(hits)} x U+{ord(hits[0]):04X}"))
+        issues.extend(char_issues(page, n))
     return len(pages), issues
 
 
@@ -70,8 +77,9 @@ def has_contact(text: str) -> bool:
 
 
 def docx_text(xml: str) -> str:
-    # runs join within a paragraph so a contact split across runs still matches; paragraphs join by newline
-    return "\n".join("".join(DOCX_TEXT.findall(paragraph)) for paragraph in xml.split("</w:p>"))
+    # runs join within a paragraph so a contact split across runs still matches; paragraphs join by newline;
+    # unescape so a code point stored as a character reference (&#xFB01;) is checked like a literal one
+    return html.unescape("\n".join("".join(DOCX_TEXT.findall(paragraph)) for paragraph in xml.split("</w:p>")))
 
 
 def main_part(archive: zipfile.ZipFile) -> str:
@@ -92,6 +100,7 @@ def scan_docx(path: Path) -> List[Dict[str, Any]]:
     text = docx_text(body)
     if not text.strip():
         issues.append(issue("no_text_layer", "blocking", None, "document body has no text"))
+    issues.extend(char_issues(text, None))
     if not has_contact(text):  # header/footer contact counts only when the body has none
         for name, xml in headers:
             if has_contact(docx_text(xml)):
