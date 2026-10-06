@@ -449,6 +449,14 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             gate,
         )
 
+    def test_legacy_date_posted_map_with_no_true_key_is_no_bound(self):
+        window = (
+            "a legacy bool map reads as its one true key; `all_time`, empty, `false`, "
+            "or a map with no true key → no bound"
+        )
+        self.assertIn(window, instruction_text(FLOW_GATE))
+        self.assertIn(window, instruction_text(FLOW_SEARCH))
+
     def test_search_keep_skips_printed_unauthorized_hire_from(self):
         search = instruction_text(FLOW_SEARCH)
         self.assertIn(
@@ -530,6 +538,24 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         for path in readers:
             with self.subTest(path=str(path.relative_to(harness.SKILL))):
                 self.assertIn(stop, instruction_text(path))
+
+    def test_careers_pack_stays_keep_only(self):
+        mutate = instruction_text(FLOW_MUTATE)
+        self.assertIn(
+            "`packs location <id> surface` removes the key, and refuses on a `surface: careers` pack",
+            mutate,
+        )
+        self.assertIn(
+            "a `surface: careers` pack without `location: keep-only` fails validation",
+            mutate,
+        )
+
+    def test_packs_listing_shows_default_role_token(self):
+        show = instruction_text(harness.SKILL / "job-profile" / "references" / "flows" / "flow-show.md")
+        self.assertIn(
+            "`tokens` = the placeholder tokens in the pack's `formulations`; key absent → `[role]`",
+            show,
+        )
 
     def test_hybrid_work_model_answers_remote_and_in_person_yes(self):
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")

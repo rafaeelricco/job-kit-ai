@@ -64,11 +64,7 @@ job_types:
   other: false
   volunteer: false
 
-date_posted:
-  all_time: false
-  month: false
-  week: false
-  24_hours: false
+date_posted: "" # one of 24_hours, week, month, all_time
 
 positions: [] # confirm target titles; empty → Gap until set
 
