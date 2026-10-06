@@ -449,6 +449,14 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             gate,
         )
 
+    def test_legacy_date_posted_map_with_no_true_key_is_no_bound(self):
+        window = (
+            "a legacy bool map reads as its one true key; `all_time`, empty, `false`, "
+            "or a map with no true key → no bound"
+        )
+        self.assertIn(window, instruction_text(FLOW_GATE))
+        self.assertIn(window, instruction_text(FLOW_SEARCH))
+
     def test_search_keep_skips_printed_unauthorized_hire_from(self):
         search = instruction_text(FLOW_SEARCH)
         self.assertIn(
