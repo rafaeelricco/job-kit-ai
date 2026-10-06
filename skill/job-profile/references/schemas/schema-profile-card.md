@@ -22,13 +22,13 @@ updated_at: "" # ISO date this file was written
 | -------------- | -------------------------------------------------------------------------------------------- |
 | `primary_role` | `job_search.yaml` `positions[0]`, else most recent `experiences.yml` `position`              |
 | `top_skills`   | `skills.yaml` `skills[].items`, categories in file order; never re-ranked by judgement       |
-| `industries`   | `experiences.yml` `company` / `summary` only where the summary names one; else `[]`          |
+| `industries`   | `experiences.yml` `industries[]` across roles, file order, deduped; else `[]`                |
 | `languages`    | `languages.yaml` `languages[].name` + `level` verbatim; never invent a cert or numeric scale |
 | `summary`      | 1-3 sentences built only from the fields above                                               |
 | `updated_at`   | ISO date at write time                                                                       |
 
-`experiences.yml` is a bare list at the document root and each `summary` is one
-scalar string of `•` bullets joined by `\n` — read it as text, not as a list.
+`experiences.yml` is a bare list at the document root and each `summary` is a
+list of bullet strings.
 
 Empty is allowed everywhere. Unknown stays `""` or `[]`. Never fill a field to make
 the card look complete.

@@ -24,7 +24,7 @@ posting even when the selected identity matches the profile.
 Profile root and store stay read-only until `flow-record.md`, with three
 exceptions: the closure log line §2 appends when the ad reads dead, the
 `submit unconfirmed` line §5 step 9 appends after an ambiguous result, and the
-`data/answers.yaml` `qa[]` rows `flow-learn.md` appends
+`data/answers.yaml` `pending[]` rows `flow-learn.md` appends
 after the last posting, whether or not this run recorded one. A
 chained `job-resume-refine` child may write `scout/applications/`.
 

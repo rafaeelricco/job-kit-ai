@@ -33,3 +33,15 @@ status Derived: `draft` | `needs-numbers` | `ready`. Never asserted.
 Rules: `README.md` and any file whose name starts with `_` are not stories.
 Status is derived from evidence and numbers, never set by hand. Each skill
 that drafts outbound text checks `never_say` from the file, not from memory.
+
+## Writing bullets
+
+For `summary[]` in experiences.yml and `description[]` in projects.yml.
+Action → how → outcome. Add ownership or pace only when it adds evidence.
+
+- Lead with the strongest fact and an accurate verb.
+- Explain the mechanism or decision when it clarifies the work.
+- Show an observed result. Use numbers only when they're supported.
+- Make your own part clear, separate from the team's.
+- One claim per bullet, past tense, no code names.
+- Never invent metrics, adoption, ownership, or outcomes.

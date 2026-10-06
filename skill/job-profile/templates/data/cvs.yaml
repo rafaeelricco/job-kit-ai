@@ -1,22 +1,13 @@
-# The one CV job-apply attaches.
-# Keys: base, adapt_per_vacancy
+# The CV job-apply attaches.
+# Read by job-apply, job-resume-refine, job-resume-review.
 #
-# How a PDF is chosen, and why:
+#   base                 PDF file name under cv/. Its .tex twin is what
+#                        job-resume-refine edits.
 #
-#   [adapt_per_vacancy] then [base under cv/] else [cv/en-us-resume.pdf]
+#   adapt_per_vacancy    true → tailor the CV for each job.
+#                        false → send base as is. Absent means true.
 #
-#   base               Filename under cv/; must already exist and open as a
-#                      PDF, never a .tex. The LaTeX source job-resume-refine
-#                      copies is the same stem with .tex.
-#   adapt_per_vacancy  true → job-apply chains job-resume-refine on a
-#                      status:new dossier and attaches a verified PDF, keeping
-#                      every base role/bullet and the compiled base page ceiling.
-#                      false → no new refinement; job-apply still honors its
-#                      prepared-plan precedence and each caller keeps its own
-#                      fallback before attaching the base. Absent means true.
-#
-#   Rules: empty base → job-apply falls back to cv/en-us-resume.pdf.
-#   Never generate LaTeX here.
+# Empty base → cv/en-us-resume.pdf is sent.
 
 base: ""
 adapt_per_vacancy: true

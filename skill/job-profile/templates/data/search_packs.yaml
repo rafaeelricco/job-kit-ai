@@ -1,91 +1,61 @@
-# One object per pack. One pack = one site × one intent.
-# Keys: id, surface, entry, formulations; optional enabled, location, route_required, route
-# job-scout reads this file from the Profile root; absent → scout stops.
+# Where job-scout searches: one pack per site.
+# Read by job-scout. Absent → scout stops.
 #
-# How a pack is searched, and why:
+#   id                Unique name. Packs run in file order.
 #
-#   [id + surface + entry] + [formulations × positions] + [location] + [route when DOM cannot search]
+#   surface           linkedin-jobs | open-web | social | careers | other.
 #
-#   id            Unique pack name. The run set is these ids, in file order.
+#   entry             The URL the search starts from.
 #
-#   surface       A label (linkedin-jobs, open-web, social, or another). Scout
-#                 opens entry; it does not load a playbook file.
+#   formulations[]    Search lines. [role] becomes each job_search position;
+#                     [industry] comes from your profile. Absent → ["[role]"].
 #
-#   entry         The one http(s) URL this pack starts from.
+#   enabled           false → kept in the file but skipped. Absent → true.
 #
-#   formulations  Query strings scout types or substitutes. `[role]` expands
-#                 from job_search.yaml positions, file order. `[industry]`
-#                 expands from the profile card. An empty leftover token is
-#                 dropped. Board packs match titles against positions instead.
+#   location          keep-only → the site's location filter is not used;
+#                     scout filters results itself. Only you set this.
 #
-#   enabled       false keeps the pack in the file but out of the run.
-#                 Absent means true.
+#   route_required    true → the site can only be searched through route.
 #
-#   location      keep-only when the surface location control cannot express
-#                 kit search_in (absent, non-persisting, inert, or a taxonomy
-#                 that hides remote-worldwide cards). Under a search_in list,
-#                 scout runs each formulation once with the control unset and
-#                 applies search_in at the keep gate only. Absent = scout sets the
-#                 surface location control. Only the operator writes this key.
+#   route             Search through the site's API instead of the page.
+#                     kind json: url with {formulation} and {page}, plus
+#                     pages, items, posting_url.
+#                     kind board: ats, url with {slug}, plus items,
+#                     posting_url, title, optional slug_lists.
 #
-#   route         Optional. Use when DOM search is not viable (route_required:
-#                 true on an enabled pack needs a complete route). kind json:
-#                 url with {formulation} and {page}, plus pages, items, and
-#                 posting_url. kind board: ats, url with {slug}, plus items,
-#                 posting_url, and title; slugs are discovered each run from
-#                 site:{entry host}, store URLs, and a daily window of any
-#                 optional slug_lists URLs (JSON string array, or CSV with
-#                 url/slug columns); items: $ is the response root.
-#                 A route url carries no constraint filters, so
-#                 work_model, date_posted, job_types, and location fall to the
-#                 keep gate.
-#
-#   Rules: a pack is a surface, not an employer. location, when present, is
-#   keep-only. An enabled pack with route_required: true must have a complete
-#   route; a disabled required pack may omit it.
+# One pack is one site, not one employer, except surface: careers,
+# which must be keep-only.
 
 packs:
   - id: linkedin-jobs
     surface: linkedin-jobs
     entry: https://www.linkedin.com/jobs/
-    formulations:
-      - "[role]"
 
   - id: hn-hiring
     surface: open-web
     entry: https://hnhiring.com
     # Location slugs are cities and Remote; kit country names never match.
     location: keep-only
-    formulations:
-      - "[role]"
 
   - id: work-at-a-startup
     surface: open-web
     entry: https://www.workatastartup.com/companies?demographic=any&hasEquity=any&hasSalary=any&industry=any&interviewProcess=any&jobType=fulltime&layout=list-compact&role=eng&sortBy=created_desc&tab=any&usVisaNotRequired=true
     # The location control does not persist a country; the view stays Remote.
     location: keep-only
-    formulations:
-      - "[role]"
 
   - id: wellfound
     surface: open-web
     entry: https://wellfound.com
-    formulations:
-      - "[role]"
 
   - id: we-work-remotely
     surface: open-web
     entry: https://weworkremotely.com
     # country[] has no Anywhere option; a country filter hides worldwide cards.
     location: keep-only
-    formulations:
-      - "[role]"
 
   - id: remote-ok
     surface: open-web
     entry: https://remoteok.com
-    formulations:
-      - "[role]"
 
   - id: hiring-cafe
     surface: open-web
@@ -93,24 +63,18 @@ packs:
     # Search is SSR-only, which the generic JSON route does not support.
     route_required: true
     enabled: false
-    formulations:
-      - "[role]"
 
   - id: greenhouse
     surface: open-web
     entry: https://job-boards.greenhouse.io
     # Undated search-engine site: harvest; stale rows read dead at extract.
     # Prefer greenhouse-boards for the live API after site: harvest.
-    formulations:
-      - "[role]"
 
   - id: lever
     surface: open-web
     entry: https://jobs.lever.co
     # Undated search-engine site: harvest; stale rows read dead at extract.
     # Prefer lever-boards for the live API after site: harvest.
-    formulations:
-      - "[role]"
 
   - id: ashby-boards
     surface: open-web
@@ -126,8 +90,6 @@ packs:
       location: location
       date: publishedAt
       listed: isListed
-    formulations:
-      - "[role]"
 
   - id: greenhouse-boards
     surface: open-web
@@ -142,8 +104,6 @@ packs:
       title: title
       location: location.name
       date: first_published
-    formulations:
-      - "[role]"
 
   - id: lever-boards
     surface: open-web
@@ -158,8 +118,6 @@ packs:
       title: text
       location: categories.location
       date: createdAt
-    formulations:
-      - "[role]"
 
   - id: linkedin-posts
     surface: social

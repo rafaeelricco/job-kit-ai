@@ -1,15 +1,12 @@
-# One object per spoken language.
-# Keys: name, level
+# Languages you speak.
+# Read by job-apply, job-match, job-resume-refine.
 #
-# How a language is printed, and why:
+#   name     Language as forms list it.
 #
-#   [name] + [level verbatim]
+#   level    Your own wording, e.g. "C1 - Advanced (professional working
+#            proficiency)". Never a bare grade like "C1".
 #
-#   name   Language as a form lists it.
-#   level  Printed proficiency as-is (e.g. native, C1, B2-C1).
-#
-#   Rules: never invent a certification, test score, or bare letter grade
-#   the owner did not supply. Empty name/level is no answer.
+# Empty means unknown. Never invent a certificate or test score.
 
 languages:
   - name: "" # TODO

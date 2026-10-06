@@ -113,7 +113,7 @@ discover() {
 if wanted unit; then
   banner "unit — shipped script unit tests"
   status=0
-  for suite in skill/job-humanize/scripts skill/job-match/scripts skill/job-resume-refine/scripts skill/job-store/scripts; do
+  for suite in skill/job-profile/scripts skill/job-humanize/scripts skill/job-match/scripts skill/job-resume-refine/scripts skill/job-store/scripts; do
     echo "--- ${suite}"
     # shellcheck disable=SC2086
     ( cd "${suite}" && $PY -m unittest discover -p 'test_*.py' ) || status=1

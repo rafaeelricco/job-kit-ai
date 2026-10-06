@@ -1,16 +1,13 @@
-# One object per public network profile.
-# Keys: network, username, url
-# job-apply reads LinkedIn and GitHub from this file.
+# Your public profiles.
+# Read by job-apply and job-prep (form fields named after the network).
 #
-# How a profile URL is filled, and why:
+#   network     LinkedIn, GitHub, Twitter, …
 #
-#   [network] + [username] → url
+#   username    Your handle there.
 #
-#   network   LinkedIn, GitHub, or another network label.
-#   username  Handle on that network.
-#   url       Canonical profile URL.
+#   url         Full profile link.
 #
-#   Rules: do not invent a handle. A network with an empty username is not a link.
+# Empty means unknown. Never invent a handle.
 
 profiles:
   - network: "LinkedIn"

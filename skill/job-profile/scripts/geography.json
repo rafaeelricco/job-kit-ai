@@ -1,0 +1,1280 @@
+{
+  "source": "https://unstats.un.org/unsd/methodology/m49/",
+  "retrieved_at": "2026-10-06",
+  "groups": {
+    "european union": {
+      "source": "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
+      "countries": [
+        "AT",
+        "BE",
+        "BG",
+        "HR",
+        "CY",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "FR",
+        "DE",
+        "GR",
+        "HU",
+        "IE",
+        "IT",
+        "LV",
+        "LT",
+        "LU",
+        "MT",
+        "NL",
+        "PL",
+        "PT",
+        "RO",
+        "SK",
+        "SI",
+        "ES",
+        "SE"
+      ]
+    }
+  },
+  "countries": {
+    "DZ": {
+      "name": "Algeria",
+      "alpha3": "DZA",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "EG": {
+      "name": "Egypt",
+      "alpha3": "EGY",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "LY": {
+      "name": "Libya",
+      "alpha3": "LBY",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "MA": {
+      "name": "Morocco",
+      "alpha3": "MAR",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "SD": {
+      "name": "Sudan",
+      "alpha3": "SDN",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "TN": {
+      "name": "Tunisia",
+      "alpha3": "TUN",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "EH": {
+      "name": "Western Sahara",
+      "alpha3": "ESH",
+      "regions": ["Africa", "Northern Africa"]
+    },
+    "IO": {
+      "name": "British Indian Ocean Territory",
+      "alpha3": "IOT",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "BI": {
+      "name": "Burundi",
+      "alpha3": "BDI",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "KM": {
+      "name": "Comoros",
+      "alpha3": "COM",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "DJ": {
+      "name": "Djibouti",
+      "alpha3": "DJI",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "ER": {
+      "name": "Eritrea",
+      "alpha3": "ERI",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "ET": {
+      "name": "Ethiopia",
+      "alpha3": "ETH",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "TF": {
+      "name": "French Southern Territories",
+      "alpha3": "ATF",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "KE": {
+      "name": "Kenya",
+      "alpha3": "KEN",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "MG": {
+      "name": "Madagascar",
+      "alpha3": "MDG",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "MW": {
+      "name": "Malawi",
+      "alpha3": "MWI",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "MU": {
+      "name": "Mauritius",
+      "alpha3": "MUS",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "YT": {
+      "name": "Mayotte",
+      "alpha3": "MYT",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "MZ": {
+      "name": "Mozambique",
+      "alpha3": "MOZ",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "RE": {
+      "name": "Réunion",
+      "alpha3": "REU",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "RW": {
+      "name": "Rwanda",
+      "alpha3": "RWA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "SC": {
+      "name": "Seychelles",
+      "alpha3": "SYC",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "SO": {
+      "name": "Somalia",
+      "alpha3": "SOM",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "SS": {
+      "name": "South Sudan",
+      "alpha3": "SSD",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "UG": {
+      "name": "Uganda",
+      "alpha3": "UGA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "TZ": {
+      "name": "United Republic of Tanzania",
+      "alpha3": "TZA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "ZM": {
+      "name": "Zambia",
+      "alpha3": "ZMB",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "ZW": {
+      "name": "Zimbabwe",
+      "alpha3": "ZWE",
+      "regions": ["Africa", "Sub-Saharan Africa", "Eastern Africa"]
+    },
+    "AO": {
+      "name": "Angola",
+      "alpha3": "AGO",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "CM": {
+      "name": "Cameroon",
+      "alpha3": "CMR",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "CF": {
+      "name": "Central African Republic",
+      "alpha3": "CAF",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "TD": {
+      "name": "Chad",
+      "alpha3": "TCD",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "CG": {
+      "name": "Congo",
+      "alpha3": "COG",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "CD": {
+      "name": "Democratic Republic of the Congo",
+      "alpha3": "COD",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "GQ": {
+      "name": "Equatorial Guinea",
+      "alpha3": "GNQ",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "GA": {
+      "name": "Gabon",
+      "alpha3": "GAB",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "ST": {
+      "name": "Sao Tome and Principe",
+      "alpha3": "STP",
+      "regions": ["Africa", "Sub-Saharan Africa", "Middle Africa"]
+    },
+    "BW": {
+      "name": "Botswana",
+      "alpha3": "BWA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Southern Africa"]
+    },
+    "SZ": {
+      "name": "Eswatini",
+      "alpha3": "SWZ",
+      "regions": ["Africa", "Sub-Saharan Africa", "Southern Africa"]
+    },
+    "LS": {
+      "name": "Lesotho",
+      "alpha3": "LSO",
+      "regions": ["Africa", "Sub-Saharan Africa", "Southern Africa"]
+    },
+    "NA": {
+      "name": "Namibia",
+      "alpha3": "NAM",
+      "regions": ["Africa", "Sub-Saharan Africa", "Southern Africa"]
+    },
+    "ZA": {
+      "name": "South Africa",
+      "alpha3": "ZAF",
+      "regions": ["Africa", "Sub-Saharan Africa", "Southern Africa"]
+    },
+    "BJ": {
+      "name": "Benin",
+      "alpha3": "BEN",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "BF": {
+      "name": "Burkina Faso",
+      "alpha3": "BFA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "CV": {
+      "name": "Cabo Verde",
+      "alpha3": "CPV",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "CI": {
+      "name": "Côte d’Ivoire",
+      "alpha3": "CIV",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "GM": {
+      "name": "Gambia",
+      "alpha3": "GMB",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "GH": {
+      "name": "Ghana",
+      "alpha3": "GHA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "GN": {
+      "name": "Guinea",
+      "alpha3": "GIN",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "GW": {
+      "name": "Guinea-Bissau",
+      "alpha3": "GNB",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "LR": {
+      "name": "Liberia",
+      "alpha3": "LBR",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "ML": {
+      "name": "Mali",
+      "alpha3": "MLI",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "MR": {
+      "name": "Mauritania",
+      "alpha3": "MRT",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "NE": {
+      "name": "Niger",
+      "alpha3": "NER",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "NG": {
+      "name": "Nigeria",
+      "alpha3": "NGA",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "SH": {
+      "name": "Saint Helena",
+      "alpha3": "SHN",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "SN": {
+      "name": "Senegal",
+      "alpha3": "SEN",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "SL": {
+      "name": "Sierra Leone",
+      "alpha3": "SLE",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "TG": {
+      "name": "Togo",
+      "alpha3": "TGO",
+      "regions": ["Africa", "Sub-Saharan Africa", "Western Africa"]
+    },
+    "AI": {
+      "name": "Anguilla",
+      "alpha3": "AIA",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "AG": {
+      "name": "Antigua and Barbuda",
+      "alpha3": "ATG",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "AW": {
+      "name": "Aruba",
+      "alpha3": "ABW",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "BS": {
+      "name": "Bahamas",
+      "alpha3": "BHS",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "BB": {
+      "name": "Barbados",
+      "alpha3": "BRB",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "BQ": {
+      "name": "Bonaire, Sint Eustatius and Saba",
+      "alpha3": "BES",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "VG": {
+      "name": "British Virgin Islands",
+      "alpha3": "VGB",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "KY": {
+      "name": "Cayman Islands",
+      "alpha3": "CYM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "CU": {
+      "name": "Cuba",
+      "alpha3": "CUB",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "CW": {
+      "name": "Curaçao",
+      "alpha3": "CUW",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "DM": {
+      "name": "Dominica",
+      "alpha3": "DMA",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "DO": {
+      "name": "Dominican Republic",
+      "alpha3": "DOM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "GD": {
+      "name": "Grenada",
+      "alpha3": "GRD",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "GP": {
+      "name": "Guadeloupe",
+      "alpha3": "GLP",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "HT": {
+      "name": "Haiti",
+      "alpha3": "HTI",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "JM": {
+      "name": "Jamaica",
+      "alpha3": "JAM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "MQ": {
+      "name": "Martinique",
+      "alpha3": "MTQ",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "MS": {
+      "name": "Montserrat",
+      "alpha3": "MSR",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "PR": {
+      "name": "Puerto Rico",
+      "alpha3": "PRI",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "BL": {
+      "name": "Saint Barthélemy",
+      "alpha3": "BLM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "KN": {
+      "name": "Saint Kitts and Nevis",
+      "alpha3": "KNA",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "LC": {
+      "name": "Saint Lucia",
+      "alpha3": "LCA",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "MF": {
+      "name": "Saint Martin (French Part)",
+      "alpha3": "MAF",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "VC": {
+      "name": "Saint Vincent and the Grenadines",
+      "alpha3": "VCT",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "SX": {
+      "name": "Sint Maarten (Dutch part)",
+      "alpha3": "SXM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "TT": {
+      "name": "Trinidad and Tobago",
+      "alpha3": "TTO",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "TC": {
+      "name": "Turks and Caicos Islands",
+      "alpha3": "TCA",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "VI": {
+      "name": "United States Virgin Islands",
+      "alpha3": "VIR",
+      "regions": ["Americas", "Latin America and the Caribbean", "Caribbean"]
+    },
+    "BZ": {
+      "name": "Belize",
+      "alpha3": "BLZ",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "CR": {
+      "name": "Costa Rica",
+      "alpha3": "CRI",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "SV": {
+      "name": "El Salvador",
+      "alpha3": "SLV",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "GT": {
+      "name": "Guatemala",
+      "alpha3": "GTM",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "HN": {
+      "name": "Honduras",
+      "alpha3": "HND",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "MX": {
+      "name": "Mexico",
+      "alpha3": "MEX",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "NI": {
+      "name": "Nicaragua",
+      "alpha3": "NIC",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "PA": {
+      "name": "Panama",
+      "alpha3": "PAN",
+      "regions": ["Americas", "Latin America and the Caribbean", "Central America"]
+    },
+    "AR": {
+      "name": "Argentina",
+      "alpha3": "ARG",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "BO": {
+      "name": "Bolivia (Plurinational State of)",
+      "alpha3": "BOL",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "BV": {
+      "name": "Bouvet Island",
+      "alpha3": "BVT",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "BR": {
+      "name": "Brazil",
+      "alpha3": "BRA",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "CL": {
+      "name": "Chile",
+      "alpha3": "CHL",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "CO": {
+      "name": "Colombia",
+      "alpha3": "COL",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "EC": {
+      "name": "Ecuador",
+      "alpha3": "ECU",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "FK": {
+      "name": "Falkland Islands (Malvinas)",
+      "alpha3": "FLK",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "GF": {
+      "name": "French Guiana",
+      "alpha3": "GUF",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "GY": {
+      "name": "Guyana",
+      "alpha3": "GUY",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "PY": {
+      "name": "Paraguay",
+      "alpha3": "PRY",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "PE": {
+      "name": "Peru",
+      "alpha3": "PER",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "GS": {
+      "name": "South Georgia and the South Sandwich Islands",
+      "alpha3": "SGS",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "SR": {
+      "name": "Suriname",
+      "alpha3": "SUR",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "UY": {
+      "name": "Uruguay",
+      "alpha3": "URY",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "VE": {
+      "name": "Venezuela (Bolivarian Republic of)",
+      "alpha3": "VEN",
+      "regions": ["Americas", "Latin America and the Caribbean", "South America"]
+    },
+    "BM": {
+      "name": "Bermuda",
+      "alpha3": "BMU",
+      "regions": ["Americas", "Northern America"]
+    },
+    "CA": {
+      "name": "Canada",
+      "alpha3": "CAN",
+      "regions": ["Americas", "Northern America"]
+    },
+    "GL": {
+      "name": "Greenland",
+      "alpha3": "GRL",
+      "regions": ["Americas", "Northern America"]
+    },
+    "PM": {
+      "name": "Saint Pierre and Miquelon",
+      "alpha3": "SPM",
+      "regions": ["Americas", "Northern America"]
+    },
+    "US": {
+      "name": "United States of America",
+      "alpha3": "USA",
+      "regions": ["Americas", "Northern America"]
+    },
+    "AQ": {
+      "name": "Antarctica",
+      "alpha3": "ATA",
+      "regions": []
+    },
+    "KZ": {
+      "name": "Kazakhstan",
+      "alpha3": "KAZ",
+      "regions": ["Asia", "Central Asia"]
+    },
+    "KG": {
+      "name": "Kyrgyzstan",
+      "alpha3": "KGZ",
+      "regions": ["Asia", "Central Asia"]
+    },
+    "TJ": {
+      "name": "Tajikistan",
+      "alpha3": "TJK",
+      "regions": ["Asia", "Central Asia"]
+    },
+    "TM": {
+      "name": "Turkmenistan",
+      "alpha3": "TKM",
+      "regions": ["Asia", "Central Asia"]
+    },
+    "UZ": {
+      "name": "Uzbekistan",
+      "alpha3": "UZB",
+      "regions": ["Asia", "Central Asia"]
+    },
+    "CN": {
+      "name": "China",
+      "alpha3": "CHN",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "HK": {
+      "name": "China, Hong Kong Special Administrative Region",
+      "alpha3": "HKG",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "MO": {
+      "name": "China, Macao Special Administrative Region",
+      "alpha3": "MAC",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "KP": {
+      "name": "Democratic People's Republic of Korea",
+      "alpha3": "PRK",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "JP": {
+      "name": "Japan",
+      "alpha3": "JPN",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "MN": {
+      "name": "Mongolia",
+      "alpha3": "MNG",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "KR": {
+      "name": "Republic of Korea",
+      "alpha3": "KOR",
+      "regions": ["Asia", "Eastern Asia"]
+    },
+    "BN": {
+      "name": "Brunei Darussalam",
+      "alpha3": "BRN",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "KH": {
+      "name": "Cambodia",
+      "alpha3": "KHM",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "ID": {
+      "name": "Indonesia",
+      "alpha3": "IDN",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "LA": {
+      "name": "Lao People's Democratic Republic",
+      "alpha3": "LAO",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "MY": {
+      "name": "Malaysia",
+      "alpha3": "MYS",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "MM": {
+      "name": "Myanmar",
+      "alpha3": "MMR",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "PH": {
+      "name": "Philippines",
+      "alpha3": "PHL",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "SG": {
+      "name": "Singapore",
+      "alpha3": "SGP",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "TH": {
+      "name": "Thailand",
+      "alpha3": "THA",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "TL": {
+      "name": "Timor-Leste",
+      "alpha3": "TLS",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "VN": {
+      "name": "Viet Nam",
+      "alpha3": "VNM",
+      "regions": ["Asia", "South-eastern Asia"]
+    },
+    "AF": {
+      "name": "Afghanistan",
+      "alpha3": "AFG",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "BD": {
+      "name": "Bangladesh",
+      "alpha3": "BGD",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "BT": {
+      "name": "Bhutan",
+      "alpha3": "BTN",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "IN": {
+      "name": "India",
+      "alpha3": "IND",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "IR": {
+      "name": "Iran (Islamic Republic of)",
+      "alpha3": "IRN",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "MV": {
+      "name": "Maldives",
+      "alpha3": "MDV",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "NP": {
+      "name": "Nepal",
+      "alpha3": "NPL",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "PK": {
+      "name": "Pakistan",
+      "alpha3": "PAK",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "LK": {
+      "name": "Sri Lanka",
+      "alpha3": "LKA",
+      "regions": ["Asia", "Southern Asia"]
+    },
+    "AM": {
+      "name": "Armenia",
+      "alpha3": "ARM",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "AZ": {
+      "name": "Azerbaijan",
+      "alpha3": "AZE",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "BH": {
+      "name": "Bahrain",
+      "alpha3": "BHR",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "CY": {
+      "name": "Cyprus",
+      "alpha3": "CYP",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "GE": {
+      "name": "Georgia",
+      "alpha3": "GEO",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "IQ": {
+      "name": "Iraq",
+      "alpha3": "IRQ",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "IL": {
+      "name": "Israel",
+      "alpha3": "ISR",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "JO": {
+      "name": "Jordan",
+      "alpha3": "JOR",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "KW": {
+      "name": "Kuwait",
+      "alpha3": "KWT",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "LB": {
+      "name": "Lebanon",
+      "alpha3": "LBN",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "OM": {
+      "name": "Oman",
+      "alpha3": "OMN",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "QA": {
+      "name": "Qatar",
+      "alpha3": "QAT",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "SA": {
+      "name": "Saudi Arabia",
+      "alpha3": "SAU",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "PS": {
+      "name": "State of Palestine",
+      "alpha3": "PSE",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "SY": {
+      "name": "Syrian Arab Republic",
+      "alpha3": "SYR",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "TR": {
+      "name": "Türkiye",
+      "alpha3": "TUR",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "AE": {
+      "name": "United Arab Emirates",
+      "alpha3": "ARE",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "YE": {
+      "name": "Yemen",
+      "alpha3": "YEM",
+      "regions": ["Asia", "Western Asia"]
+    },
+    "BY": {
+      "name": "Belarus",
+      "alpha3": "BLR",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "BG": {
+      "name": "Bulgaria",
+      "alpha3": "BGR",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "CZ": {
+      "name": "Czechia",
+      "alpha3": "CZE",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "HU": {
+      "name": "Hungary",
+      "alpha3": "HUN",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "PL": {
+      "name": "Poland",
+      "alpha3": "POL",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "MD": {
+      "name": "Republic of Moldova",
+      "alpha3": "MDA",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "RO": {
+      "name": "Romania",
+      "alpha3": "ROU",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "RU": {
+      "name": "Russian Federation",
+      "alpha3": "RUS",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "SK": {
+      "name": "Slovakia",
+      "alpha3": "SVK",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "UA": {
+      "name": "Ukraine",
+      "alpha3": "UKR",
+      "regions": ["Europe", "Eastern Europe"]
+    },
+    "AX": {
+      "name": "Åland Islands",
+      "alpha3": "ALA",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "DK": {
+      "name": "Denmark",
+      "alpha3": "DNK",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "EE": {
+      "name": "Estonia",
+      "alpha3": "EST",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "FO": {
+      "name": "Faroe Islands",
+      "alpha3": "FRO",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "FI": {
+      "name": "Finland",
+      "alpha3": "FIN",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "GG": {
+      "name": "Guernsey",
+      "alpha3": "GGY",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "IS": {
+      "name": "Iceland",
+      "alpha3": "ISL",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "IE": {
+      "name": "Ireland",
+      "alpha3": "IRL",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "IM": {
+      "name": "Isle of Man",
+      "alpha3": "IMN",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "JE": {
+      "name": "Jersey",
+      "alpha3": "JEY",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "LV": {
+      "name": "Latvia",
+      "alpha3": "LVA",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "LT": {
+      "name": "Lithuania",
+      "alpha3": "LTU",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "NO": {
+      "name": "Norway",
+      "alpha3": "NOR",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "SJ": {
+      "name": "Svalbard and Jan Mayen Islands",
+      "alpha3": "SJM",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "SE": {
+      "name": "Sweden",
+      "alpha3": "SWE",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "GB": {
+      "name": "United Kingdom of Great Britain and Northern Ireland",
+      "alpha3": "GBR",
+      "regions": ["Europe", "Northern Europe"]
+    },
+    "AL": {
+      "name": "Albania",
+      "alpha3": "ALB",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "AD": {
+      "name": "Andorra",
+      "alpha3": "AND",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "BA": {
+      "name": "Bosnia and Herzegovina",
+      "alpha3": "BIH",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "HR": {
+      "name": "Croatia",
+      "alpha3": "HRV",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "GI": {
+      "name": "Gibraltar",
+      "alpha3": "GIB",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "GR": {
+      "name": "Greece",
+      "alpha3": "GRC",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "VA": {
+      "name": "Holy See",
+      "alpha3": "VAT",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "IT": {
+      "name": "Italy",
+      "alpha3": "ITA",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "MT": {
+      "name": "Malta",
+      "alpha3": "MLT",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "ME": {
+      "name": "Montenegro",
+      "alpha3": "MNE",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "MK": {
+      "name": "North Macedonia",
+      "alpha3": "MKD",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "PT": {
+      "name": "Portugal",
+      "alpha3": "PRT",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "SM": {
+      "name": "San Marino",
+      "alpha3": "SMR",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "RS": {
+      "name": "Serbia",
+      "alpha3": "SRB",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "SI": {
+      "name": "Slovenia",
+      "alpha3": "SVN",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "ES": {
+      "name": "Spain",
+      "alpha3": "ESP",
+      "regions": ["Europe", "Southern Europe"]
+    },
+    "AT": {
+      "name": "Austria",
+      "alpha3": "AUT",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "BE": {
+      "name": "Belgium",
+      "alpha3": "BEL",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "FR": {
+      "name": "France",
+      "alpha3": "FRA",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "DE": {
+      "name": "Germany",
+      "alpha3": "DEU",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "LI": {
+      "name": "Liechtenstein",
+      "alpha3": "LIE",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "LU": {
+      "name": "Luxembourg",
+      "alpha3": "LUX",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "MC": {
+      "name": "Monaco",
+      "alpha3": "MCO",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "NL": {
+      "name": "Netherlands (Kingdom of the)",
+      "alpha3": "NLD",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "CH": {
+      "name": "Switzerland",
+      "alpha3": "CHE",
+      "regions": ["Europe", "Western Europe"]
+    },
+    "AU": {
+      "name": "Australia",
+      "alpha3": "AUS",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "CX": {
+      "name": "Christmas Island",
+      "alpha3": "CXR",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "CC": {
+      "name": "Cocos (Keeling) Islands",
+      "alpha3": "CCK",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "HM": {
+      "name": "Heard Island and McDonald Islands",
+      "alpha3": "HMD",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "NZ": {
+      "name": "New Zealand",
+      "alpha3": "NZL",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "NF": {
+      "name": "Norfolk Island",
+      "alpha3": "NFK",
+      "regions": ["Oceania", "Australia and New Zealand"]
+    },
+    "FJ": {
+      "name": "Fiji",
+      "alpha3": "FJI",
+      "regions": ["Oceania", "Melanesia"]
+    },
+    "NC": {
+      "name": "New Caledonia",
+      "alpha3": "NCL",
+      "regions": ["Oceania", "Melanesia"]
+    },
+    "PG": {
+      "name": "Papua New Guinea",
+      "alpha3": "PNG",
+      "regions": ["Oceania", "Melanesia"]
+    },
+    "SB": {
+      "name": "Solomon Islands",
+      "alpha3": "SLB",
+      "regions": ["Oceania", "Melanesia"]
+    },
+    "VU": {
+      "name": "Vanuatu",
+      "alpha3": "VUT",
+      "regions": ["Oceania", "Melanesia"]
+    },
+    "GU": {
+      "name": "Guam",
+      "alpha3": "GUM",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "KI": {
+      "name": "Kiribati",
+      "alpha3": "KIR",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "MH": {
+      "name": "Marshall Islands",
+      "alpha3": "MHL",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "FM": {
+      "name": "Micronesia (Federated States of)",
+      "alpha3": "FSM",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "NR": {
+      "name": "Naoero",
+      "alpha3": "NRU",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "MP": {
+      "name": "Northern Mariana Islands",
+      "alpha3": "MNP",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "PW": {
+      "name": "Palau",
+      "alpha3": "PLW",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "UM": {
+      "name": "United States Minor Outlying Islands",
+      "alpha3": "UMI",
+      "regions": ["Oceania", "Micronesia"]
+    },
+    "AS": {
+      "name": "American Samoa",
+      "alpha3": "ASM",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "CK": {
+      "name": "Cook Islands",
+      "alpha3": "COK",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "PF": {
+      "name": "French Polynesia",
+      "alpha3": "PYF",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "NU": {
+      "name": "Niue",
+      "alpha3": "NIU",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "PN": {
+      "name": "Pitcairn",
+      "alpha3": "PCN",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "WS": {
+      "name": "Samoa",
+      "alpha3": "WSM",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "TK": {
+      "name": "Tokelau",
+      "alpha3": "TKL",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "TO": {
+      "name": "Tonga",
+      "alpha3": "TON",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "TV": {
+      "name": "Tuvalu",
+      "alpha3": "TUV",
+      "regions": ["Oceania", "Polynesia"]
+    },
+    "WF": {
+      "name": "Wallis and Futuna Islands",
+      "alpha3": "WLF",
+      "regions": ["Oceania", "Polynesia"]
+    }
+  }
+}

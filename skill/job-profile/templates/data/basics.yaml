@@ -1,26 +1,50 @@
-# Identity and contact facts for job-apply forms.
-# Keys: name, email, phone, location, country, url.label, url.href
+# Who you are and how to reach you, for application forms.
+# Read by job-apply, job-scout, job-match.
 #
-# How a form field is filled, and why:
+#   name              Display name, e.g. "Rafael Ricco".
 #
-#   [this file] then [a derived split of name or location]
+#   legal_name        Full name as on your ID.
 #
-#   name      Display name. First / last split at the first space.
-#   email     Application email.
-#   phone     Application phone.
-#   location  City, region, country as printed.
-#   country   Country of residence as a form lists it. When absent, apply may
-#             derive it from location's last comma part only if that part names
-#             a country.
-#   url       Personal site: label + href.
+#   birth_date        YYYY-MM-DD. Given only when a form requires it.
 #
-#   Rules: never invent a country, phone, or email. Empty is no answer.
+#   email, phone      Application contact details.
+#
+#   phone_whatsapp    true if the phone number is on WhatsApp.
+#
+#   location          "City, State, Country" as you'd print it.
+#
+#   country           Country you live in.
+#
+#   address.*         line1, line2, district, postal_code. City and state
+#                     come from location.
+#
+#   citizenships      Countries you are a citizen of.
+#
+#   permits           Other countries where you may work (visa, permit, PR).
+#
+#   timezone          IANA name, e.g. America/Sao_Paulo.
+#
+#   url               Personal site: label and href.
+#
+# Empty means unknown. Never invent a value.
+# Never store ID numbers or passport details.
 
 name: "{{display_name}}"
+legal_name: ""
+birth_date: ""
 email: "{{email}}"
 phone: ""
+phone_whatsapp: false
 location: ""
 country: "" # country of residence as a form lists it, e.g. "Brazil"
+address:
+  line1: ""
+  line2: ""
+  district: ""
+  postal_code: ""
+citizenships: [] # confirmed citizenship countries; never inferred from residence
+permits: [] # beyond citizenships; empty → citizenships only
+timezone: ""
 url:
   label: "Website"
   href: ""
