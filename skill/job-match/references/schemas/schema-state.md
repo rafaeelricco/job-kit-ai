@@ -39,7 +39,7 @@ Pipe those files to the scripts; never retype their JSON.
 | `constraints.residence`          | Run `job-profile/scripts/geography.py` with `data/basics.yaml` `country` per `job-profile/references/contracts/contract-geography.md`; copy only `country` and `regions`. Missing or unresolved residence stops matching.                                                 |
 | `constraints.exclude_companies`  | `job_search.yaml` `exclude_companies`                                                                                                                                                                                                                                     |
 | `constraints.market_currencies`  | `job_search.yaml` `market_currencies`                                                                                                                                                                                                                                     |
-| `constraints.work_authorization` | `{ "authorized_in": basics.yaml citizenships + basics.yaml permits }`, verbatim                                                                                                                                                                                           |
+| `constraints.work_authorization` | `{ "citizenships": basics.yaml citizenships, "permits": basics.yaml permits }`, each verbatim; never merged, since screening treats them differently                                                                                                                      |
 
 ```json
 {
@@ -56,7 +56,7 @@ Pipe those files to the scripts; never retype their JSON.
     "residence": { "country": null, "regions": [] },
     "exclude_companies": [],
     "market_currencies": [],
-    "work_authorization": { "authorized_in": [] }
+    "work_authorization": { "citizenships": [], "permits": [] }
   }
 }
 ```

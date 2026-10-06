@@ -502,6 +502,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("only a country or the eu is a jurisdiction; any other region", screening)
         self.assertIn("eu free movement comes from citizenships only; a permit covers its own country", screening)
         self.assertIn('`"places": ["eu"]` once per citizenship and once for an asked country', screening)
+        state = instruction_text(harness.SKILL / "job-match" / "references" / "schemas" / "schema-state.md")
+        self.assertIn('"work_authorization": { "citizenships": [], "permits": [] }', state)
+        self.assertNotIn("authorized_in", state)
         for path in harness.SKILL.rglob("*.md"):
             with self.subTest(path=path):
                 text = path.read_text(encoding="utf-8")
