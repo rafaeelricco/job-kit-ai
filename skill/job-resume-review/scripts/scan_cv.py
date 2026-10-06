@@ -24,8 +24,8 @@ MAX_BYTES = 2_500_000
 MAX_PART_BYTES = 20_000_000  # uncompressed budget for the DOCX parts read; a CV body is well under 1 MB
 LIGATURES = {chr(c) for c in range(0xFB00, 0xFB07)}
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
-PHONE = re.compile(r"\+?(?:\(\d+\)|\d+)(?:[ .-]?(?:\(\d+\)|\d+))*")  # " - " or an unclosed "(" ends a run
-NOT_PHONE = re.compile(r"\d{1,3}(?:\.\d{3}){2,}|(?:\d\d?[./])?(?:19|20)\d\d-(?:\d\d?[./])?(?:19|20)\d\d")
+PHONE = re.compile(r"\+?(?:\(\d+\)|\d+)(?:[ .\u00a0\u202f-]?(?:\(\d+\)|\d+))*")  # " - " or an unclosed "(" ends a run
+NOT_PHONE = re.compile(r"\d{3}\.\d{3}\.\d{3}-\d{2}|\d{3}-\d{2}-\d{4}|\d{1,3}(?:\.\d{3}){2,}|(?:\d\d?[./])?(?:19|20)\d\d-(?:\d\d?[./])?(?:19|20)\d\d")
 MIN_PHONE_DIGITS = 9  # a year range such as 2019-2024 has 8 digits
 DOCX_TEXT = re.compile(r"<w:t(?: [^>]*)?>([^<]*)</w:t>")
 DOCX_RUN_START = re.compile(r"(?=<w:r[ >])")
