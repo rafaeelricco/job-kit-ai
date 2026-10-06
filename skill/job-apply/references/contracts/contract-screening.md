@@ -102,14 +102,15 @@ Before staging any prose, enforce every `never_say` ban below.
 - Current role: the `data/experiences.yml` role whose `date` ends `Present`.
   None → `currently employed?` is `No`; a current company or title field takes
   `Not currently employed (most recently {position} at {company})` from the
-  most recent role; current salary uses `salary_history.last`.
+  most recent role; a current-salary field → rule 7, while a previous or last
+  salary field still uses `salary_history.last`.
 - Seniority self-label: the current role's `position`, else the most recent role's.
 - How did you hear about us / source: the dossier `source` pack.
   `linkedin-jobs` or `linkedin-posts` → `LinkedIn`; a `*-boards` pack or
   `surface: careers` → `Company careers page`; any other pack → its entry
   host's site name (`wellfound.com` → `Wellfound`). A dropdown without that
   option takes the option meaning job board, else other.
-- Salary history: current or previous salary prints `salary_history.last` in
+- Salary history: current (with a current role) or previous salary prints `salary_history.last` in
   its own currency and period; another currency or period → rule 7.
 - Bachelor's degree?: `Yes` when an `education.yaml` `level` names a bachelor's
   degree; an ask that names a field also needs that entry's `field` to name it,
