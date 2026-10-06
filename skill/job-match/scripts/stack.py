@@ -58,15 +58,17 @@ def rank_all(payload: object) -> List[Dict[str, object]]:
     return [rank_row(skills, job) for job in jobs]
 
 
+def write_json(value: object) -> None:
+    sys.stdout.buffer.write((json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+
+
 def main() -> int:
     try:
         output = rank_all(json.loads(sys.stdin.buffer.read().decode("utf-8-sig")))
     except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as error:
-        json.dump({"stack_error": str(error)}, sys.stdout)
-        sys.stdout.write("\n")
+        write_json({"stack_error": str(error)})
         return 1
-    json.dump(output, sys.stdout, indent=2, ensure_ascii=False)
-    sys.stdout.write("\n")
+    write_json(output)
     return 0
 
 

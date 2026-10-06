@@ -55,6 +55,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIsNone(json.loads(result.stdout)[0]["score"])
 
+    def test_non_cp1252_url_writes_utf8(self):
+        url = "https://justjoin.it/oferta/programista-łódź"
+        payload = {"skills": ["React"], "jobs": [{"url": url, "required_skills": ["React"]}]}
+        result = self.run_cli(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout.decode("utf-8"))[0]["url"], url)
+
     def test_malformed_input_exits_1(self):
         result = self.run_cli(b'{"skills": "Go", "jobs": []}')
         self.assertEqual(result.returncode, 1)
