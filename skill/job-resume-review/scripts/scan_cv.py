@@ -21,7 +21,8 @@ from typing import Any, Dict, List, Optional, Tuple
 MAX_BYTES = 2_500_000
 LIGATURES = {chr(c) for c in range(0xFB00, 0xFB07)}
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
-PHONE = re.compile(r"\+?\(?\d[\d ().-]{7,}\d")
+PHONE = re.compile(r"\+?(?:\(\d+\)|\d+)(?:[ .-]?(?:\(\d+\)|\d+))*")  # " - " or an unclosed "(" ends a run
+NOT_PHONE = re.compile(r"\d{1,3}(?:\.\d{3}){2,}|(?:\d\d?[./])?(?:19|20)\d\d-(?:\d\d?[./])?(?:19|20)\d\d")
 MIN_PHONE_DIGITS = 9  # a year range such as 2019-2024 has 8 digits
 DOCX_TEXT = re.compile(r"<w:t(?: [^>]*)?>([^<]*)</w:t>")
 DOCX_HEADER_FOOTER = re.compile(r"word/(?:header|footer)\d+\.xml")
@@ -63,7 +64,8 @@ def scan_pdf_text(text: str) -> Tuple[int, List[Dict[str, Any]]]:
 
 def has_contact(text: str) -> bool:
     return bool(EMAIL.search(text)) or any(
-        sum(ch.isdigit() for ch in match.group()) >= MIN_PHONE_DIGITS for match in PHONE.finditer(text))
+        sum(ch.isdigit() for ch in match.group()) >= MIN_PHONE_DIGITS and not NOT_PHONE.fullmatch(match.group())
+        for match in PHONE.finditer(text))
 
 
 def docx_text(xml: str) -> str:

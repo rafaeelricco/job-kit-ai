@@ -72,6 +72,21 @@ class DocxTests(unittest.TestCase):
             path = docx(tmp, PARA.format("Alex Doe"), footer1="Alex Doe CV 2019-2024, updated 2024.01.15")
             self.assertEqual(scan_docx(path), [])
 
+    def test_date_ranges_and_amounts_are_not_body_contact(self):
+        for body in ("Senior Engineer, Acme 2015 - 2020 (5 years)", "Acme 2015-2020 (5 years)",
+                     "Software Engineer, Globex 01.2019 - 03.2024", "Globex 01.2019-03.2024",
+                     "Led migration saving R$ 1.200.000.000 per year"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = docx(tmp, PARA.format(body), header1="alex.doe@example.com")
+                self.assertEqual(codes(scan_docx(path)), [("contact_in_header_footer", "blocking", None)], body)
+
+    def test_phone_shapes_are_body_contact(self):
+        for phone in ("+55 11 90000-0000", "(11) 90000-0000", "+1 (415) 555-0123", "415.555.0123",
+                      "+44 (0)20 7946 0958", "+351 912 345 678", "+55 11 2015-2020"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = docx(tmp, PARA.format(f"Alex Doe {phone}"), header1="alex.doe@example.com")
+                self.assertEqual(scan_docx(path), [], phone)
+
     def test_text_box_table_image_and_empty_body(self):
         with tempfile.TemporaryDirectory() as tmp:
             found = codes(scan_docx(docx(tmp, "<w:tbl><w:txbxContent/></w:tbl><w:drawing/>")))
