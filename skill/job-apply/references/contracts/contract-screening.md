@@ -176,8 +176,12 @@ synonym (`us`, `eu`, `uk`, `br`), then run `job-profile/scripts/geography.py`
 once per authorized country with `{"country": "<authorized country>",
 "places": ["<asked jurisdiction>"]}`. Only a country or the EU is a
 jurisdiction; any other region (`LATAM`, `Americas`, `worldwide`) gets no answer.
-EU free movement: an authorized country whose `EU` match is `true` also counts
-`true` for an asked country whose `EU` match is `true`.
+EU free movement comes from citizenships only; a permit covers its own country.
+Run the helper with `"places": ["EU"]` once per citizenship and once for an
+asked country (`{"country": "<asked country>", "places": ["EU"]}`). A
+citizenship whose `EU` match is `true` counts `true` for an asked country whose
+`EU` match is `true`. When the asked jurisdiction is the EU itself, only
+citizenship results count; a permit result there is `null`.
 
 | Result                                         | Authorized / legally allowed / permit | Requires visa | Requires sponsorship |
 | ---------------------------------------------- | ------------------------------------- | ------------- | -------------------- |

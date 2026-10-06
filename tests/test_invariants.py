@@ -493,7 +493,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("`citizenships` plus `basics.yaml` `permits`", screening)
         self.assertIn("| every result `false`", screening)
         self.assertIn("only a country or the eu is a jurisdiction; any other region", screening)
-        self.assertIn("eu free movement: an authorized country whose `eu` match is `true`", screening)
+        self.assertIn("eu free movement comes from citizenships only; a permit covers its own country", screening)
+        self.assertIn('`"places": ["eu"]` once per citizenship and once for an asked country', screening)
         for path in harness.SKILL.rglob("*.md"):
             with self.subTest(path=path):
                 text = path.read_text(encoding="utf-8")
