@@ -12,7 +12,8 @@ $script:SkillNames = @(
   'job-stories',
   'job-inbox',
   'job-humanize',
-  'job-resume-refine'
+  'job-resume-refine',
+  'job-resume-review'
 ) + $script:CoreSkillNames
 $script:BrowserSkillNames = @('job-scout', 'job-apply', 'job-prep')
 $script:BrowserSharedDeps = @(

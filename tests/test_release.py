@@ -387,7 +387,12 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertFalse((f.package / ".git").exists())
             installed = f.agents / "job-match"
             self.assertEqual(installed.resolve(), (f.physical / "skill/job-match").resolve())
-            self.assertEqual(len(list(f.agents.iterdir())), 9)
+            self.assertEqual(len(list(f.agents.iterdir())), 10)
+            review = f.agents / "job-resume-review"
+            self.assertEqual(review.resolve(), (f.physical / "skill/job-resume-review").resolve())
+            for resource in ("SKILL.md", "references/rubric.md", "references/report.md", "references/research.md",
+                             "scripts/review_score.py", "scripts/scan_cv.py"):
+                self.assertTrue((review / resource).is_file(), resource)
             self.success(f.run("agents"))
             self.success(f.run("agents", version="v1.0.1"))
             self.assertEqual((f.package / "VERSION").read_text(), "v1.0.1\n")
