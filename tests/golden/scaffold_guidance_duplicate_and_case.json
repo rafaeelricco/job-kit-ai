@@ -68,7 +68,16 @@
           "profile_term": "TypeScript"
         }
       ],
-      "priority_roles": [],
+      "priority_roles": [
+        {
+          "company": "Acme",
+          "position": "Senior Frontend Engineer",
+          "matched_on": [
+            "role_type",
+            "seniority"
+          ]
+        }
+      ],
       "warnings": []
     }
   ]

@@ -69,6 +69,25 @@ def direct_skill_hold(candidate_term: str, job_term: str) -> bool:
     )
 
 
+def held_terms(candidate: "CandidateProfile", job: "JobProfile") -> Tuple[str, ...]:
+    return tuple(
+        term
+        for term in job.required_skills
+        if any(direct_skill_hold(skill, term) for skill in candidate.skills)
+    )
+
+
+def stack_score(
+    candidate: "CandidateProfile", job: "JobProfile"
+) -> Optional["StackScore"]:
+    """Primary stack counts; unscored when either skill list is empty."""
+    if not (candidate.skills and job.required_skills):
+        return None
+    return StackScore(
+        held=len(held_terms(candidate, job)), required=len(job.required_skills)
+    )
+
+
 @dataclass(frozen=True)
 class Experience:
     company: str
@@ -199,7 +218,7 @@ class ScoreBreakdown:
             raise ValueError("score_breakdown must be an object")
         ignored_names = frozenset(ignored)
         raw_stack = value.get("primary_stack")
-        if raw_stack is None:
+        if raw_stack is None or "primary_stack" in ignored_names:
             stack = None
         elif not isinstance(raw_stack, dict):
             raise ValueError("primary_stack: cell must carry held/required counts")

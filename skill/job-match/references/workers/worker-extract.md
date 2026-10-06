@@ -7,7 +7,11 @@ already in the brief. Never open Profile root. Never fetch a URL. Never score.
 ## Deltas
 
 1. Open only the files the brief names; run no script, write no file. Those excerpts and the JobProfile shape below are the whole evidence set.
-2. For each excerpt emit one JobProfile. Facts `—` → `null` / `[]`. A token not in the excerpt is absent.
+2. For each excerpt emit one JobProfile. A dossier excerpt carries `job`, already
+   copied from Posting facts and frontmatter: keep its filled keys, fill only
+   `languages_required` / `languages_preferred` (moving a human-language name out
+   of `required_skills`), `preferred_skills`, and `domain` from `role`. A posting
+   body: build every key. Facts `—` → `null` / `[]`. A token not in the excerpt is absent.
    `languages_required` / `languages_preferred` items are `{name, level}` (`level` null when unprinted).
 
 ```json

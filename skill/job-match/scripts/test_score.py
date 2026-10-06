@@ -211,6 +211,33 @@ class ScoreAllTests(unittest.TestCase):
             output[1]["score_error"], "no JobProfile for this url"
         )
 
+    def test_primary_stack_is_derived_from_profiles(self):
+        for sent in ("3/5", {"held": 2, "required": 2}):
+            with self.subTest(sent=sent):
+                payload = {
+                    "candidate": {"skills": ["TypeScript"]},
+                    "jobs": [
+                        {"url": "u1", "required_skills": ["TypeScript", "Go"]}
+                    ],
+                    "matches": [
+                        {
+                            "url": "u1",
+                            "strengths": [],
+                            "gaps": [],
+                            "blockers": [],
+                            "score_breakdown": breakdown(primary_stack=sent),
+                        }
+                    ],
+                }
+
+                output = score_all(payload)
+
+                self.assertNotIn("score_error", output[0])
+                self.assertEqual(
+                    output[0]["score_breakdown"]["primary_stack"],
+                    {"held": 1, "required": 2},
+                )
+
     def test_legacy_array_scores_cells_as_given(self):
         output = score_all(
             [

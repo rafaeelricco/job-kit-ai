@@ -156,8 +156,9 @@ bash "<KIT_ROOT>/scripts/install.sh" browser-use`
 
    **If unresolved** — probe Aside repo-agnostically first: every
    `$ASIDE_ROOT/<name>/.job-kit` for the Aside skill names this kit ships
-   (`job-scout`, `job-apply`, `job-prep`, `job-resume-refine`, `job-profile`, `job-list`,
-   `job-match`, `job-stories`, `job-inbox`, `job-humanize`, `job-profile-root`, `job-store`)
+   (`job-scout`, `job-apply`, `job-prep`, `job-resume-refine`, `job-resume-review`,
+   `job-profile`, `job-list`, `job-match`, `job-stories`, `job-inbox`, `job-humanize`,
+   `job-profile-root`, `job-store`)
    exists → say Aside skills are already present from some checkout, so the
    operator does not reinstall over a working channel. Then set `{{KIT_INSTALL}}`
    to (mirror README SSOT; do not invent a different host or script path):

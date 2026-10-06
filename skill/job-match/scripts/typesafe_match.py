@@ -40,8 +40,8 @@ from models import (
     JobProfile,
     MatchResult,
     ScoreBreakdown,
-    StackScore,
-    direct_skill_hold,
+    held_terms,
+    stack_score,
 )
 from score import WEIGHTS
 
@@ -378,23 +378,11 @@ def parse_choices(body: object) -> Union[Choices, Failure]:
     )
 
 
-def held_terms(candidate: CandidateProfile, job: JobProfile) -> Tuple[str, ...]:
-    return tuple(
-        term
-        for term in job.required_skills
-        if any(direct_skill_hold(skill, term) for skill in candidate.skills)
-    )
-
-
 def to_match(
     candidate: CandidateProfile, job: JobProfile, choices: Choices
 ) -> MatchResult:
     held = held_terms(candidate, job)
-    stack = (
-        StackScore(held=len(held), required=len(job.required_skills))
-        if candidate.skills and job.required_skills
-        else None
-    )
+    stack = stack_score(candidate, job)
     source: Dict[str, object] = {"url": job.url}
     collapsed = [
         cell

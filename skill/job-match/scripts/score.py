@@ -18,6 +18,7 @@ from models import (
     MatchResult,
     ScoreBreakdown,
     StackScore,
+    stack_score,
 )
 
 
@@ -38,7 +39,7 @@ BANDS: Tuple[Tuple[int, Decision], ...] = (
     (70, "possible_match"),
     (50, "weak_match"),
 )
-DERIVED = ("experience", "role_type")
+DERIVED = ("primary_stack", "experience", "role_type")
 QUOTED_LISTS = ("strengths", "gaps", "blockers")
 
 
@@ -141,6 +142,7 @@ def derive(
     """Return comparison-defined cells; code wins over worker values."""
     return replace(
         breakdown,
+        primary_stack=stack_score(candidate, job),
         experience=experience_points(
             candidate.years_experience, job.years_experience
         ),

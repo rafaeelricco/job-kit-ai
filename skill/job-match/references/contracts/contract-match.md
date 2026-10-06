@@ -17,14 +17,12 @@ Load `job-profile/references/contracts/contract-geography.md`. Evaluate pasted-p
 
 ## Soft weights (sum = 100)
 
-Cells are integers, or `—` for a factor with no evidence, except Primary stack:
-a scored Primary stack cell must be `{"held": k, "required": n}` so
-`scripts/score.py` owns its point calculation and half-up rounding. The counts
-remain in `score_breakdown` through scoring and validation; a pre-rounded
-Primary stack integer is invalid. `k` and `n` must be integers with `n >= 1`
-and `0 <= k <= n`. Experience and Role type are defined by comparison alone,
-so `scripts/score.py` derives them from the CandidateProfile and JobProfile
-it receives; workers leave those two cells `null`. Workers fill the remaining
+Cells are integers, or `—` for a factor with no evidence, except Primary stack,
+which carries `{"held": k, "required": n}` counts so `scripts/score.py` owns its
+point calculation and half-up rounding; a pre-rounded Primary stack integer is
+invalid. Primary stack, Experience, and Role type are defined by comparison
+alone, so `scripts/score.py` derives them from the CandidateProfile and
+JobProfile it receives; workers leave those three cells `null`. Workers fill the remaining
 cells; `scripts/score.py` computes `match_score`, `decision`, and
 `confidence` from them, and drops any `strengths` / `gaps` / `blockers` item
 that quotes no token from the two profiles.

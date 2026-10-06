@@ -63,8 +63,8 @@ Duplicate guard, every queue path: a queued dossier failing clause 5 of
 `possible duplicate of scout/jobs/{other}`. No `plan.json` is written; the
 `next:` row says to apply from the other dossier or set this one `dropped`.
 
-Print only the run metadata `Browser: <driver>` (the same bar as
-`job-apply/references/flows/flow-apply.md` §1: it must open a page and read a form)
+Print only the run metadata `Browser: <driver>` (it must open a page and read a
+form; a text fetcher is not a driver, and none qualifying → stop and name what is missing)
 and `Prep queue: {n}`. A `from-match` queue slot is one capped linked URL,
 including a link already destined for `Skipped`; other queue slots are selected
 dossiers. Zero → `Nothing to prepare.` and end.

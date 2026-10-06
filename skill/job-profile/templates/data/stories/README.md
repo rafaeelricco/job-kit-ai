@@ -7,8 +7,9 @@ the names you gave it; `/job-stories add` fills one from evidence, and
 Frontmatter keys: id, company, covers, claim, evidence, impact_numbers,
 never_say, volunteer, sources, status.
 
-`job-apply`, `job-stories`, and `job-resume-refine` read **frontmatter only**.
-The body below it is rehearsal and never reaches outbound text.
+`job-apply`, `job-stories`, `job-resume-refine`, and `job-resume-review` read
+**frontmatter only**. The body below it is rehearsal and never reaches outbound
+text.
 
 How a story is read, and why:
 

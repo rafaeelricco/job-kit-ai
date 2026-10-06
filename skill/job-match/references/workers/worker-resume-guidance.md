@@ -12,6 +12,5 @@ section of `contract-match.md`, and `contract-resume-guidance.md`.
    hold `held`, and the validator rejects any other `held`. Never add, drop,
    or reorder a requirement; never change a row the skeleton already marked
    `held`.
-3. Fill `priority_roles` with exact candidate roles matched on role type and
-   seniority only; none → add `no_relevant_role` to `warnings`.
+3. Leave `priority_roles` and `warnings` as the skeleton set them.
 4. Emit the JSON array, then stop.

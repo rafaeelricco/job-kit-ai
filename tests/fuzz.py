@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, localcontext
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -759,42 +759,6 @@ def _experience_monotone(payload: Mapping[str, object]) -> Optional[str]:
     return None
 
 
-def _worker_completion(
-    row: Mapping[str, object], candidate: object, job: object
-) -> Dict[str, object]:
-    """Apply the two fills ``scaffold`` documents as the worker's, and no others.
-
-    ``scaffold_guidance`` ships a skeleton on purpose: its docstring and
-    ``references/workers/worker-resume-guidance.md`` hand ``priority_roles`` and the
-    ``no_relevant_role`` warning to the classification worker. Everything else in
-    the row — key set, schema version, url, and every requirement's kind, order,
-    status and profile_term — is the scaffold's own, and is what the property
-    then puts through the validator untouched.
-    """
-    completed: Dict[str, object] = copy.deepcopy(dict(row))
-    roles: List[Dict[str, object]] = []
-    seen: Set[Tuple[str, str]] = set()
-    for role in candidate.experience:
-        pair = (role.company, role.position)
-        reasons = validate_guidance._role_match_reasons(job, role.position)
-        if not reasons or pair in seen:
-            continue
-        seen.add(pair)
-        roles.append(
-            {
-                "company": role.company,
-                "position": role.position,
-                "matched_on": sorted(reasons),
-            }
-        )
-    completed["priority_roles"] = roles
-    warnings = list(completed.get("warnings") or ())
-    if not roles and "no_relevant_role" not in warnings:
-        warnings.append("no_relevant_role")
-    completed["warnings"] = warnings
-    return completed
-
-
 def _scaffold_always_validates(payload: Mapping[str, object]) -> Optional[str]:
     pair = payload.get("guidance_pair")
     if not isinstance(pair, dict):
@@ -813,7 +777,7 @@ def _scaffold_always_validates(payload: Mapping[str, object]) -> Optional[str]:
         {
             "candidate": candidate_source,
             "jobs": [job_source],
-            "guidance": [_worker_completion(row, candidate, job)],
+            "guidance": [row],
         }
     )
     invalid = result.get("invalid")
