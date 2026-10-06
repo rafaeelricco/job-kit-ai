@@ -6,8 +6,10 @@ from __future__ import annotations
 from functools import lru_cache
 import json
 from pathlib import Path
+import re
 import sys
 from typing import Any
+import unicodedata
 
 DATA_PATH = Path(__file__).with_name("geography.json")
 COUNTRY_ALIASES = {
@@ -15,6 +17,33 @@ COUNTRY_ALIASES = {
     "united states": "US",
     "united kingdom": "GB",
     "uk": "GB",
+    "great britain": "GB",
+    "england": "GB",
+    "scotland": "GB",
+    "wales": "GB",
+    "northern ireland": "GB",
+    "south korea": "KR",
+    "north korea": "KP",
+    "russia": "RU",
+    "vietnam": "VN",
+    "turkey": "TR",
+    "czech republic": "CZ",
+    "tanzania": "TZ",
+    "syria": "SY",
+    "moldova": "MD",
+    "laos": "LA",
+    "brunei": "BN",
+    "ivory coast": "CI",
+    "cape verde": "CV",
+    "east timor": "TL",
+    "palestine": "PS",
+    "macedonia": "MK",
+    "swaziland": "SZ",
+    "vatican": "VA",
+    "vatican city": "VA",
+    "dr congo": "CD",
+    "drc": "CD",
+    "republic of the congo": "CG",
 }
 REGION_ALIASES = {
     "latam": "latin america and the caribbean",
@@ -22,6 +51,7 @@ REGION_ALIASES = {
     "eu": "european union",
 }
 WORLDWIDE_LABELS = {"worldwide", "anywhere", "global"}
+PARENTHETICAL = re.compile(r"\s*\([^)]*\)")
 
 
 @lru_cache(maxsize=1)
@@ -32,14 +62,21 @@ def _load_countries() -> tuple[dict[str, dict[str, Any]], dict[str, str], dict[s
     groups = {name: set(group["countries"]) for name, group in data["groups"].items()}
     lookup: dict[str, str] = {}
     for code, country in countries.items():
-        for value in (code, country["alpha3"], country["name"]):
-            lookup[value.strip().casefold()] = code
-    lookup.update(COUNTRY_ALIASES)
+        short_name = PARENTHETICAL.sub("", country["name"])
+        for value in (code, country["alpha3"], country["name"], short_name):
+            lookup[_normalize(value)] = code
+    lookup.update({_normalize(alias): code for alias, code in COUNTRY_ALIASES.items()})
     return countries, lookup, groups
 
 
+def _normalize(value: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", value.replace("\u2019", "'"))
+    folded = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return " ".join(folded.casefold().split())
+
+
 def _country_code(value: str, lookup: dict[str, str]) -> str | None:
-    return lookup.get(value.strip().casefold())
+    return lookup.get(_normalize(value))
 
 
 def _place_match(
@@ -49,7 +86,7 @@ def _place_match(
     country_lookup: dict[str, str],
     groups: dict[str, set[str]],
 ) -> bool | None:
-    normalized = place.strip().casefold()
+    normalized = _normalize(place)
     if normalized in WORLDWIDE_LABELS:
         return True
 

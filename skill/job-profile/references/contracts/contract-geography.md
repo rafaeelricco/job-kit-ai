@@ -19,7 +19,9 @@ regions, and null matches. Invalid input returns `geography_error` and exit 1;
 name that error and stop. Missing or unresolved residence stops geographic
 matching; run `/job-profile continue fill basics.country`.
 
-Canonical country names and ISO identifiers resolve case-insensitively.
+Canonical country names, their short forms without a parenthetical, common
+English names (Netherlands, South Korea, Russia, Vietnam), and ISO identifiers
+resolve ignoring case and accents.
 LATAM / Latin America means the M49 Latin America and the Caribbean group.
 Worldwide / anywhere / global includes every resolved residence country.
 EU / European Union means the bundled EU member-state group.
