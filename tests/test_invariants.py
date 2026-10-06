@@ -550,6 +550,13 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             mutate,
         )
 
+    def test_packs_listing_shows_default_role_token(self):
+        show = instruction_text(harness.SKILL / "job-profile" / "references" / "flows" / "flow-show.md")
+        self.assertIn(
+            "`tokens` = the placeholder tokens in the pack's `formulations`; key absent → `[role]`",
+            show,
+        )
+
     def test_hybrid_work_model_answers_remote_and_in_person_yes(self):
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
         self.assertIn("remote is `yes` when `work_model.remote` or `work_model.hybrid` is true, else `no`.", screening)
