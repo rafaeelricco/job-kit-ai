@@ -13,6 +13,9 @@ from scan_cv import MAX_BYTES, scan_docx, scan_pdf_text
 
 DOC = '<w:document xmlns:w="w"><w:body>{}</w:body></w:document>'
 PARA = "<w:p><w:r><w:t>{}</w:t></w:r></w:p>"
+RELS = ('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="{}"/>'
+        '</Relationships>')
 
 
 def codes(issues):
@@ -92,6 +95,15 @@ class DocxTests(unittest.TestCase):
             found = codes(scan_docx(docx(tmp, "<w:tbl><w:txbxContent/></w:tbl><w:drawing/>")))
         self.assertEqual(sorted(found), sorted([("no_text_layer", "blocking", None), ("text_box", "major", None),
                                                 ("table", "minor", None), ("image", "minor", None)]))
+
+    def test_main_part_follows_the_package_relationship(self):
+        for target in ("/word/document2.xml", "word/document2.xml"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "cv.docx"
+                with zipfile.ZipFile(path, "w") as z:
+                    z.writestr("_rels/.rels", RELS.format(target))
+                    z.writestr("word/document2.xml", DOC.format("<w:tbl>" + PARA.format("Alex Doe") + "</w:tbl>"))
+                self.assertEqual(codes(scan_docx(path)), [("table", "minor", None)], target)
 
 
 class CliTests(unittest.TestCase):

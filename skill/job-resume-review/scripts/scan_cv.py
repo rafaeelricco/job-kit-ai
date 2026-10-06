@@ -17,6 +17,7 @@ import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from xml.etree import ElementTree
 
 MAX_BYTES = 2_500_000
 LIGATURES = {chr(c) for c in range(0xFB00, 0xFB07)}
@@ -73,9 +74,18 @@ def docx_text(xml: str) -> str:
     return "\n".join("".join(DOCX_TEXT.findall(paragraph)) for paragraph in xml.split("</w:p>"))
 
 
+def main_part(archive: zipfile.ZipFile) -> str:
+    # the officeDocument relationship names the body part; Word Online can save it as word/document2.xml
+    if "_rels/.rels" in archive.namelist():
+        for relationship in ElementTree.fromstring(archive.read("_rels/.rels")):
+            if relationship.get("Type", "").endswith("/officeDocument"):
+                return relationship.get("Target", "").lstrip("/")
+    return "word/document.xml"
+
+
 def scan_docx(path: Path) -> List[Dict[str, Any]]:
     with zipfile.ZipFile(path) as archive:
-        body = archive.read("word/document.xml").decode("utf-8")
+        body = archive.read(main_part(archive)).decode("utf-8")
         parts = sorted(name for name in archive.namelist() if DOCX_HEADER_FOOTER.fullmatch(name))
         headers = [(name, archive.read(name).decode("utf-8")) for name in parts]
     issues: List[Dict[str, Any]] = []
@@ -115,7 +125,8 @@ def main(argv: List[str]) -> int:
         if len(argv) != 2:
             raise ValueError("usage: scan_cv.py <cv.pdf|cv.docx>")
         report = scan(Path(argv[1]))
-    except (OSError, ValueError, RuntimeError, KeyError, zipfile.BadZipFile, subprocess.TimeoutExpired) as error:
+    except (OSError, ValueError, RuntimeError, KeyError, zipfile.BadZipFile, ElementTree.ParseError,
+            subprocess.TimeoutExpired) as error:
         print(json.dumps({"scan_cv_error": str(error)}, ensure_ascii=True, indent=2))
         return 2
     print(json.dumps(report, ensure_ascii=True, indent=2))
