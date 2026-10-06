@@ -73,6 +73,7 @@ This is the shared display contract job-scout uses.
 `### Packs` third when `data/search_packs.yaml` is readable: `id · entry host ·
 enabled|disabled · route=json|board|DOM|missing|invalid|disabled · location=surface|keep-only|invalid · tokens`.
 `location=keep-only` when the pack declares `location: keep-only`; key absent → `location=surface`; any other present value → `location=invalid`, naming the pack.
+`tokens` = the placeholder tokens in the pack's `formulations`; key absent → `[role]`, the default job-scout runs.
 A complete JSON route has `kind: json`, a `url` containing `{formulation}` and
 `{page}`, and non-empty `pages`, `items`, and `posting_url` dot paths.
 A complete board route has `kind: board`, `ats` in the `job-store/references/schemas/schema-dossier.md` "ATS family" vocabulary, a `url` containing `{slug}`, and non-empty `items`, `posting_url`, and `title` dot paths (no board-count; slugs are discovered at search).

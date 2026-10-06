@@ -45,7 +45,7 @@ profile URLs. Do not collect demographic/EEO data.
 Show source-derived values and template defaults as proposals. Every field needs
 explicit `confirm`, `edit`, or `skip`; silence is re-asked. Typed defaults need
 explicit `keep`.
-Template bool maps (`work_model`, `job_types`, `date_posted`) are convenience
+Template bool maps (`work_model`, `job_types`) and `date_posted` are convenience
 shells, not facts — require `keep` or `edit`; on `skip` write empty/`false`,
 never retain shipped trues.
 Never infer legal authorization or language levels.
