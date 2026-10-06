@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import scan_cv
-from scan_cv import MAX_BYTES, scan_docx, scan_pdf_text
+from scan_cv import MAX_BYTES, MAX_PART_BYTES, scan_docx, scan_pdf_text
 
 DOC = '<w:document xmlns:w="w"><w:body>{}</w:body></w:document>'
 PARA = "<w:p><w:r><w:t>{}</w:t></w:r></w:p>"
@@ -128,6 +128,16 @@ class CliTests(unittest.TestCase):
                 status, out = run(pdf)
         self.assertEqual((status, out["format"], out["pages"]), (0, "pdf", 1))
         self.assertEqual(codes(out["issues"]), [("file_too_large", "minor", None)])
+
+    def test_docx_parts_over_the_size_limit_exit_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "cv.docx"
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr("word/document.xml", DOC.format(PARA.format("a" * MAX_PART_BYTES)))
+            with mock.patch.object(scan_cv.zipfile.ZipFile, "read", side_effect=AssertionError("decompressed")):
+                status, out = run(path)
+        self.assertEqual(status, 2)
+        self.assertIn("byte limit", out["scan_cv_error"])
 
     def test_missing_pdftotext_and_unsupported_type_exit_2(self):
         with tempfile.TemporaryDirectory() as tmp:

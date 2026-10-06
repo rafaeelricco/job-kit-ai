@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from xml.etree import ElementTree
 
 MAX_BYTES = 2_500_000
+MAX_PART_BYTES = 20_000_000  # uncompressed budget for the DOCX parts read; a CV body is well under 1 MB
 LIGATURES = {chr(c) for c in range(0xFB00, 0xFB07)}
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 PHONE = re.compile(r"\+?(?:\(\d+\)|\d+)(?:[ .-]?(?:\(\d+\)|\d+))*")  # " - " or an unclosed "(" ends a run
@@ -82,10 +83,18 @@ def docx_text(xml: str) -> str:
     return html.unescape("\n".join("".join(DOCX_TEXT.findall(paragraph)) for paragraph in xml.split("</w:p>")))
 
 
+def read_parts(archive: zipfile.ZipFile, names: List[str]) -> List[str]:
+    # check declared sizes before decompressing; zipfile stops each read at the declared size
+    total = sum(archive.getinfo(name).file_size for name in names)
+    if total > MAX_PART_BYTES:
+        raise ValueError(f"DOCX parts expand to {total} bytes, over the {MAX_PART_BYTES} byte limit")
+    return [archive.read(name).decode("utf-8") for name in names]
+
+
 def main_part(archive: zipfile.ZipFile) -> str:
     # the officeDocument relationship names the body part; Word Online can save it as word/document2.xml
     if "_rels/.rels" in archive.namelist():
-        for relationship in ElementTree.fromstring(archive.read("_rels/.rels")):
+        for relationship in ElementTree.fromstring(read_parts(archive, ["_rels/.rels"])[0]):
             if relationship.get("Type", "").endswith("/officeDocument"):
                 return relationship.get("Target", "").lstrip("/")
     return "word/document.xml"
@@ -93,9 +102,9 @@ def main_part(archive: zipfile.ZipFile) -> str:
 
 def scan_docx(path: Path) -> List[Dict[str, Any]]:
     with zipfile.ZipFile(path) as archive:
-        body = archive.read(main_part(archive)).decode("utf-8")
         parts = sorted(name for name in archive.namelist() if DOCX_HEADER_FOOTER.fullmatch(name))
-        headers = [(name, archive.read(name).decode("utf-8")) for name in parts]
+        body, *xmls = read_parts(archive, [main_part(archive)] + parts)
+        headers = list(zip(parts, xmls))
     issues: List[Dict[str, Any]] = []
     text = docx_text(body)
     if not text.strip():
