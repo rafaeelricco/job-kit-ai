@@ -48,16 +48,16 @@ Print `Profile root: /abs/path` before the first diff of the session.
 
 ## `job_search.yaml` — writable keys
 
-| Key                                              | Shape                                              |
-| ------------------------------------------------ | -------------------------------------------------- |
-| `positions`                                      | list of strings                                    |
-| `location.search_in`                             | list of strings, or `worldwide` only when explicit |
-| `location.also_eligible_from`                    | list of strings                                    |
-| `location.exclude_hire_from`                     | list of strings                                    |
-| `market_currencies`                              | list of strings                                    |
-| `exclude_companies`                              | list of strings                                    |
-| `work_model.*` / `job_types.*`                   | bool, only when explicit                           |
-| `date_posted`                                    | one of `24_hours`, `week`, `month`, `all_time`     |
+| Key                            | Shape                                              |
+| ------------------------------ | -------------------------------------------------- |
+| `positions`                    | list of strings                                    |
+| `location.search_in`           | list of strings, or `worldwide` only when explicit |
+| `location.also_eligible_from`  | list of strings                                    |
+| `location.exclude_hire_from`   | list of strings                                    |
+| `market_currencies`            | list of strings                                    |
+| `exclude_companies`            | list of strings                                    |
+| `work_model.*` / `job_types.*` | bool, only when explicit                           |
+| `date_posted`                  | one of `24_hours`, `week`, `month`, `all_time`     |
 
 Nothing else in this file is written, except by the legacy moves below. When
 scout preflight (or the operator) names a key still present in `job_search.yaml`
