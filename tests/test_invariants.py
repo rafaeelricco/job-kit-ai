@@ -539,6 +539,17 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             with self.subTest(path=str(path.relative_to(harness.SKILL))):
                 self.assertIn(stop, instruction_text(path))
 
+    def test_careers_pack_stays_keep_only(self):
+        mutate = instruction_text(FLOW_MUTATE)
+        self.assertIn(
+            "`packs location <id> surface` removes the key, and refuses on a `surface: careers` pack",
+            mutate,
+        )
+        self.assertIn(
+            "a `surface: careers` pack without `location: keep-only` fails validation",
+            mutate,
+        )
+
     def test_hybrid_work_model_answers_remote_and_in_person_yes(self):
         screening = instruction_text(harness.SKILL / "job-apply" / "references" / "contracts" / "contract-screening.md")
         self.assertIn("remote is `yes` when `work_model.remote` or `work_model.hybrid` is true, else `no`.", screening)

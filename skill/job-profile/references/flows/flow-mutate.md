@@ -115,8 +115,9 @@ that is `card refresh`.
   A typed line that contains `[industry]` → warn (scout drops an empty
   `[industry]` token), then let the user decide.
 - `location` — `packs location <id> keep-only` writes `location: keep-only` on one
-  pack; `packs location <id> surface` removes the key. No id match → say so. Only
-  the operator declares keep-only; scout never infers it from the surface.
+  pack; `packs location <id> surface` removes the key, and refuses on a
+  `surface: careers` pack. No id match → say so. Only the operator declares
+  keep-only; scout never infers it from the surface.
 - `add` / `remove` a pack — require `id`, `surface`, and `entry` from the user;
   `formulations` is optional (absent → `[role]`). `surface` is a label
   (`linkedin-jobs`, `open-web`, `social`, `careers`, or
@@ -133,6 +134,7 @@ non-empty `pages`, `items`, and `posting_url` strings, or `kind: board` with `at
 (`enabled` absent or true) with `route_required: true` must have that complete
 route. A disabled required pack may omit it.
 `location`, when present, is `keep-only`; any other value fails validation.
+A `surface: careers` pack without `location: keep-only` fails validation.
 
 ## `cvs.yaml` — writable keys
 
