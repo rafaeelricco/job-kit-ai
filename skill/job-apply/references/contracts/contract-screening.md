@@ -114,9 +114,9 @@ Before staging any prose, enforce every `never_say` ban below.
 - Bachelor's degree?: `Yes` when an `education.yaml` `level` names a bachelor's
   degree; an ask that names a field also needs that entry's `field` to name it,
   else rule 7.
-- Own company / CNPJ / invoicing entity: a yes/no ask is `Yes` only when
-  `employment_routes.contractor_entity` is `Yes`, else `No`; free text prints it
-  verbatim.
+- Own company / CNPJ / invoicing entity: a yes/no ask prints
+  `employment_routes.contractor_entity` only when it is exactly `Yes` or `No`;
+  empty or any other value → rule 7. Free text prints a non-empty value verbatim.
 - Salary period: `salary_range_usd` is yearly. A monthly ask divides the
   figure by 12, rounded to 100; a daily ask by 260, rounded to 10; an hourly
   ask by 2080, rounded to 5.
