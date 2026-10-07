@@ -92,18 +92,18 @@ name and contact details are not included.
 
 Each skill contains its usage and detailed workflow:
 
-| Skill                                                 | Purpose                                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------- |
-| [job-profile](skill/job-profile/SKILL.md)             | Create, register, or edit a profile.                        |
-| [job-scout](skill/job-scout/SKILL.md)                 | Find and rank live openings.                                |
-| [job-list](skill/job-list/SKILL.md)                   | Read saved jobs and statuses.                               |
-| [job-match](skill/job-match/SKILL.md)                 | Assess fit and get resume guidance.                         |
-| [job-prep](skill/job-prep/SKILL.md)                   | Prepare applications without submitting.                    |
-| [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                             |
-| [job-resume-refine](skill/job-resume-refine/SKILL.md) | Refine a base resume for a posting.                         |
-| [job-resume-review](skill/job-resume-review/SKILL.md) | Score CV quality and audit summaries, bullets, and parsing. |
-| [job-inbox](skill/job-inbox/SKILL.md)                 | Track Gmail replies.                                        |
-| [job-stories](skill/job-stories/SKILL.md)             | Build interview stories, scripts, and experience bullets.   |
+| Skill                                                 | Purpose                                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [job-profile](skill/job-profile/SKILL.md)             | Create, register, or edit a profile.                                                       |
+| [job-scout](skill/job-scout/SKILL.md)                 | Find and rank live openings.                                                               |
+| [job-list](skill/job-list/SKILL.md)                   | Read saved jobs and statuses.                                                              |
+| [job-match](skill/job-match/SKILL.md)                 | Assess fit and get resume guidance.                                                        |
+| [job-prep](skill/job-prep/SKILL.md)                   | Prepare applications without submitting.                                                   |
+| [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                                                            |
+| [job-resume-refine](skill/job-resume-refine/SKILL.md) | Refine a base resume for a posting.                                                        |
+| [job-resume-review](skill/job-resume-review/SKILL.md) | Review CV quality and assess the hiring case using independent agents and public evidence. |
+| [job-inbox](skill/job-inbox/SKILL.md)                 | Track Gmail replies.                                                                       |
+| [job-stories](skill/job-stories/SKILL.md)             | Build interview stories, scripts, and experience bullets.                                  |
 
 Shared skills handle [profile lookup](skill/job-profile-root/SKILL.md) and
 [job records](skill/job-store/SKILL.md).
