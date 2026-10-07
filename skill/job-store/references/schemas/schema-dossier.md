@@ -70,7 +70,7 @@ Factor with no evidence stays `—`. Never write `0` for unknown, never omit the
 
 ## Posting facts
 
-Keys below, plus main-derived `blocker`, `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`) and read as stored by every consumer; `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
+Keys below, plus main-derived `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`) and read as stored by every consumer; `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
 
 | key                  | value                      |
 | -------------------- | -------------------------- |
@@ -92,9 +92,8 @@ Keys below, plus main-derived `blocker`, `ats`, `match_score`, `match_decision`,
 | match_score          | 78                         |
 | match_decision       | possible_match             |
 | match_confidence     | 0.95                       |
-| blocker              | —                          |
 
-`blocker` is main-derived (`job-scout/references/flows/flow-rank.md` Bucket), not a gated column — recompute here; never read it off a row. `ats` is main-derived from the frontmatter `url` host per "ATS family" below, rewritten on every scout write. `match_score` (integer 0–100), `match_decision` (a `job-match/references/contracts/contract-match.md` decision band), and `match_confidence` (`0.00`–`1.00`, the share of the rubric that carried believable evidence) are main-derived from the persist-set row `job-scout/references/flows/flow-match-gate.md` carries; a dossier `job-apply` created, or one written before these rows, prints none of them — a consumer reads an absent row as unscored and never recomputes it. None of the five is an extract key.
+`ats` is main-derived from the frontmatter `url` host per "ATS family" below, rewritten on every scout write. `match_score` (integer 0–100), `match_decision` (a `job-match/references/contracts/contract-match.md` decision band), and `match_confidence` (`0.00`–`1.00`, the share of the rubric that carried believable evidence) are main-derived from the persist-set row `job-scout/references/flows/flow-match-gate.md` carries; a dossier `job-apply` created, or one written before these rows, prints none of them — a consumer reads an absent row as unscored and never recomputes it. None of the four is an extract key.
 
 `eligibility` ∈ `confirmed` | `incompatible` | `unknown`; a dossier with no such row reads as `unknown`. `eligibility_evidence` is `—` when the page printed no hire-from sentence. Both are gated columns: read them off the row, never recompute.
 
@@ -156,7 +155,7 @@ Blocks below the log from `job-apply` / `job-inbox` may carry posting-derived te
 
 ## Re-run rules
 
-Opening `---` through the ownership marker = scout-owned, rewritten each run. Below the marker, and `status:` in frontmatter, belong to operator / `job-apply` / `job-inbox`.
+Opening `---` through the ownership marker = scout-owned, rewritten each run. Below the marker belongs to operator / `job-prep` / `job-apply` / `job-inbox`; `status:` in frontmatter to operator / `job-apply` / `job-inbox`.
 
 | On re-run                                                                                  | Do                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

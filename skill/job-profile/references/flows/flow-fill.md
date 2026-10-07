@@ -90,7 +90,7 @@ explicit skips, and confirmed pack enablement choices.
 - Write empty values/lists for explicit skips where supported, except the
   Edit keep-on-disk skip rule above.
 - Keep typed defaults only when the questionnaire records explicit `keep`.
-- Write one `data/stories/<slug>.md` stub per confirmed story name — `status: draft`,
+- Write one `data/stories/<slug>.md` stub per confirmed story name — `id: <slug>`, `status: draft`,
   `company` set to the confirmed employer when it matches `data/experiences.yml`,
   else `""` for a confirmed project; every other field empty, no prose — and write
   the final observations response to `data/observations.yaml`.

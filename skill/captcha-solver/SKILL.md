@@ -11,8 +11,7 @@ description: >
 # CAPTCHA solver
 
 Requires an attached **browser-use** session. If `browser-use` is not loaded,
-read its `SKILL.md` now and follow it for connection; do not restate that
-skill here.
+read its `SKILL.md` now and follow it for connection.
 
 Send each Python step to browser-use through standard input. Use
 `browser-use <<'PY' … PY` in Bash; in PowerShell use:

@@ -39,9 +39,10 @@ the lesson; those are two of the five required parts.
 `## Opener`, `## 30-second version`, and `## 90-second version` are blockquoted
 speech — verbatim what goes in the mouth, no stage directions inside the quote.
 
-`## Opener` carries name, domain title, computed years of experience, current company
+`## Opener` carries domain title, computed years of experience, current company
 from `data/experiences.yml`, and the `Core Stack` items from `data/skills.yaml`.
-Nothing else. A hobby, a pet, or a family fact here is the failure the recording is
+Nothing else; the read set holds no name, so the operator says it before the
+Opener. A hobby, a pet, or a family fact here is the failure the recording is
 screened for.
 
 The five beats map to the deck: `Situation` and `Task` from `evidence.problem`,

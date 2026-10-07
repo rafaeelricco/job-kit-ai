@@ -15,7 +15,7 @@ ask about, in rows or in Gaps.
 
 Default sort: `status` group, then `score` desc; `score: —` sorts last within its
 group. One row per dossier.
-`posting` carries dead-by-log only — `dead {YYYY-MM-DD}` from the latest scout
+`posting` carries dead-by-log only — `dead {YYYY-MM-DD}` from the latest
 posting-state line per `job-store/references/flows/flow-read.md`, else `—`. Never fill it from the
 `## Posting facts` row.
 Say the count above the table.

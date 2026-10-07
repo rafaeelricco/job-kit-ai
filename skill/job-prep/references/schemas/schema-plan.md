@@ -12,7 +12,7 @@ by `job-prep digest`.
   "ats": "greenhouse",
   "channel": "ats",
   "prepared_at": "2026-09-03T02:14:00Z",
-  "cv": "~/profile/scout/applications/2026-09-03-acme--full-stack-engineer/Resume_Full_Stack_Engineer.pdf",
+  "cv": "/home/jane/profile/scout/applications/2026-09-03-acme--full-stack-engineer/Jane_Doe_Full_Stack_Engineer_Resume.pdf",
   "cv_sha256": "4c1f0b9a7d2e6c8f3a5b1d0e9f7c6b4a2d8e1f0c3b5a7d9e6f2c4b8a1d3e5f70",
   "fields": [
     {
