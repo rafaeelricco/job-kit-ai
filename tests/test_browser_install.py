@@ -330,22 +330,18 @@ class BrowserChannelTests(unittest.TestCase):
             )
         self.each_shell(scenario)
 
-    def test_claude_worker_agent_cycle(self):
+    def test_claude_worker_agent_legacy_cleanup(self):
         def scenario(f):
             (f.root / "home" / ".claude").mkdir()
-            source = f.kit / "skill/job-match/agents/job-kit-worker.md"
             dest = f.root / "home/.claude/agents/job-kit-worker.md"
             self.success(f.run("agents/install", "--dry-run", override=False))
+            self.success(f.run("agents/install", override=False))
             self.assertFalse(dest.exists())
-            self.success(f.run("agents/install", override=False))
-            self.assertEqual(dest.read_bytes(), source.read_bytes())
-            dest.write_text(source.read_text() + "\n# stale\n")
-            self.success(f.run("agents/install", override=False))
-            self.assertEqual(dest.read_bytes(), source.read_bytes())
+            dest.parent.mkdir()
+            dest.write_text("# job-kit: managed copy\n")
             self.success(f.run("uninstall", "agents", override=False))
             self.assertFalse(dest.exists())
             dest.write_text("mine\n")
-            self.assertNotEqual(f.run("agents/install", override=False).returncode, 0)
             self.success(f.run("uninstall", "agents", override=False))
             self.assertEqual(dest.read_text(), "mine\n")
         self.each_shell(scenario)

@@ -20,8 +20,7 @@ runs inline even when spawning works — except validate, which spawns whenever 
 can so the review stays independent of the pass that wrote the row.
 Hand each worker one slice file in the run directory — exactly its batch, plus
 the same `state.candidate` for match, validate, and advise — and the paths of the worker and contract files it obeys. Never paste JSON
-into a brief. Spawn each worker as agent type `job-kit-worker` when the harness
-offers it, else the default type. Main runs every script.
+into a brief. Main runs every script.
 
 ## bind
 

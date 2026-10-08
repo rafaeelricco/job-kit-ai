@@ -69,9 +69,6 @@ function Get-PlanRowsAgentHome {
       $dest = Get-SkillDest $root $name
       $rows.Add((New-PlanRowAgent $dest $name $source)) | Out-Null
     }
-    if ($target -eq 'claude') {
-      $rows.Add((New-PlanRowWorkerAgent $script:RepoRoot)) | Out-Null
-    }
   }
   return $rows
 }
@@ -109,9 +106,6 @@ function Install-AgentHome {
     try {
       Install-SkillsInto $destRoot $script:RepoRoot $names
       $linked++
-      if ($target -eq 'claude') {
-        Copy-WorkerAgent $script:RepoRoot
-      }
     } catch {
       Write-KitDie $_.Exception.Message
     }

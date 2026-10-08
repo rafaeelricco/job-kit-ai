@@ -88,9 +88,6 @@ plan_rows_agent_home() {
         dest="$(skill_dest "${root}" "${name}")"
         plan_row_agent "${dest}" "${name}" "${source}"
       done
-      if [ "${target}" = claude ]; then
-        plan_row_worker_agent "${repo}"
-      fi
     done
   )
 }
@@ -123,9 +120,6 @@ install_agent_home() {
         linked=$((linked + 1))
       else
         exit 1
-      fi
-      if [ "${target}" = claude ]; then
-        copy_worker_agent "${repo}" "${FORCE}" || exit 1
       fi
     done
     remove_legacy_codex_skills_dir "${repo}" || exit 1

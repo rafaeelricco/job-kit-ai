@@ -350,79 +350,11 @@ unlink_skill() {
   echo "removed: ${dest}"
 }
 
-WORKER_AGENT_SOURCE="skill/job-match/agents/job-kit-worker.md"
+# Legacy: the kit no longer installs this agent; uninstall still removes a marked copy.
 WORKER_AGENT_MARKER="# job-kit: managed copy"
 
 # worker_agent_dest — the Claude Code agent file path.
 worker_agent_dest() { printf '%s\n' "${HOME}/.claude/agents/job-kit-worker.md"; }
-
-# plan_row_worker_agent REPO — N source missing | N up to date | I copy | I refresh | N foreign.
-# Side effects: none (probes the destination only).
-plan_row_worker_agent() {
-  local repo="$1" source dest
-  source="${repo}/${WORKER_AGENT_SOURCE}"
-  dest="$(worker_agent_dest)"
-  if [ ! -f "${source}" ]; then
-    printf 'N%ssource missing%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
-    return 0
-  fi
-  if [ -f "${dest}" ] && cmp -s "${source}" "${dest}"; then
-    printf 'N%sup to date%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
-    return 0
-  fi
-  if [ ! -e "${dest}" ] && [ ! -L "${dest}" ]; then
-    printf 'I%scopy%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
-    return 0
-  fi
-  if [ -f "${dest}" ] && grep -qF -- "${WORKER_AGENT_MARKER}" "${dest}"; then
-    printf 'I%srefresh%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
-    return 0
-  fi
-  printf 'N%sforeign%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
-}
-
-# copy_worker_agent REPO FORCE — mkdir ~/.claude/agents; copy when absent, refresh a
-# marked copy that differs, replace an unmarked file only when FORCE=1.
-# Side effects: mkdir, cp, may rm. Prints status lines.
-copy_worker_agent() {
-  local repo="$1" force="$2" source dest parent
-  source="${repo}/${WORKER_AGENT_SOURCE}"
-  dest="$(worker_agent_dest)"
-  parent="$(dirname "${dest}")"
-  if [ ! -f "${source}" ]; then
-    echo "error: agent source missing: ${source}" >&2
-    return 1
-  fi
-  [ -d "${HOME}/.claude" ] || {
-    echo "error: destination parent missing: ${HOME}/.claude" >&2
-    return 1
-  }
-  mkdir -p "${parent}" || return 1
-  if [ -f "${dest}" ] && cmp -s "${source}" "${dest}"; then
-    echo "up to date: ${dest}"
-    return 0
-  fi
-  if [ -e "${dest}" ] || [ -L "${dest}" ]; then
-    if [ -f "${dest}" ] && [ ! -L "${dest}" ] && grep -qF -- "${WORKER_AGENT_MARKER}" "${dest}"; then
-      :
-    elif [ "${force}" -eq 1 ]; then
-      rm -rf "${dest}" || {
-        echo "error: failed to remove foreign path: ${dest}" >&2
-        return 1
-      }
-      echo "forced remove: ${dest}"
-    else
-      echo "error: foreign path blocks install: ${dest}" >&2
-      echo "  remove it manually, then re-run" >&2
-      return 1
-    fi
-  fi
-  cp -f "${source}" "${dest}" || {
-    echo "error: failed to copy ${dest}" >&2
-    return 1
-  }
-  echo "copied: ${dest}"
-}
 
 # unlink_worker_agent — remove the copy only when it carries WORKER_AGENT_MARKER.
 # Side effects: may rm -f. Prints removed/skipped.

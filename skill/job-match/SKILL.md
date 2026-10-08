@@ -15,7 +15,7 @@ Store law: load the `job-store` skill now; obey it end-to-end.
 Resolve `scout/` and every `data/*` path against Profile root (not CWD, not skill dir).
 `data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
-Skill-local files: `./references/**`, `./scripts/*.py`, and `./agents/*.md` only. Resolve them
+Skill-local files: `./references/**` and `./scripts/*.py` only. Resolve them
 against the directory containing this loaded `SKILL.md`, never the caller's CWD.
 
 Read `./references/flows/flow-match.md` now.

@@ -490,7 +490,7 @@ function Test-AgentsHomeOwned {
   return $false
 }
 
-$script:WorkerAgentSource = 'skill/job-match/agents/job-kit-worker.md'
+# Legacy: the kit no longer installs this agent; uninstall still removes a marked copy.
 $script:WorkerAgentMarker = '# job-kit: managed copy'
 
 # Get-WorkerAgentDest
@@ -505,79 +505,6 @@ function Test-WorkerAgentMarked {
   param([Parameter(Mandatory = $true)][string]$Path)
   if (-not (Test-Path -LiteralPath $Path -PathType Leaf) -or (Test-ReparsePoint $Path)) { return $false }
   return [bool](Select-String -LiteralPath $Path -SimpleMatch -Pattern $script:WorkerAgentMarker -Quiet)
-}
-
-# Test-WorkerAgentSame SOURCE DEST
-# True when both files exist and are byte-identical.
-function Test-WorkerAgentSame {
-  param([string]$Source, [string]$Dest)
-  if (-not (Test-Path -LiteralPath $Dest -PathType Leaf)) { return $false }
-  $a = [IO.File]::ReadAllBytes($Source)
-  $b = [IO.File]::ReadAllBytes($Dest)
-  if ($a.Length -ne $b.Length) { return $false }
-  for ($i = 0; $i -lt $a.Length; $i++) {
-    if ($a[$i] -ne $b[$i]) { return $false }
-  }
-  return $true
-}
-
-# New-PlanRowWorkerAgent REPO
-# N source missing | N up to date | I copy | I refresh | N foreign.
-function New-PlanRowWorkerAgent {
-  param([Parameter(Mandatory = $true)][string]$Repo)
-  $source = Join-Path $Repo $script:WorkerAgentSource
-  $dest = Get-WorkerAgentDest
-  if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
-    return (New-PlanRow 'N' 'source missing' $dest)
-  }
-  if (Test-WorkerAgentSame $source $dest) {
-    return (New-PlanRow 'N' 'up to date' $dest)
-  }
-  if (-not (Test-Path -LiteralPath $dest) -and -not (Test-ReparsePoint $dest)) {
-    return (New-PlanRow 'I' 'copy' $dest)
-  }
-  if (Test-WorkerAgentMarked $dest) {
-    return (New-PlanRow 'I' 'refresh' $dest)
-  }
-  return (New-PlanRow 'N' 'foreign' $dest)
-}
-
-# Copy-WorkerAgent REPO
-# Copy the agent file into ~/.claude/agents. Copies when absent, refreshes a marked
-# copy, replaces an unmarked file only when Force is 1.
-function Copy-WorkerAgent {
-  param([Parameter(Mandatory = $true)][string]$Repo)
-  $source = Join-Path $Repo $script:WorkerAgentSource
-  $dest = Get-WorkerAgentDest
-  $parent = Split-Path $dest -Parent
-  if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
-    throw "agent source missing: $source"
-  }
-  $claudeHome = Split-Path $parent -Parent
-  if (-not (Test-Path -LiteralPath $claudeHome -PathType Container)) {
-    throw "destination parent missing: $claudeHome"
-  }
-  New-Item -ItemType Directory -Path $parent -Force | Out-Null
-  if (Test-WorkerAgentSame $source $dest) {
-    Write-Host "up to date: $dest"
-    return
-  }
-  if ((Test-Path -LiteralPath $dest) -or (Test-ReparsePoint $dest)) {
-    if (Test-WorkerAgentMarked $dest) {
-      # kit-owned copy: refresh below
-    } elseif ($script:Force -eq 1) {
-      Remove-KitLinkOrItem $dest
-      Write-Host "forced remove: $dest"
-    } else {
-      throw "foreign path blocks install: $dest`n  remove it manually, then re-run"
-    }
-  }
-  try {
-    Copy-Item -LiteralPath $source -Destination $dest -Force
-  } catch {
-    throw "failed to copy ${dest}: $($_.Exception.Message)"
-  }
-  Write-Host "copied: $dest"
 }
 
 # Remove-WorkerAgent
