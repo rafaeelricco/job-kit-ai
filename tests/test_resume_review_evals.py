@@ -18,7 +18,10 @@ import resume_review  # noqa: E402
 from pdf_fixture import write_pdf  # noqa: E402
 
 REPORT_MD = SKILL / "job-resume-review" / "references" / "report.md"
-UNCHANGED = {"bullet_anchors", "hidden_text_pdf"}
+UNCHANGED = {
+    "bullet_anchors", "hidden_text_pdf", "implicit_terms",
+    "public_snapshot", "public_unavailable",
+}
 SAMPLE = """\
 Score: 40/100 · coverage 100% · final · capped from 71
 
@@ -58,6 +61,16 @@ class ParseTests(unittest.TestCase):
         report = report_parse.parse("no report here")
         self.assertEqual((report.score, report.criteria, report.bullets, report.matrix), (None, {}, {}, {}))
 
+    def test_diagnostics_preserve_numeric_anchors(self):
+        extra = "\nCareer positioning: management evidence not demonstrated.\n\n" \
+                "| Surface | Term | Evidence | Finding |\n" \
+                "| --- | --- | --- | --- |\n" \
+                "| CV | deployment automation | E1.B2 | supported but implicit |\n"
+        before, after = report_parse.parse(SAMPLE), report_parse.parse(SAMPLE + extra)
+        for field in ("score", "coverage", "provisional", "capped_from",
+                      "criteria", "bullets", "matrix"):
+            self.assertEqual(getattr(before, field), getattr(after, field))
+
 
 class RunnerTests(unittest.TestCase):
     def test_read_stream_takes_final_result_and_bash_commands(self):
@@ -78,8 +91,49 @@ class RunnerTests(unittest.TestCase):
         with mock.patch.object(resume_review.shutil, "which", return_value=None), redirect_stderr(io.StringIO()):
             self.assertEqual(resume_review.main([]), 2)
 
+    def test_supplied_context_reaches_prompt(self):
+        case = next(c for c in resume_review.CASES if c.name == "public_snapshot")
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = resume_review.prompt_for(case, Path(tmp))
+        self.assertIn(case.context, prompt)
+
 
 class FixtureTests(unittest.TestCase):
+    def test_visibility_checks_accept_report_variants_and_reject_wrong_findings(self):
+        samples = (
+            ("implicit_terms", -1,
+             "| CV | deployment automation | E1.B2 | The work is there but not named. |", True),
+            ("implicit_terms", -1,
+             "| CV | deployment automation | E1.B2 | Absent; no demonstrated deployment automation. |", False),
+            ("implicit_terms", -1,
+             "| CV | deployment automation | E1.B2 | Visible and supported. |", False),
+            ("skills_only_requirement", -1,
+             "| CV | Kubernetes / K8s | Skills only | Listed only. |", True),
+            ("skills_only_requirement", -1,
+             "| CV | Kubernetes | E1.B1 | Visible and supported in production. |", False),
+            ("public_snapshot", 2,
+             "| Page snapshot | Deployment automation, CI/CD | Supplied text | Absent from the snapshot. |", True),
+            ("public_snapshot", 2,
+             "| https://example.com/alexdoe | deployment automation | Supplied text | Not visible. |", True),
+            ("public_snapshot", 2,
+             "| CV | deployment automation | E1.B2 | Absent from the CV. |", False),
+        )
+        for name, index, text, accepted in samples:
+            with self.subTest(case=name, text=text):
+                case = next(c for c in resume_review.CASES if c.name == name)
+                run = resume_review.Run(report_parse.parse(text), [])
+                self.assertEqual(case.checks[index](run) is None, accepted)
+
+    def test_seniority_check_accepts_missing_evidence_not_title_only_approval(self):
+        case = next(c for c in resume_review.CASES if c.name == "seniority_title_only")
+        for text, accepted in (
+            ("| Management | Not shown. No direct reports or hiring evidence. |", True),
+            ("Management is established solely by the Engineering Director title.", False),
+        ):
+            with self.subTest(text=text):
+                run = resume_review.Run(report_parse.parse(text), [])
+                self.assertEqual(case.checks[-1](run) is None, accepted)
+
     def test_every_edit_matches_the_base_fixture(self):
         base = (resume_review.FIXTURES / "base.md").read_text(encoding="utf-8")
         for case in resume_review.CASES:
