@@ -158,3 +158,54 @@ truthfully maps to the posting title; text copied from the posting word for
 word; and a posting acronym or full form the CV never spells the posting's
 way.
 Report eligibility questions separately without assuming unknown answers.
+
+## Career positioning
+
+This diagnostic is qualitative and outside score arithmetic.
+
+Compare the level advertised by the CV with the responsibility it
+demonstrates: scope, autonomy, decision complexity, ownership, outcomes,
+and influence. Separate individual-contributor and management evidence.
+Titles and years alone do not establish seniority. Give a supported level
+or range, its evidence, and the uncertainty; do not claim to establish the
+candidate's actual ability from the document.
+
+Offer up to three supported role directions and explain the evidence for
+each. Keep conditional targets that require unshown responsibilities in the
+gap questions, outside the supported-direction list.
+Label each direction's industry context as demonstrated or a transfer
+hypothesis; do not combine both under a demonstrated claim.
+Discuss company size or stage only where the evidence supports it. Headcount
+establishes size, not company stage, funding, or growth.
+These are search directions, not rankings of live openings or predictions
+of hiring success.
+
+For the target role or supplied ambition, distinguish evidence already
+available to surface, unanswered evidence questions, and development needs
+established by the available facts. Missing CV evidence alone does not
+establish missing experience. When the available evidence does not establish
+experience, ask whether it exists rather than assuming it probably does.
+Private Profile facts must be labeled when
+they support a direction that the CV does not yet demonstrate.
+
+## Recruiter search visibility
+
+This diagnostic is qualitative and outside score arithmetic.
+
+Check recognizable target titles, truthful title equivalents, important
+capabilities, and relevant acronym/full-form variants against the posting
+when supplied, otherwise against the resolved target and demonstrated work.
+
+For each material term, distinguish visible and supported wording,
+supported work expressed implicitly, listed-only claims, unsupported terms,
+and unassessed surfaces. Cite the CV location or inspected page section.
+Recommend terminology only when the underlying work supports it; preserve
+historical titles and distinguish any functional explanation from the title.
+
+Assess the CV and each supplied professional surface separately. Page
+snapshots establish only what their supplied content shows. Inaccessible
+pages remain unassessed, never absent from search or evidence of low ability.
+
+Show one illustrative Boolean query using relevant title alternatives and
+capabilities, then trace its terms to the evidence. Present it as a terminology
+diagnostic, not a test of indexing, ranking, or recruiter discovery.
