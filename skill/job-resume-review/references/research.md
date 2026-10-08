@@ -2,6 +2,8 @@
 
 The public sources below inform the review criteria. Contextual defaults and
 scoring choices are distinguished from source-backed recommendations.
+The relevant guidance is recorded locally; original-source links provide
+attribution and are not required reading to run a review.
 
 ## Recommendations and original sources
 
@@ -61,6 +63,13 @@ flags hidden text for human review.
 **AI-writing signals.** A [field experiment with about 480,000 jobseekers](https://pubsonline.informs.org/doi/10.1287/mnsc.2024.04528)
 found AI writing assistance raised hires. Recruiter surveys name uniform bullet shapes and stock phrases as signs of
 generated text, but no field study yet ties them to callbacks, so the rubric caps their effect at one point.
+
+## Career positioning and search visibility
+
+Read `./references/career-positioning-sources.md` for the relevant content
+extracted from Danilo Moraes's post and attached prompt, Jessica B.'s
+sourcing post, and LinkedIn's Recruiter documentation, including their limits.
+`./references/rubric.md` owns the resulting diagnostic rules.
 
 ## Evidence strength
 

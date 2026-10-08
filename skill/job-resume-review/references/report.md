@@ -18,12 +18,30 @@ read them:
    projects, numbered from 1, top to bottom. Below the table, give a concrete
    improvement direction for each bullet rated 2 or lower.
 7. Organization, market, visual, parsing, and factual-consistency findings.
-8. If a posting is supplied, the alignment score and the matrix
-   `| Requirement | Weight | Evidence | Credit |`.
-9. Prioritized fixes ordered by severity and likely benefit. Each names who
-   acts: edit the base CV; `/job-stories add` when a bullet lacks a verified
-   outcome number; `/job-resume-refine` for posting-specific Summary or
-   Skills coverage; the LaTeX source or template for parsing defects.
+8. Career positioning: advertised versus supported level, evidence and
+   uncertainty, supported role directions and company/industry contexts,
+   and gaps relative to the target or supplied ambition.
+9. Recruiter search visibility: the illustrative query and the table
+   `| Surface | Term | Evidence | Finding |`.
+   Keep CV and public-page findings separate and state snapshot/access limits.
+10. If a posting is supplied, the alignment score and the matrix
+    `| Requirement | Weight | Evidence | Credit |`.
+11. Independent hiring assessment: perspectives completed, public-research
+    coverage and limitations, strongest reasons to advance, supported
+    objections and counterevidence, and unresolved disagreements. Cite CV
+    locations and public sources. Give a provisional recommendation to
+    advance to interview, gather more evidence, or not advance on the current
+    evidence, explaining what would change it.
+12. Prioritized fixes ordered by severity and likely benefit. Mark up to
+    three immediate actions within this list. Each names who
+    acts: edit the base CV; `/job-stories add` when a bullet lacks a verified
+    outcome number; `/job-resume-refine` for posting-specific Summary or
+    Skills coverage; the LaTeX source or template for parsing defects;
+    update the personal website or relevant public work when hiring evidence
+    is missing there. For each hiring-evidence gap, name the concern, the
+    evidence needed, where it belongs, and the question to resolve before
+    adding it. Distinguish existing evidence to surface from evidence or
+    experience still to develop. Recommend actions without performing them.
 
 Separate observed defects from suspected risks and unassessed areas.
 For missing evidence, specify the question to resolve rather than inventing
