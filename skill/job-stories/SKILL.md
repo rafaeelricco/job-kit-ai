@@ -1,6 +1,6 @@
 ---
 name: job-stories
-description: "Write the interview story deck, or render it as a vetting script or S.T.A.R.T. bullets. Use when the user runs /job-stories or /job-pitch, asks to add a story, which stories need numbers, a 90-second script, or work-experience bullets. Not for drafting an application (job-apply)."
+description: "Write the interview story deck, or render it as a vetting script or S.T.A.R.T. bullets. Use when the user runs /job-stories or /job-pitch, asks to add a story, which stories need numbers, a 90-second script, or work-experience bullets."
 argument-hint: "[add | audit | script | experience]"
 ---
 

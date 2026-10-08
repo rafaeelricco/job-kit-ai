@@ -6,7 +6,7 @@ Workers do not invent criteria.
 
 First match wins → blocked. Do not invent auth paths.
 
-1–7. Drop when the posting cannot hire this seeker (first match): Posting facts `eligibility` reads `incompatible`; onsite or hybrid-without-remote place that matches no `location.search_in` entry (never under `worldwide` or an empty `search_in`); printed work_model that does not intersect kit-true flags (unknown → not a drop; no kit-true flag → not a drop), or named onsite place with no shared work_model flag (no kit-true flag → not a drop); remote permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per `job-profile/references/contracts/contract-geography.md`; hire-from only in `location.exclude_hire_from`; salary currencies none of which are in `market_currencies`; company slug in `exclude_companies`. Blank is not a drop. Never infer authorization or currency from a company or country name. Hire-from is printed location, `work_auth`, `hiring_route`, `eligibility_evidence`, or a title country tag — never the company's country. Against `state.candidate.constraints` + JobProfile / Posting facts.
+1–7. Drop when the posting cannot hire this seeker: Posting facts `eligibility` reads `incompatible`; onsite or hybrid-without-remote place that matches no `location.search_in` entry (never under `worldwide` or an empty `search_in`); printed work_model that does not intersect kit-true flags (unknown → not a drop; no kit-true flag → not a drop), or named onsite place with no shared work_model flag (no kit-true flag → not a drop); remote permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per `job-profile/references/contracts/contract-geography.md`; hire-from only in `location.exclude_hire_from`; salary currencies none of which are in `market_currencies`; company slug in `exclude_companies`. Blank is not a drop. Never infer authorization or currency from a company or country name. Hire-from is printed location, `work_auth`, `hiring_route`, `eligibility_evidence`, or a title country tag — never the company's country. Against `state.candidate.constraints` + JobProfile / Posting facts.
 
 Load `job-profile/references/contracts/contract-geography.md`. Evaluate pasted-posting geography against `constraints.residence` through its helper; keep missing or unresolved geography and authorization unknown. Existing dossier `eligibility` is read as stored; this read-only flow does not rewrite dossiers or reinterpret stored incompatibility from a new residence fact.
 
@@ -17,15 +17,14 @@ Load `job-profile/references/contracts/contract-geography.md`. Evaluate pasted-p
 
 ## Soft weights (sum = 100)
 
-Cells are integers, or `—` for a factor with no evidence, except Primary stack,
-which carries `{"held": k, "required": n}` counts so `scripts/score.py` owns its
-point calculation and half-up rounding; a pre-rounded Primary stack integer is
-invalid. Primary stack, Experience, and Role type are defined by comparison
-alone, so `scripts/score.py` derives them from the CandidateProfile and
-JobProfile it receives; workers leave those three cells `null`. Workers fill the remaining
-cells; `scripts/score.py` computes `match_score`, `decision`, and
-`confidence` from them, and drops any `strengths` / `gaps` / `blockers` item
-that quotes no token from the two profiles.
+Cells are integers, or `—` for a factor with no evidence; never `0` for unknown.
+Primary stack, Experience, and Role type are defined by comparison alone, so
+`scripts/score.py` derives them from the CandidateProfile and JobProfile it
+receives (Primary stack as raw `{"held": k, "required": n}` counts it rounds
+half-up; a pre-rounded integer is invalid); workers leave those three cells `null`.
+Workers fill the remaining cells; `scripts/score.py` computes `match_score`,
+`decision`, and `confidence` from them, and drops any `strengths` / `gaps` /
+`blockers` item that quotes no token from the two profiles.
 Invalid cells receive a per-row `score_error`; they are never rounded or allowed
 to abort the remaining batch.
 
@@ -39,8 +38,6 @@ to abort the remaining batch.
 | Domain            |      5 | Printed domain cue holds in `candidate.domains` → 5; cue present, no hold → 0; no cue → —                                                                                                                  |
 | Language          |      5 | Soft extra (not HF8) met → 5; printed extra unmet → 0; none → —                                                                                                                                            |
 | Preferences       |      5 | `candidate.preferences` agree with JobProfile `work_model` / `location` → 5; conflict → 0; all blank → —                                                                                                   |
-
-No evidence for a factor → that factor's cell is `—`. Never write `0` for unknown.
 
 ## Decision bands
 

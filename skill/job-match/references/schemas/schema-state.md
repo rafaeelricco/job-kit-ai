@@ -1,7 +1,7 @@
 # Match state
 
 Orchestrator holds this object in-session, or as JSON files in the run-scoped temp
-directory `SKILL.md` names — never under Profile root. Nodes write only their keys.
+directory outside Profile root. Nodes write only their keys.
 Pipe those files to the scripts; never retype their JSON.
 
 ```json
@@ -90,7 +90,7 @@ Extractor output. Unknown → `null` or `[]`. Copy printed tokens only.
 }
 ```
 
-Store excerpts arrive with the Posting-facts keys, `url` / `company` / `title`, and `scout_score` already copied by `job-store/scripts/slice_store.py` (`—` → `null`). Human-language names printed under **Must have** → `languages_required` as `{name, level}` (`level` null when unprinted); "advantage" / nice-to-have → `languages_preferred` the same way. Programming languages stay in `required_skills`. Other `preferred_skills` / `domain` from `## The role` only when printed. `scout_score` = frontmatter `score` (`—` → `null`).
+Store excerpts arrive with the Posting-facts keys, `url` / `company` / `title`, and `scout_score` already copied by `job-store/scripts/slice_store.py` (`—` → `null`). Human-language names printed under **Must have** → `languages_required` as `{name, level}` (`level` null when unprinted); "advantage" / nice-to-have → `languages_preferred` the same way. Programming languages stay in `required_skills`. Other `preferred_skills` / `domain` from `## The role` only when printed.
 
 ## MatchResult
 
@@ -117,8 +117,3 @@ Matcher output.
   }
 }
 ```
-
-`score_breakdown.primary_stack`, `experience`, and `role_type` are derived by
-`scripts/score.py` from CandidateProfile and JobProfile; workers leave them
-`null`. A scored `primary_stack` carries raw `{"held": <count>, "required": <count>}`
-counts, never a pre-rounded integer.

@@ -4,8 +4,6 @@ description: >
   Solve a CAPTCHA already on the attached browser-use page (reCAPTCHA,
   Turnstile, hCaptcha, image/text challenge). Use when: captcha, recaptcha,
   turnstile, hcaptcha, "i'm not a robot", "verify you are human", challenge.
-  Not for general browsing or starting a session (use browser-use). Not for
-  avoiding captchas up front — that stays browser-use cloud guidance.
 ---
 
 # CAPTCHA solver

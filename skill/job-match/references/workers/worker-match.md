@@ -1,7 +1,7 @@
 # worker-match
 
 Caller hands CandidateProfile JSON, MatchingPolicy (`contract-match.md` body),
-and one or more JobProfile JSON objects, inline or as the files the brief names. Never open Profile root. Never fetch a
+and one or more JobProfile JSON objects, inline or as the files the brief names. Never fetch a
 URL. Never change the policy. No dossier prose.
 
 ## Deltas

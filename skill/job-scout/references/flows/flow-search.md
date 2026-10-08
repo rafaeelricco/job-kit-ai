@@ -16,8 +16,7 @@ When a pack has `route`, consume it before any DOM search, except a
 `kind: board` pack first runs `site:{entry host} {formulation}` on a
 search engine for slug discovery, then GETs the route. That harvest
 is not a second surface and not a DOM fallback: `entry` already
-declared the host, and a later route failure still never falls back
-to DOM. A bot-wall, captcha, throttle, or empty interrupt on that
+declared the host. A bot-wall, captcha, throttle, or empty interrupt on that
 harvest records `defect: surface_interrupted` for the harvest and
 still GETs stored slugs (2) and list slugs (3); it does not stop the pack or mark route
 GETs unsubmitted. A `kind: json` pack runs once
@@ -85,8 +84,7 @@ index (`job-boards.greenhouse.io`, `boards.greenhouse.io`, `jobs.lever.co`,
 instead; an `entry` with a path opens directly. On a `site:` run the search
 engine is the surface: set its date control to the `date_posted` window when it
 has one, and expect stale rows regardless — the index is not the board, and
-extract marks them `dead` (`./flow-extract.md`). A `kind: board` pack over the
-same family reads the live board API after that harvest. There is no
+extract marks them `dead` (`./flow-extract.md`). There is no
 board-registry file.
 
 Surface filter controls matching Constraints `date_posted`, `work_model`,

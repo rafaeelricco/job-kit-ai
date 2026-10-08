@@ -587,7 +587,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("equivalent of scout/jobs/{other}", schema)
         self.assertIn("scout writes four events", schema)
         self.assertNotIn("scout writes exactly three events", schema)
-        scout = instruction_text(harness.SKILL / "job-scout" / "SKILL.md")
+        scout = instruction_text(
+            harness.SKILL / "job-scout" / "references" / "flows" / "flow-scout.md"
+        )
         self.assertIn("do not merge", scout)
         self.assertIn("neither file already has", scout)
         queue = instruction_text(
