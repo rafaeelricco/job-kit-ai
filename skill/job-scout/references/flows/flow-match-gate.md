@@ -1,6 +1,6 @@
 # Scout — persist set
 
-Input: `status=live` rows that passed `SKILL.md` §4 Gate, with Rank `score`.
+Input: `status=live` rows that passed `./flow-gate.md`, with Rank `score`.
 
 Drop to Gaps, no dossier:
 
@@ -12,15 +12,14 @@ Keep: integer `score` 8–10 and match decision at/above `possible_match` (`matc
 
 Match: resolve the installed `job-match` skill root, then derive CandidateProfile
 once per its `references/schemas/schema-state.md`. Load `references/workers/worker-extract.md`,
-`references/contracts/contract-match.md`, and `references/workers/worker-match.md`. Require a readable
-`scripts/score.py`, and resolve the Python 3 launcher using job-match's order:
-`python3`, Windows `py -3`, then a `python` command verified as major version 3.
-Fan-out batch ~10, handed off per job-match `references/flows/flow-match.md`. Per
-row, that row's Verified extract is the posting body — never fetch, never open
+`references/contracts/contract-match.md`, and `references/workers/worker-match.md`. The scorer is
+`scripts/score.py`; resolve its Python 3 launcher per job-match
+`references/flows/flow-match.md` **score**, and fan out per that flow. Per row,
+that row's Verified extract is the posting body — never fetch, never open
 Profile root.
 
 extract → JobProfile. Malformed → Gaps, drop.
-HF8 (`contract-match.md` hard filter 8, language) → Gaps `match blocked`, drop. Do not re-run Gate 1–7.
+HF8 (`contract-match.md` hard filter 8, language) → Gaps `match blocked`, drop. Do not re-run hard filters 1–7; the scout gate applied them.
 match → MatchResult. When the run carried `--typesafe`, run
 `job-match/scripts/typesafe_match.py` (same launcher) with
 `{"candidate": <CandidateProfile>, "jobs": <JobProfiles>}` on stdin instead of

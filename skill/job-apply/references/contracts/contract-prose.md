@@ -1,8 +1,7 @@
 # Prose contract
 
 Rules for every composed free-text value job-apply authors: a cover letter, an
-outbound message, and a question field that wants sentences. Paste this file
-verbatim as `CONTRACT` when loading `job-humanize` with `Surface: letter`.
+outbound message, and a question field that wants sentences.
 
 ## Sources
 

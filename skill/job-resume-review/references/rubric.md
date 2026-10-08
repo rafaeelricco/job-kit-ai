@@ -2,8 +2,7 @@
 
 These weights are a designed evaluation framework, not a scientifically
 validated scale, employer ATS score, or prediction of interview success.
-`./scripts/review_score.py` owns the arithmetic; keep its weights and cap
-equal to this file.
+`./scripts/review_score.py` owns the arithmetic.
 
 | Criterion            | Weight | Assess                                                                |
 | -------------------- | -----: | --------------------------------------------------------------------- |
@@ -27,7 +26,7 @@ A recruiter's first pass reads the top third of page 1 and each role's
 title, company, and dates. Rate Positioning on whether that area alone shows
 the target title, specialty, and one strong proof. A missing summary is not
 a deduction. A present summary takes that space, so a generic one lowers
-Positioning: no summary beats a generic one. Audit a present summary for
+Positioning. Audit a present summary for
 identity, specificity, evidence, relevance, and concision with a separate
 0–4 diagnostic rating. Generic means the patterns in
 `job-resume-refine/references/formats/format-summary.md` "Not a summary",
@@ -161,7 +160,8 @@ Report eligibility questions separately without assuming unknown answers.
 
 ## Career positioning
 
-This diagnostic is qualitative and outside score arithmetic.
+This diagnostic and Recruiter search visibility are qualitative and outside
+score arithmetic.
 
 Compare the level advertised by the CV with the responsibility it
 demonstrates: scope, autonomy, decision complexity, ownership, outcomes,
@@ -189,8 +189,6 @@ Private Profile facts must be labeled when
 they support a direction that the CV does not yet demonstrate.
 
 ## Recruiter search visibility
-
-This diagnostic is qualitative and outside score arithmetic.
 
 Check recognizable target titles, truthful title equivalents, important
 capabilities, and relevant acronym/full-form variants against the posting

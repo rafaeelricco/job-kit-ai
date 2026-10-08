@@ -1,6 +1,6 @@
 ---
 name: job-resume-refine
-description: "Refine a base resume for one posting while preserving every base role and raw LaTeX bullet, resolve supported ATS terms against profile Facts, compile and verify the PDF, and report the result. Use when the user runs /job-resume-refine or asks for a tailored resume or CV PDF for a posting. Not for preparing the whole application package (job-apply), ranking openings (job-scout), or editing Fact YAML (job-profile)."
+description: "Refine a base resume for one posting while preserving every base role and raw LaTeX bullet, resolve supported ATS terms against profile Facts, compile and verify the PDF, and report the result. Use when the user runs /job-resume-refine or asks for a tailored resume or CV PDF for a posting."
 argument-hint: "<dossier> | <url> | <pasted ad>"
 ---
 

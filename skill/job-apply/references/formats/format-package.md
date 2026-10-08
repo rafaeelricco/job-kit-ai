@@ -72,6 +72,5 @@ Empty → omit the section.
 ### Unfinished
 
 Printed once, beside `### Skipped`. One line per posting that did not submit for
-any other reason: `{company} · {title} — {reason}`. Its `status:` is unchanged,
-so a rerun retries it unless a `flow-apply.md` §1 guard drops it.
+any other reason: `{company} · {title} — {reason}`.
 Empty → omit the section.

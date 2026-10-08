@@ -96,6 +96,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-resume-review\references\rubric.md',
   'skill\job-resume-review\references\report.md',
   'skill\job-resume-review\references\research.md',
+  'skill\job-resume-review\references\flow-job-resume-review.md',
   'skill\job-resume-review\scripts\review_score.py',
   'skill\job-resume-review\scripts\scan_cv.py',
   'skill\job-list\SKILL.md',

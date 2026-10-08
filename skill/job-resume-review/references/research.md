@@ -32,8 +32,7 @@ is not itself a weakness.
 
 **Parsing and qualification visibility.** [Greenhouse's parsing guidance](https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse)
 identifies image-only documents, columns, complex tables, header/footer contact
-details, and files over 2.5 MB as potential parsing risks. These risks do not prove that every such
-document fails. Extracted reading order and rendered pages provide complementary
+details, and files over 2.5 MB as potential parsing risks. Extracted reading order and rendered pages provide complementary
 evidence; local extraction cannot guarantee an employer's parser result.
 [Greenhouse Talent Matching](https://support.greenhouse.io/hc/en-us/articles/41131886674075-Talent-Matching-FAQ)
 and [Workable Screening Assistant](https://help.workable.com/hc/en-us/articles/23685011706775-Using-the-Screening-Assistant-AI-powered)
@@ -104,10 +103,6 @@ sourcing post, and LinkedIn's Recruiter documentation, including their limits.
 - [GitHub's portfolio guidance](https://docs.github.com/en/account-and-profile/tutorials/using-your-github-profile-to-enhance-your-resume)
   supports relevant, inspectable technical work. Portfolio advice applies when the
   target role benefits from it, not to every applicant.
-- Community templates and commercial checker
-  percentages are examples or tool-specific feedback, not validated universal rules.
+- Community templates are examples, not validated universal rules.
 - Example achievements and figures in the linked guides are illustrative. They are
   not facts about the reviewed candidate and must not be reused as such.
-- `./references/rubric.md` owns scoring weights and anchors, and `./scripts/review_score.py`
-  owns the arithmetic. They are deliberate design choices; the sources support the
-  underlying criteria only.

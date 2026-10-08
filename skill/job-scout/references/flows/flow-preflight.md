@@ -8,7 +8,7 @@ Presence of `location.also_eligible_from` or `direct_regions`, including empty v
 Load `job-profile/references/contracts/contract-geography.md`; resolve `data/basics.yaml` `country` through its helper before matching. Missing or unresolved country → stop; run `/job-profile continue fill basics.country`.
 `location.search_in` is `worldwide` or a nonempty list of places; empty → stop. Below, `worldwide` and "a `search_in` list" name these two cases.
 
-Enabled packs empty and no URL token → STOP; enable via `/job-profile`. `enabled: false` is unlisted.
+Enabled packs empty and no URL token → stop; enable via `/job-profile`. `enabled: false` is unlisted.
 Tokens after `/job-scout` bind the run set (enabled deck `id:`). A token that
 is an http(s) URL or bare domain binds an ad-hoc pack instead: `source` = its
 host, `id` = its host (`-2`, `-3` on collision), `entry` = the URL (`https://`
@@ -25,4 +25,4 @@ Skip-wait → print `Packs: {id}, …` in run order.
 
 Print `### Profile card` (role · skills · industries · languages) and `### Constraints` (the search keys above, through `exclude_companies`, plus salary_range_usd, citizenships, residence country, accepted employment_routes, relocation) — values per `job-profile` flow-show Blocks; scout adds no fields and prints no Packs/CV blocks. Pass both into every search, with the normalized residence country and derived regions from the geography helper. Keep citizenships and `basics.yaml` `permits` available to evaluate explicit posting authorization requirements.
 
-Auth: existing session. Never create an account. Password/OTP/2FA are operator-only. Signed-out limited page → ask once only if the redirect stays on the target registrable domain or a known IdP (Google, Microsoft, Apple, LinkedIn, GitHub, Okta); any other host → STOP before asking. Still blocked → `auth_gate` (search) or `status=uncertain` (extract).
+Auth: existing session. Never create an account. Password/OTP/2FA are operator-only. Signed-out limited page → ask once only if the redirect stays on the target registrable domain or a known IdP (Google, Microsoft, Apple, LinkedIn, GitHub, Okta); any other host → stop before asking. Still blocked → `auth_gate` (search) or `status=uncertain` (extract).

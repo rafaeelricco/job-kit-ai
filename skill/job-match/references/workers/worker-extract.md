@@ -2,7 +2,7 @@
 
 Caller hands one or more excerpts, inline or in the one slice file the brief names: dossier slice (Posting facts + `## The role` +
 frontmatter `company` / `title` / `url` / `score`) or one supplied posting body
-already in the brief. Never open Profile root. Never fetch a URL. Never score.
+already in the brief. Never fetch a URL.
 
 ## Deltas
 
