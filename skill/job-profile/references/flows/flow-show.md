@@ -71,13 +71,13 @@ the target-role sentence.
 This is the shared display contract job-scout uses.
 
 `### Packs` third when `data/search_packs.yaml` is readable: `id · entry host ·
-enabled|disabled · route=json|board|careers|DOM|missing|invalid|disabled · location=surface|keep-only|invalid · tokens · explicit boards`.
+enabled|disabled · route=json|board|careers|companies|DOM|missing|invalid|disabled · location=surface|keep-only|invalid · tokens · explicit boards`.
 `location=keep-only` when the pack declares `location: keep-only`; key absent → `location=surface`; any other present value → `location=invalid`, naming the pack.
 `tokens` = the placeholder tokens in the pack's `formulations`; key absent → `[role]`, the default job-scout runs.
 Load `./references/schemas/schema-search-packs.md` for route completeness.
 `explicit boards` counts enabled `boards` rows; absent means zero.
 List only `packs`; discovery markets are listed by `/job-company-scout`.
-Route status, first match: complete JSON route → `route=json`; complete board route → `route=board`; complete careers route → `route=careers`; any other present
+Route status, first match: complete JSON route → `route=json`; complete board route → `route=board`; complete careers route → `route=careers`; complete companies route → `route=companies`; any other present
 route → `route=invalid`; `route_required: true` and enabled → `route=missing`;
 `route_required: true` and disabled → `route=disabled`; else `route=DOM`.
 The same line must name the affected pack.
