@@ -162,7 +162,8 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
                              maxsplit=1, flags=re.IGNORECASE)[0]
             # Descriptions can qualify a base wage or an alternative wage quote,
             # but must not erase the label on an additional, separately priced bonus.
-            separate_amount = (bool(out) and not re.search(r"\bor\b", before, re.IGNORECASE)
+            alternative = re.search(r"\bor\s*\(?\s*$", CURRENCY_TOKEN.sub("", before), re.IGNORECASE)
+            separate_amount = (bool(out) and not alternative
                                and (previous_end == 0 or re.search(
                                    r"[+(,]|\b(?:plus|and)\b", before, re.IGNORECASE)))
             if not separate_amount:

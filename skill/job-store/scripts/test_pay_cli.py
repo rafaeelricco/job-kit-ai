@@ -140,7 +140,10 @@ class PayCliTests(unittest.TestCase):
                    "USD 50,000/year (USD 6,000 bonus included)",
                    "USD 50,000/year and USD 6,000 annual bonus included",
                    "USD 50,000/year, USD 6,000 annual bonus included",
-                   "USD 50,000/year; USD 6,000 annual bonus included")
+                   "USD 50,000/year; USD 6,000 annual bonus included",
+                   "USD 50,000/year or more plus USD 6,000 annual bonus included",
+                   "USD 50,000/year NY or remote plus USD 6,000 annual bonus included",
+                   "USD 50,000/year or more (USD 6,000 bonus included)")
         code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
                                   "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
         self.assertEqual(code, 0)
