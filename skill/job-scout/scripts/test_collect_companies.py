@@ -177,6 +177,31 @@ class CoverageRegressionTest(unittest.TestCase):
         _, recovered = collect(self.payload(), fake, "2026-10-22T00:00:00+00:00")
         self.assertEqual(recovered["candidates"], [])
 
+    def test_queue_follows_current_selection(self):
+        fake = Fake({"https://boards-api.greenhouse.io/v1/boards/acme/jobs":
+                     gh("Software Engineer", "Senior Software Engineer")})
+        _, first = collect(self.payload(regions=["US"], limit=1), fake, "2026-10-20T00:00:00+00:00")
+        self.assertEqual(first["queued"], 1)
+        _, uk = collect(self.payload(regions=["UK"]), fake, "2026-10-21T00:00:00+00:00")
+        self.assertEqual(uk["candidates"], [])
+        _, other = collect(self.payload(regions=["US"], positions=["Data Scientist"]), fake,
+                           "2026-10-22T00:00:00+00:00")
+        self.assertEqual(other["candidates"], [])
+        _, back = collect(self.payload(regions=["US"], positions=["Senior Software Engineer"]), fake,
+                          "2026-10-23T00:00:00+00:00")
+        self.assertEqual([(c["title"], c["matched_query"]) for c in back["candidates"]],
+                         [("Senior Software Engineer", "Senior Software Engineer")])
+        self.assertNotIn("row_id", back["candidates"][0])
+
+    def test_held_queue_is_not_counted_as_queued(self):
+        fake = Fake({"https://boards-api.greenhouse.io/v1/boards/acme/jobs":
+                     gh("Software Engineer", "Senior Software Engineer")})
+        collect(self.payload(regions=["US"], limit=1), fake, "2026-10-20T00:00:00+00:00")
+        _, uk = collect(self.payload(regions=["UK"]), fake, "2026-10-21T00:00:00+00:00")
+        self.assertEqual(uk["queued"], 0)
+        with open(self.state, encoding="utf-8") as f:
+            self.assertEqual(len(json.load(f)["queue"]), 1)
+
     def test_positions_change_keeps_listed_postings_sent(self):
         fake = Fake({"https://boards-api.greenhouse.io/v1/boards/acme/jobs": gh("Software Engineer")})
         _, first = collect(self.payload(), fake, "2026-10-20T00:00:00+00:00")
@@ -184,6 +209,15 @@ class CoverageRegressionTest(unittest.TestCase):
         collect(self.payload(positions=["Data Scientist"]), fake, "2026-10-21T00:00:00+00:00")
         _, back = collect(self.payload(), fake, "2026-10-22T00:00:00+00:00")
         self.assertEqual(back["candidates"], [])
+
+    def test_queue_entry_without_row_id_is_still_emitted(self):
+        with open(self.state, "w", encoding="utf-8") as f:
+            json.dump({"boards": {"US-001": {"checked_at": "2026-10-21T00:00:00+00:00", "status": "done",
+                                             "sent": ["https://job-boards.greenhouse.io/acme/jobs/0"]}},
+                       "queue": [{"company": "Acme", "title": "Software Engineer",
+                                  "url": "https://job-boards.greenhouse.io/acme/jobs/0"}]}, f)
+        _, out = collect(self.payload(limit=1), Fake({}), "2026-10-22T00:00:00+00:00")
+        self.assertEqual([c["url"] for c in out["candidates"]], ["https://job-boards.greenhouse.io/acme/jobs/0"])
 
     def test_non_string_checked_at_does_not_crash(self):
         with open(self.state, "w", encoding="utf-8") as f:

@@ -11,7 +11,8 @@ optional ats_evidence (an EU Greenhouse or EU Lever host makes the row
 unsupported). State is {"boards": {row_id: {"checked_at", "status", "error"?,
 "sent"?}}, "queue": [..]}, written atomically; a re-fetched board queues only
 matched urls not in its `sent` list, which a failed fetch keeps. Queued
-candidates are emitted before any new fetch; boards
+candidates whose row is selected and whose title matches a current position
+are emitted before any new fetch; other queued candidates stay in state. Boards
 are fetched never-checked first, then oldest checked_at, then row_id, each at
 most once per call, until the queue reaches `limit` or no board is left. A
 fetch error, HTTP 429/5xx, or a missing response path marks the board
@@ -252,8 +253,21 @@ def collect(payload: Any, fetch: Fetch, now: str) -> Tuple[int, Dict[str, Any]]:
         return (checked is not None, checked or "", row["row_id"])
 
     todo = sorted((r for r in selected if r["ats"] in COLLECTORS), key=order)
-    queue = [c for c in state["queue"] if isinstance(c, dict) and isinstance(c.get("url"), str)]
-    urls = {c["url"] for c in queue}
+    # Only queued candidates from a selected row that still match a position are
+    # emitted, re-matched against this call's positions; the rest stay in state.
+    ids = {r["row_id"] for r in selected}
+    queue, held = [], []
+    for c in state["queue"]:
+        if not isinstance(c, dict) or not isinstance(c.get("url"), str):
+            continue
+        query = title_match(c["title"], payload["positions"]) if isinstance(c.get("title"), str) else None
+        # An entry queued before row_id was recorded is checked by title only.
+        row_id = c.get("row_id")
+        if (row_id is None or row_id in ids) and query is not None:
+            queue.append(dict(c, matched_query=query))
+        else:
+            held.append(c)
+    urls = {c["url"] for c in queue + held}
     limit, fetched, failed = payload["limit"], 0, []
     while todo and len(queue) < limit:
         row = todo.pop(0)
@@ -284,14 +298,16 @@ def collect(payload: Any, fetch: Fetch, now: str) -> Tuple[int, Dict[str, Any]]:
             if item["url"] in urls or item["url"] in sent:
                 continue
             urls.add(item["url"])
-            queue.append({"company": row["company_name"], "title": item["title"], "url": item["url"],
+            queue.append({"row_id": row["row_id"], "company": row["company_name"],
+                          "title": item["title"], "url": item["url"],
                           "source": payload["pack"], "channel": "ats", "author": UNKNOWN,
                           "contact": UNKNOWN, "date": item["date"], "matched_query": query,
                           "location": item["location"]})
         listed = {item["url"] for item in found}
         kept = [url for url in sorted(sent) if url in listed and url not in matched]
         boards[row["row_id"]] = {"checked_at": now, "status": "done", "sent": matched + kept}
-    emit, state["queue"] = queue[:limit], queue[limit:]
+    emit = [{k: v for k, v in c.items() if k != "row_id"} for c in queue[:limit]]
+    state["queue"] = held + queue[limit:]
     try:
         write_state(payload["state"], state)
     except OSError as exc:
@@ -299,7 +315,7 @@ def collect(payload: Any, fetch: Fetch, now: str) -> Tuple[int, Dict[str, Any]]:
     return 0, {"candidates": emit,
                "boards": {"fetched": fetched, "failed": failed, "unsupported": unsupported,
                           "no_ats": no_ats, "remaining": len(todo)},
-               "queued": len(state["queue"])}
+               "queued": len(queue) - len(emit)}
 
 
 def http_fetch(url: str, body: Optional[Dict[str, Any]]) -> Any:
