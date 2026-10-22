@@ -450,7 +450,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertNotIn("legally_allowed_to_work_in_us", search)
         self.assertIn("location unknown → keep", search)
         self.assertIn("no kit-true flag → keep", search)
-        self.assertIn("still gets stored slugs (2)", search)
+        self.assertIn("still collects stored slugs (2)", search)
         self.assertIn("`/embed/job_app`", search)
         self.assertIn("the `for` query value", search)
         self.assertIn("jobs.eu.lever.co", search)
@@ -644,8 +644,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("owns no dossier under its pre-fold url", extract)
         self.assertNotIn("closure lookup still finds", extract)
         self.assertNotIn("a posting that redirects → replace", extract)
-        self.assertIn("they are not refilled from the search surface", extract)
-        self.assertIn("a row extract later marks `dead` is not refilled", search)
+        self.assertIn("no pack has a candidate cap", search)
+        self.assertNotIn("pack cap", extract)
         self.assertIn("set its date control to the `date_posted` window when it has one", search)
 
     def test_dom_candidates_carry_a_proven_formulation(self):
@@ -664,9 +664,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             "`site:` cards on a `kind: board` pack are slug sources, not candidates",
             search,
         )
-        self.assertIn("get new first", search)
-        self.assertIn("(3) every row of each `slug_lists` url", search)
-        self.assertIn("get new first, then the window", search)
+        self.assertIn("(3) every row of each `slug_lists` entry", search)
+        self.assertIn("no slug is skipped or deferred to a later run", search)
+        self.assertNotIn("the window", search)
         self.assertIn("there is no board-registry file", search)
         self.assertNotIn("`data/boards.yaml` is an optional seed", search)
         self.assertNotIn(
