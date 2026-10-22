@@ -119,9 +119,9 @@ Each subhead = matching extract key, copied. Key `—` → omit that subhead —
 
 ## Provenance
 
-`source {value} · channel {value} · author {value} · date {value}` from search columns, `—` if unknown. `source` is the pack `id` that found the row (`job-scout/references/flows/flow-search.md`), never a host — except an ad-hoc pack, whose `id` is its host (`job-scout/references/flows/flow-preflight.md`). Fold it through `job-store/scripts/normalize_source.py` before writing; a token that script reports as unknown persists as written and is named under Gaps. Channel matches frontmatter. Include ` · contact {value}` and ` · query {value}` only when known; omit when `—`. `query` = `matched_query`, verbatim: an expanded pack formulation, or a `positions[]` entry on a `kind: board` route. A value that is neither (a board or category label, a `[board] …` tag) is not a provenance and the row does not persist. Never re-derive; never invent a contact.
+`source {value} · channel {value} · author {value} · date {value}` from search columns, `—` if unknown. `source` is the pack `id` that found the row (`job-scout/references/flows/flow-search.md`), never a host — except an ad-hoc pack, whose `id` is its host (`job-scout/references/flows/flow-preflight.md`). Fold it through `job-store/scripts/normalize_source.py` before writing; a token that script reports as unknown persists as written and is named under Gaps. Channel matches frontmatter. Include ` · contact {value}` and ` · query {value}` only when known; omit when `—`. `query` = `matched_query`, verbatim: an expanded pack formulation, or a `positions[]` entry on a `kind: board` or `kind: careers` route. A value that is neither (a board or category label, a `[board] …` tag) is not a provenance and the row does not persist. Never re-derive; never invent a contact.
 
-source linkedin-jobs · channel ats · author — · query "Senior Software Engineer" · date 2026-08-08
+source greenhouse-boards · channel ats · author — · query "Senior Software Engineer" · date 2026-08-08
 
 <!-- scout never writes below this line -->
 

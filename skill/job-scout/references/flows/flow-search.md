@@ -12,13 +12,18 @@ true key → no bound). Every date control and date keep below reads it.
 
 `worldwide` → each formulation once, location unfiltered: location control unset. A `search_in` list → cycle its entries. A pack with `location: keep-only` runs under a `search_in` list as under `worldwide`: each formulation once, location control unset, `search_in` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
 
-When a pack has `route`, consume it before any DOM search, except a
+For `route.kind: careers`, use **Declared careers listings** below. JSON GET
+rules apply only to `json` and `board` routes. Validate selected pack fields
+against `job-profile/references/schemas/schema-search-packs.md`; research memory is
+not a search input. Scout never writes the deck.
+
+When a pack has a JSON or board route, consume it before any DOM search, except a
 `kind: board` pack first runs `site:{entry host} {formulation}` on a
 search engine for slug discovery, then GETs the route. That harvest
 is not a second surface and not a DOM fallback: `entry` already
 declared the host. A bot-wall, captcha, throttle, or empty interrupt on that
 harvest records `defect: surface_interrupted` for the harvest and
-still GETs stored slugs (2) and list slugs (3); it does not stop the pack or mark route
+still GETs stored slugs (2), list slugs (3), and explicit boards; it does not stop the pack or mark route
 GETs unsubmitted. A `kind: json` pack runs once
 per expanded formulation; a `kind: board` pack runs once per board
 slug. Location remains a keep filter instead of repeating the same
@@ -44,7 +49,17 @@ routed URL for every `search_in` entry.
   "ATS family" vocabulary), a `url` containing `{slug}`, and `items`,
   `posting_url`, `title` dot paths; `location`, `date`, and `listed` are
   optional dot paths; `slug_lists` is an optional list of http(s) URLs.
-  `items: $` names the response root. Collect slugs
+  `items: $` names the response root. First collect enabled `pack.boards`.
+  Validate each board root against the shared search-pack schema, including
+  ATS family and regional instance; invalid seeds are named under Gaps and
+  never requested. Extract tenants with the URL rules below, not company IDs.
+  Disabled explicit tenants are excluded from every seed source in this pack.
+  Deduplicate valid explicit seeds by instance and lowercased tenant, sort by
+  that key, and rotate left by (UTC days since 1970-01-01) mod seed count;
+  no seeds skips rotation. GET explicit seeds first, then the remaining
+  sources below, excluding every tenant already attempted. The existing
+  40-candidate keep cap includes explicit seeds; unvisited seeds are reported
+  as truncated coverage, never as successful checks. Collect remaining slugs
   unique by lowercased slug: (1) each `site:` result URL this run;
   (2) every readable store dossier whose url host is this ATS family;
   (3) every row of each `slug_lists` URL. Read a list by opening it as
@@ -64,10 +79,10 @@ routed URL for every `search_in` entry.
   their count, wrapping. GET new first, then the window, then
   remaining (2) oldest min `last_seen` first.
   One GET per slug, `{slug}` percent-encoded, serial. Stop at the
-  40-candidate keep cap. Empty (1)+(2)+(3) → `defect: no_boards`, scan
+  40-candidate keep cap. No enabled valid explicit or remaining slugs → `defect: no_boards`, scan
   nothing. `site:` cards on a `kind: board` pack are slug sources,
   not candidates; candidates come only from a successful route GET.
-  Company = the `site:` card company, else the store company, else
+  Company = the explicit board's `name`, else the `site:` card company, else the store company, else
   a list row `name`, else the slug. Per item: `posting_url` normalized; `matched_query` = the
   first `positions[]` entry the item's `title` contains as whole
   words, case-insensitive, punctuation ignored — no entry → drop the
@@ -78,14 +93,45 @@ routed URL for every `search_in` entry.
   returns non-JSON, or lacks the `items` path is a zero-keep run;
   every slug failing → `defect: route_failed`.
 
+## Declared careers listings
+
+A `kind: careers` route requires `surface: careers` and `location: keep-only`;
+an incomplete route records `defect: query_not_submitted` and scans nothing.
+Open `entry` and inspect its job listing, including linked or embedded ATS
+listings reached through the company's careers links. Record the observed
+link chain in the run report. This is a declared route, never a fallback after
+an API failure. Do not search unrelated sites or substitute guessed URLs.
+
+One pack is one listing run. Successful inspection of the listing or an
+explicit no-openings state is submission proof; a blank or blocked page is
+not a successful empty listing. An auth gate uses preflight's auth rules;
+an unavailable page records `defect: route_failed`. A listing interrupted by
+a bot-wall, captcha, throttle, or contradictory blank records
+`defect: surface_interrupted`, retaining candidates already observed.
+
+Keep only individual posting links; exclude talent networks, generic
+applications, and category links. Use the board route's whole-word
+`positions[]` title matching rule for `matched_query`, the pack's `company`
+when present (else the observed employer), its `id` as `source`, and `ats`
+as `channel`. Populate only printed fields; absent fields remain `—`.
+
+Follow listing pagination until exhausted or a page adds no new posting URL,
+capped at five pages and 40 kept candidates; a cap records
+`defect: list_truncated`. Do not require a search box or formulation echo.
+Apply the common keep rules below, then existing extract, geography, match,
+and persistence rules. A successfully inspected empty listing is a
+zero-result run; a failed or interrupted listing is not.
+
+## DOM search
+
 A pack without `route` runs the DOM flow. Open `entry`. ATS roots with no browsable
 index (`job-boards.greenhouse.io`, `boards.greenhouse.io`, `jobs.lever.co`,
 `jobs.ashbyhq.com`) use `site:{entry host} {formulation}` on a search engine
 instead; an `entry` with a path opens directly. On a `site:` run the search
 engine is the surface: set its date control to the `date_posted` window when it
 has one, and expect stale rows regardless — the index is not the board, and
-extract marks them `dead` (`./flow-extract.md`). There is no
-board-registry file.
+extract marks them `dead` (`./flow-extract.md`). Explicit boards live in the
+deck; there is no separate board-registry file.
 
 Surface filter controls matching Constraints `date_posted`, `work_model`,
 `job_types`, and location (location omitted on a `location: keep-only` pack) — no others → set them before scanning. Paginate until
@@ -96,7 +142,7 @@ formulation run. A zero-keep page is not a stop. Cap hit →
 For DOM runs, proof is the surface echo matching the submitted string;
 otherwise record `defect: query_not_submitted`. A DOM candidate's
 `matched_query` is the expanded formulation whose echo proved the run,
-verbatim. A card reached any other way — a category or index page, a board
+verbatim. Outside a declared careers route, a card reached any other way — a category or index page, a board
 listing, browsing on from `entry` — has no proven run and is not a candidate:
 do not open it, do not emit it. The pack declares its surfaces; a run never
 adds one. A source whose term search misses cards its category pages list is
@@ -110,7 +156,7 @@ this run; a `site:` search-engine run may carry that query to one other engine
 first, and a run that recovers on another engine counts as submitted. Still
 empty → stop the pack there: every built run after the interrupted one
 is unsubmitted, and the verdict is `defect: surface_interrupted`. A
-`kind: board` harvest interrupt is the exception above: stored-slug
+`kind: board` harvest interrupt is the exception above: explicit and stored-slug
 GETs still run. A query that
 never kept cards in the run and is contradicted by no re-test stays a zero.
 
@@ -125,7 +171,7 @@ Every pack prints `### Candidates` then `### Defect log`:
 `source` is the pack `id` (an ad-hoc pack's id is its host), never the surface label or the posting host.
 
 `pack | formulations_run | zero_result_runs | unsubmitted_runs | verdict`
-`zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A DOM run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under a `search_in` list, every run for one entry zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
+`zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A careers route is one listing run with location applied only as a keep filter; failed or interrupted careers runs do not count as zero results. A DOM run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under a `search_in` list, every run for one entry zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
 `verdict` ∈ `pass` | `auth_gate` | `defect: {name}`. No defect and no auth gate is `pass`. `unsubmitted_runs` above `0` is always `defect: surface_interrupted`; `query_not_submitted` names a pack fault (unknown `location` value, incomplete route, missing echo), never an interrupt.
 
 ## 2 Merge
