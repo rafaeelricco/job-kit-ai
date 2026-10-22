@@ -62,7 +62,7 @@ Pasted posting: run **extract** before **filter₁**. Store sources keep the gra
 
 ## filter₁
 
-Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting (no Posting facts table): the JobProfile's `company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility` / `salary`. First hit → `state.blocked`. Do not score.
+Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting (no Posting facts table): the JobProfile's `company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility`, and `pay_usd_year` from `job-store/scripts/pay.py` (same launcher as **score**) run on its `salary`. First hit → `state.blocked`. Do not score.
 
 ## extract
 

@@ -38,7 +38,7 @@ Pipe those files to the scripts; never retype their JSON.
 | `constraints.location`           | `job_search.yaml` `location` (`search_in`, `exclude_hire_from`)                                                                                                                                                                                                           |
 | `constraints.residence`          | Run `job-profile/scripts/geography.py` with `data/basics.yaml` `country` per `job-profile/references/contracts/contract-geography.md`; copy only `country` and `regions`. Missing or unresolved residence stops matching.                                                 |
 | `constraints.exclude_companies`  | `job_search.yaml` `exclude_companies`                                                                                                                                                                                                                                     |
-| `constraints.market_currencies`  | `job_search.yaml` `market_currencies`                                                                                                                                                                                                                                     |
+| `constraints.pay_min_usd_year`   | `min_usd_year` from `job-store/scripts/pay.py` (same launcher as **score**) run with `job_search.yaml` `salary_expectations.min` and `"rows": []`; `null` when min is empty                                                                                               |
 | `constraints.work_authorization` | `{ "citizenships": basics.yaml citizenships, "permits": basics.yaml permits }`, each verbatim; never merged, since screening treats them differently                                                                                                                      |
 
 ```json
@@ -55,7 +55,7 @@ Pipe those files to the scripts; never retype their JSON.
     "location": { "search_in": [], "exclude_hire_from": [] },
     "residence": { "country": null, "regions": [] },
     "exclude_companies": [],
-    "market_currencies": [],
+    "pay_min_usd_year": null,
     "work_authorization": { "citizenships": [], "permits": [] }
   }
 }

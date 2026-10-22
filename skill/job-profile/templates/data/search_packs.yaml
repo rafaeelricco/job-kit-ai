@@ -21,7 +21,8 @@
 #                     kind json: url with {formulation} and {page}, plus
 #                     pages, items, posting_url.
 #                     kind board: ats, url with {slug}, plus items,
-#                     posting_url, title, optional slug_lists.
+#                     posting_url, title, optional slug_lists (http(s)
+#                     URLs or paths under the profile, e.g. data/boards/lever.csv).
 #
 # One pack is one site, not one employer, except surface: careers,
 # which must be keep-only.

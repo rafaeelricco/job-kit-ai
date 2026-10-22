@@ -225,6 +225,7 @@ class SliceStore(unittest.TestCase):
         self.assertEqual(row["eligibility"], "confirmed")
         self.assertEqual(row["eligibility_evidence"], "Remote, anywhere in the UK")
         self.assertEqual(row["salary"], "—")
+        self.assertEqual(row["pay_usd_year"], "—")
         self.assertEqual(row["hiring_route"], "—")
         self.assertEqual(row["company"], "P")
 

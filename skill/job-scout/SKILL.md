@@ -16,6 +16,6 @@ mutation flow. Resolve `data/*` against Profile root.
 
 Store law: load the `job-store` skill now; obey it end-to-end.
 
-Skill-local files: `./references/**` only.
+Skill-local files: `./references/**` and `./scripts/**` only.
 Read `./references/flows/flow-scout.md` now.
 Load each additional reference only when that flow names it.

@@ -14,8 +14,6 @@
 #   location.exclude_hire_from
 #                            Hiring places to skip, e.g. ["United States"].
 #
-#   market_currencies        Salary currencies to keep, e.g. [USD, EUR].
-#
 #   exclude_companies        Companies to never show.
 #
 #   prune_score_max          Dossiers scoring at or below this are trashed.
@@ -24,7 +22,10 @@
 #                            direct_contractor, local_employment (Yes | No),
 #                            contractor_entity (free text).
 #
-#   salary_expectations.*    salary_range_usd (yearly, "min-max"), bonus, equity.
+#   salary_expectations.*    min (lowest pay you accept; scout drops postings
+#                            whose highest pay is below it), target (what you
+#                            ask for), each {currency, monthly, annual} with
+#                            annual = monthly × 12; bonus, equity.
 #
 #   salary_history.last      Last pay: amount, currency, period, basis.
 #
@@ -58,7 +59,6 @@ positions: [] # confirm target titles; empty → Gap until set
 location:
   search_in: [] # markets to search, or worldwide; empty → scout STOP until set
   exclude_hire_from: [] # hire-from places to drop (e.g. Brazil); empty → none
-market_currencies: [] # e.g. USD, EUR, GBP; empty → no markets prose
 exclude_companies: [] # company names to drop at search and gate, slug-compared; empty → none
 prune_score_max: 5 # job-prune: dossiers scored at or below this move to scout/jobs/.trash/
 
@@ -73,7 +73,8 @@ employment_routes:
   contractor_entity: "" # e.g. Yes | No | Can open one if required; never the number
 
 salary_expectations:
-  salary_range_usd: "" # TODO e.g. "80000-120000"
+  min: { currency: "", monthly: "", annual: "" } # TODO e.g. USD 5000 / 60000; empty → no pay drop
+  target: { currency: "", monthly: "", annual: "" } # TODO e.g. USD 6833 / 82000
   bonus: ""
   equity: ""
 
