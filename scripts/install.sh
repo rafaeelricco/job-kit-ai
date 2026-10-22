@@ -88,7 +88,7 @@ interactive_menu() {
     options[${#options[@]}]="Aside skills"
   fi
   options[${#options[@]}]="Coding-agent skills"
-  options[${#options[@]}]="browser-use skills (job-scout + job-apply in coding agents)"
+  options[${#options[@]}]="browser-use skills (job-company-scout + job-scout + job-apply + job-prep in coding agents)"
   options[${#options[@]}]="All of the above"
   options[${#options[@]}]="Quit"
 

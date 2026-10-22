@@ -6,6 +6,7 @@ $script:CoreSkillNames = @(
   'job-store'
 )
 $script:SkillNames = @(
+  'job-company-scout',
   'job-profile',
   'job-list',
   'job-match',
@@ -17,6 +18,7 @@ $script:SkillNames = @(
 ) + $script:CoreSkillNames
 $script:BrowserSkillNames = @('job-scout', 'job-apply', 'job-prep')
 $script:BrowserSharedDeps = @(
+  'job-company-scout',
   'job-match',
   'job-list',
   'job-profile',

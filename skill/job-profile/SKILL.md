@@ -74,6 +74,8 @@ mutation path.
 
 When the operator asks to find jobs / scout openings, hand off `job-scout`, then
 end this skill.
+When the operator asks to discover companies or find employer boards, hand off
+`job-company-scout`, then end this skill without doing research here.
 When the operator says `continue fill`, with or without naming a field, read
 `./references/flows/flow-fill.md` now.
 When the operator mutates search config, packs, the profile card, CV settings, or

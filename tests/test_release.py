@@ -387,7 +387,7 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertFalse((f.package / ".git").exists())
             installed = f.agents / "job-match"
             self.assertEqual(installed.resolve(), (f.physical / "skill/job-match").resolve())
-            self.assertEqual(len(list(f.agents.iterdir())), 10)
+            self.assertEqual(len(list(f.agents.iterdir())), 11)
             review = f.agents / "job-resume-review"
             self.assertEqual(review.resolve(), (f.physical / "skill/job-resume-review").resolve())
             for resource in ("SKILL.md", "references/rubric.md", "references/report.md", "references/research.md",

@@ -43,6 +43,9 @@ curl -fsSL https://r1cco.com/install.sh | bash -s -- all --dry-run
 ```
 
 Channels are `all` (default), `agents`, `browser-use`, and `aside`.
+`job-company-scout` is included in `agents` and `aside`, and is also available
+through `browser-use`. The `agents` channel does not require the browser-use CLI
+for company discovery; the skill uses the agent's available web or browser tools.
 
 Re-run the install command to update. The package lives at
 `${XDG_DATA_HOME:-$HOME/.local/share}/job-kit` by default
@@ -61,6 +64,10 @@ Run these skills in your agent:
 3. `/job-list` — review saved jobs and application statuses.
 4. `/job-apply` — fill, submit, and record applications.
 5. `/job-inbox` — check replies from a session with Gmail access.
+
+Run `/job-company-scout uk` to discover employers and save verified careers
+pages in your search packs. Then run the Job Scout pack IDs it reports.
+Discovery retains companies without careers pages for later research.
 
 **`/job-apply` submits without pausing for approval.** Use `/job-prep` to prepare
 application packages without submitting. Scout finds and records jobs; inbox
@@ -95,6 +102,7 @@ Each skill contains its usage and detailed workflow:
 | Skill                                                 | Purpose                                                                                    |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | [job-profile](skill/job-profile/SKILL.md)             | Create, register, or edit a profile.                                                       |
+| [job-company-scout](skill/job-company-scout/SKILL.md) | Discover employers and save verified careers pages in search packs.                        |
 | [job-scout](skill/job-scout/SKILL.md)                 | Find and rank live openings.                                                               |
 | [job-list](skill/job-list/SKILL.md)                   | Read saved jobs and statuses.                                                              |
 | [job-match](skill/job-match/SKILL.md)                 | Assess fit and get resume guidance.                                                        |

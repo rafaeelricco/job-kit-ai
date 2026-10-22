@@ -24,7 +24,8 @@ Load `./references/schemas/schema-profile-card.md` when the verb is `card refres
    Edit surgically: never re-serialize the document, never drop comments or
    keys outside the diff. A live file is never edited in place.
 7. Re-parse **every** staged file. For `search_packs.yaml`, also apply the route
-   invariant below. Any staging write, parse, or validation that fails →
+   invariant in `../schemas/schema-search-packs.md` against the complete staged
+   document. Any staging write, parse, or validation that fails →
    delete the staged files and say nothing was written, naming the failing path,
    pack id, and error.
 8. All staged files parse → re-read **every** target against disk before the
@@ -133,8 +134,18 @@ that is `card refresh`.
 
 ## `search_packs.yaml` — writable
 
+Load `../schemas/schema-search-packs.md` before any `packs` mutation. It is the
+single owner of the pack, board, discovery, and route schema. Operator-provided
+board rows and discovery market/source configuration remain ordinary confirmed
+`packs` edits under the protocol above. `/job-company-scout` owns discovery
+history and entries marked `managed_by: job-company-scout`; do not manually
+rewrite that history or those entries through this flow, except `enable` /
+`disable`, which may flip their `enabled`.
+
 - `list` — read-only. Use the `flow-show.md` Packs format and route statuses.
-- `enable` / `disable` — flip `enabled` on a named `id`. No id match → say so.
+- `enable` / `disable` — flip `enabled` on a named pack `id`; with a pack `id`
+  and a `company_id` (`packs enable <id> <company_id>`), flip `enabled` on that
+  pack's one `boards[]` row instead, including a discovery-owned row. No match → say so.
   Enabling must satisfy the route invariant before the staged file is renamed.
 - `formulations` — replace the list on one pack with strings the user typed. Never
   compose a formulation, never widen one, never look a term up. Empty list →
@@ -153,15 +164,9 @@ that is `card refresh`.
   when supplied by the user. A pack is a surface; an employer board is a slug,
   never a pack, except a `surface: careers` pack, which must carry `location: keep-only`.
 
-Route invariant: `route_required`, when present, is boolean. A present route is
-a mapping that is either `kind: json` with a `url` containing `{formulation}` and `{page}` and
-non-empty `pages`, `items`, and `posting_url` strings, or `kind: board` with `ats` in the
-`job-store/references/schemas/schema-dossier.md` "ATS family" vocabulary, a `url` containing
-`{slug}`, and non-empty `items`, `posting_url`, and `title` strings. An enabled pack
-(`enabled` absent or true) with `route_required: true` must have that complete
-route. A disabled required pack may omit it.
-`location`, when present, is `keep-only`; any other value fails validation.
-A `surface: careers` pack without `location: keep-only` fails validation.
+The schema owns the full route invariant, including `kind: careers`, its
+`surface: careers` and `location: keep-only` requirements, and discovery-created
+company fields. Validate the whole staged document against it before rename.
 
 ## `cvs.yaml` — writable keys
 
@@ -211,7 +216,7 @@ Protocol write path. Empty fields stay `""` / `[]`.
 | salary, notice, relocation, availability, consents, EOR: `employment_routes.*`, `salary_expectations.*`, `salary_history.*`, `availability.*`, `consents.*` | Print what is on disk. Editing is `continue fill`, or a human editing `data/job_search.yaml`. |
 | experiences, skills, languages, projects, basics, profiles                                                                                                  | Print what is on disk. Editing is `continue fill`.                                            |
 | identity (LinkedIn username)                                                                                                                                | Print what is on disk. Editing is `continue fill`.                                            |
-| "find me boards"                                                                                                                                            | No network. Scout discovers slugs at search from `site:` and the store.                       |
+| "find me boards"                                                                                                                                            | Hand off `job-company-scout`; profile editing performs no research.                       |
 | Copy another profile's data                                                                                                                                 | Refuse. Never read a donor Profile root; values come from the operator for _this_ profile.    |
 
 A suggestion is never a write. An unanswered suggestion stays a suggestion.

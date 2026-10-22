@@ -197,6 +197,7 @@ class BrowserChannelTests(unittest.TestCase):
             self.assertNotIn(SOLVER, f.names())
             self.assertNotIn("browser-use", f.names())
             self.assertIn("job-profile", f.names())
+            self.assertIn("job-company-scout", f.names())
             self.success(f.run("uninstall", "agents"))
             self.assertEqual(f.names(), set())
         self.each_shell(scenario)
@@ -215,6 +216,7 @@ class BrowserChannelTests(unittest.TestCase):
             self.success(f.run("uninstall", "browser-use"))
             self.assertEqual(before - f.names(),
                              {SOLVER, "job-scout", "job-apply", "job-prep", "browser-use"})
+            self.assertIn("job-company-scout", f.names())
             self.assertIn("job-match", f.names())
             self.assertIn("job-profile", f.names())
             self.success(f.run("uninstall", "agents"))
@@ -229,6 +231,7 @@ class BrowserChannelTests(unittest.TestCase):
             self.assertIn(SOLVER, f.names())
             self.assertIn("job-match", f.names())
             self.assertIn("job-apply", f.names())
+            self.assertIn("job-company-scout", f.names())
             self.assertIn("job-profile", f.names())
             self.success(f.run("uninstall", "browser-use"))
             self.assertEqual(f.names(), set())
@@ -365,6 +368,8 @@ class BrowserChannelTests(unittest.TestCase):
     def test_install_router_aside(self):
         def scenario(f):
             self.success(f.run("install", "aside"))
+            self.assertTrue((f.aside / "job-company-scout" / "SKILL.md").is_file())
+            self.assertFalse((f.aside / "job-company-scout").is_symlink())
             installed = f.aside / "job-match"
             self.assertTrue((installed / "SKILL.md").is_file())
             self.assertFalse(installed.is_symlink())

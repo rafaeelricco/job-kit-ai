@@ -445,13 +445,22 @@ class Pack:
         return None
 
 
-def search_packs() -> Tuple[Pack, ...]:
+def search_packs(deck: Optional[str] = None) -> Tuple[Pack, ...]:
     """Every pack in the shipped deck, in file order, with its own lines."""
     packs = []
     identifier = None
     lineno = 0
     body = []
-    for number, line in enumerate(read(DECK).splitlines(), start=1):
+    in_packs = False
+    for number, line in enumerate((read(DECK) if deck is None else deck).splitlines(), start=1):
+        if line.strip() and not line.startswith((" ", "#")):
+            if identifier is not None:
+                packs.append(Pack(identifier, lineno, tuple(body)))
+                identifier = None
+            in_packs = line.strip() == "packs:"
+            continue
+        if not in_packs:
+            continue
         match = PACK_ID.match(line)
         if match:
             if identifier is not None:
@@ -468,19 +477,38 @@ def search_packs() -> Tuple[Pack, ...]:
 
 
 def route_defect(pack: Pack) -> Optional[str]:
-    """Why ``pack``'s route is not a complete json or board route, or None when it is."""
+    """Why a declared route is incomplete, or None when it is valid."""
     block = pack.value(4, "route")
     if block is None:
         return "carries no route block"
     if block:
         return "writes route inline as {0!r}, not a block mapping".format(block)
     kind = pack.value(6, "kind")
+    if kind == "careers":
+        if pack.value(4, "surface") != "careers":
+            return "careers route requires surface: careers"
+        if pack.value(4, "location") != "keep-only":
+            return "careers route requires location: keep-only"
+        entry = pack.value(4, "entry") or ""
+        if not entry.startswith(("https://", "http://")):
+            return "careers route requires an HTTP(S) entry"
+        return None
+    if kind == "companies":
+        if pack.value(4, "location") != "keep-only":
+            return "companies route requires location: keep-only"
+        csv_path = pack.value(6, "csv") or ""
+        if not re.match(r"^(/|[A-Za-z]:[\\/])", csv_path):
+            return "companies route requires an absolute csv path"
+        empty = [key for key in ("regions", "tiers") if (pack.value(6, key) or "[]") == "[]"]
+        if empty:
+            return "companies route omits " + ", ".join(empty)
+        return None
     if kind == "json":
         fields, tokens = ROUTE_FIELDS, ROUTE_TOKENS
     elif kind == "board":
         fields, tokens = BOARD_FIELDS, BOARD_TOKENS
     else:
-        return "declares route kind {0!r}, not json or board".format(kind)
+        return "declares route kind {0!r}, not json, board, or careers".format(kind)
     missing = [key for key in fields if not pack.value(6, key)]
     if missing:
         return "omits route " + ", ".join(missing)
@@ -508,6 +536,51 @@ class SearchPackRouteTests(unittest.TestCase):
         self.fail(
             "no pack `{0}` in {1}".format(identifier, DECK.relative_to(REPO).as_posix())
         )
+
+    def test_discovery_sections_are_not_job_packs(self):
+        discovery = "discovery:\n  - id: research-only\n    entry: https://research.example/\n"
+        deck = "packs:\n  - id: jobs\n    entry: https://jobs.example/\n"
+        for contents in (discovery + deck, deck + discovery):
+            with self.subTest(contents=contents):
+                packs = search_packs(contents)
+                self.assertEqual([pack.identifier for pack in packs], ["jobs"])
+                self.assertEqual(packs[0].value(4, "entry"), "https://jobs.example/")
+        self.assertEqual(search_packs(discovery), ())
+
+    def test_careers_route_requires_its_declared_surface_and_location(self):
+        deck = (
+            "packs:\n  - id: careers-example\n"
+            "    entry: https://example.com/careers\n"
+            "    surface: careers\n    location: keep-only\n"
+            "    route:\n      kind: careers\n"
+        )
+        self.assertIsNone(route_defect(search_packs(deck)[0]))
+        for old, new, reason in (
+            ("surface: careers", "surface: open-web", "surface: careers"),
+            ("    location: keep-only\n", "", "location: keep-only"),
+            ("location: keep-only", "location: surface", "location: keep-only"),
+            ("https://example.com/careers", "file:///private", "HTTP(S) entry"),
+            ("kind: careers", "kind: unknown", "not json, board, or careers"),
+        ):
+            with self.subTest(reason=reason, replacement=new):
+                self.assertIn(reason, route_defect(search_packs(deck.replace(old, new))[0]))
+
+    def test_companies_route_requires_csv_regions_and_tiers(self):
+        deck = (
+            "packs:\n  - id: companies\n    surface: companies\n    location: keep-only\n"
+            "    route:\n      kind: companies\n      csv: /data/companies.csv\n"
+            "      regions: [UK, US, EU]\n      tiers: [A]\n"
+        )
+        self.assertIsNone(route_defect(search_packs(deck)[0]))
+        self.assertIsNone(route_defect(search_packs(deck.replace("/data", "D:\\data"))[0]))
+        for old, new, reason in (
+            ("    location: keep-only\n", "", "location: keep-only"),
+            ("/data/companies.csv", "companies.csv", "absolute csv path"),
+            ("[UK, US, EU]", "[]", "omits regions"),
+            ("      tiers: [A]\n", "", "omits tiers"),
+        ):
+            with self.subTest(reason=reason):
+                self.assertIn(reason, route_defect(search_packs(deck.replace(old, new))[0]))
 
     def test_deck_parses(self):
         declared = len(re.findall(r"(?m)^  - id:", self.deck))
@@ -574,7 +647,6 @@ class SearchPackRouteTests(unittest.TestCase):
 
     def test_surfaces_without_a_location_control_declare_keep_only(self):
         for identifier in (
-            "linkedin-posts",
             "hn-hiring",
             "work-at-a-startup",
             "we-work-remotely",
@@ -591,16 +663,6 @@ class SearchPackRouteTests(unittest.TestCase):
             if pack.value(4, "surface") == "social":
                 with self.subTest(pack=pack.identifier, source=pack.where):
                     self.assertEqual(pack.value(4, "location"), "keep-only")
-
-    def test_shipped_route_dependent_packs(self):
-        hiring_cafe = self.pack("hiring-cafe")
-        self.assertEqual(hiring_cafe.value(4, "route_required"), "true")
-        self.assertEqual(
-            hiring_cafe.value(4, "enabled"),
-            "false",
-            "hiring-cafe at {0} carries no route, so it must ship "
-            "disabled".format(hiring_cafe.where),
-        )
 
 
 class SchemaBlockTests(unittest.TestCase):

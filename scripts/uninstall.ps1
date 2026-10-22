@@ -31,8 +31,8 @@ Usage: uninstall.ps1                 # interactive menu (console required)
        uninstall.ps1 -h|--help
 
 Targets:
-  aside        Aside skills (job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
-  agents       Coding-agent skills (job-profile, job-list,
+  aside        Aside skills (job-company-scout, job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
+  agents       Coding-agent skills (job-company-scout, job-profile, job-list,
                job-match, job-stories, job-inbox, job-humanize,
                job-profile-root, job-store, job-resume-refine, job-resume-review)
   browser-use  Browser skills (job-scout, job-apply, job-prep) in coding-agent homes, plus

@@ -36,7 +36,7 @@ Install channels:
   all          Aside + coding agents + browser-use, skipping absent (default)
   aside        Aside only, macOS (fails off macOS, or when Aside is not set up)
   agents       Coding agents only (fails when no agent home exists)
-  browser-use  job-scout + job-apply + job-prep plus the browser-use driver
+  browser-use  job-company-scout + job-scout + job-apply + job-prep plus the browser-use driver
                skill into coding-agent homes (needs an agent home), driven by
                the local browser-use CLI over your own browser
   fetch        Refresh the installed bundle, install no skills
@@ -130,6 +130,7 @@ KIT_REQUIRED_FILES="${KIT_OWNERSHIP_FILES}
 scripts/common.sh
 scripts/browser-use/install.sh
 skill/captcha-solver/SKILL.md
+skill/job-company-scout/SKILL.md
 skill/job-apply/SKILL.md
 skill/job-prep/SKILL.md
 skill/job-resume-refine/SKILL.md

@@ -2,6 +2,7 @@
 
 List only. Never apply, message, or connect.
 Write-set: `scout/jobs/*.md` + lock furniture per job-store `contract-persistence.md`,
+plus `scout/runtime/{pack id}.json` collector state for `kind: companies` packs,
 plus job-match's run-scoped temp directory outside Profile root during the match gate,
 removed before this run ends.
 

@@ -1,0 +1,10 @@
+{
+  "script": "skill/job-scout/scripts/collect_companies.py",
+  "stdin": {
+    "state": "/tmp/x.json"
+  },
+  "exit": 1,
+  "stdout": {
+    "collect_error": "csv must be an absolute path"
+  }
+}

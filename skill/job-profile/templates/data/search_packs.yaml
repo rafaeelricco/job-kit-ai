@@ -17,21 +17,22 @@
 #
 #   route_required    true → the site can only be searched through route.
 #
-#   route             Search through the site's API instead of the page.
+#   route             Explicit API or careers-listing route.
 #                     kind json: url with {formulation} and {page}, plus
 #                     pages, items, posting_url.
 #                     kind board: ats, url with {slug}, plus items,
 #                     posting_url, title, optional slug_lists (http(s)
 #                     URLs or paths under the profile, e.g. data/boards/lever.csv).
+#                     kind careers: official company careers page; requires
+#                     surface careers and location: keep-only.
+#   boards[]          Optional company boards for a kind: board pack. Each row
+#                     has company_id, name, and a verified ATS board-root url;
+#                     enabled defaults true, managed_by may be job-company-scout.
 #
 # One pack is one site, not one employer, except surface: careers,
 # which must be keep-only.
 
 packs:
-  - id: linkedin-jobs
-    surface: linkedin-jobs
-    entry: https://www.linkedin.com/jobs/
-
   - id: hn-hiring
     surface: open-web
     entry: https://hnhiring.com
@@ -57,25 +58,6 @@ packs:
   - id: remote-ok
     surface: open-web
     entry: https://remoteok.com
-
-  - id: hiring-cafe
-    surface: open-web
-    entry: https://hiring.cafe
-    # Search is SSR-only, which the generic JSON route does not support.
-    route_required: true
-    enabled: false
-
-  - id: greenhouse
-    surface: open-web
-    entry: https://job-boards.greenhouse.io
-    # Undated search-engine site: harvest; stale rows read dead at extract.
-    # Prefer greenhouse-boards for the live API after site: harvest.
-
-  - id: lever
-    surface: open-web
-    entry: https://jobs.lever.co
-    # Undated search-engine site: harvest; stale rows read dead at extract.
-    # Prefer lever-boards for the live API after site: harvest.
 
   - id: ashby-boards
     surface: open-web
@@ -106,28 +88,69 @@ packs:
       location: location.name
       date: first_published
 
-  - id: lever-boards
-    surface: open-web
-    entry: https://jobs.lever.co
+  # Large-company list (market-research enriched CSV). Set csv, then enable.
+  - id: companies-uk-us-eu
+    surface: companies
+    enabled: false
+    location: keep-only
     route_required: true
     route:
-      kind: board
-      ats: lever
-      url: https://api.lever.co/v0/postings/{slug}?mode=json
-      items: $
-      posting_url: hostedUrl
-      title: text
-      location: categories.location
-      date: createdAt
+      kind: companies
+      csv: /path/to/top_1500_companies_enriched.csv
+      regions: [UK, US, EU]
+      tiers: [A]
 
-  - id: linkedin-posts
-    surface: social
-    entry: https://www.linkedin.com/search/results/content/
-    # Posts content search has no location control; Anywhere is the only view.
-    location: keep-only
-    formulations:
-      - '"we''re hiring" [role]'
-      - '"now hiring" [role]'
-      - '"open role" [role]'
-      - '"join our team" [role]'
-      - "hiring [role]"
+# Company discovery is explicit through /job-company-scout. Its state belongs
+# here; company discovery never starts a job search or application workflow.
+discovery:
+  markets:
+    uk:
+      enabled: true
+      scope: Companies headquartered in the United Kingdom
+      sources:
+        cambridge:
+          url: https://www.enterprise.cam.ac.uk/stories/
+          strategy: news
+        setsquared:
+          url: https://setsquared-bristol.co.uk/news/
+          strategy: news
+        entrepreneur-first:
+          url: https://www.joinef.com/portfolio/
+          strategy: portfolio
+        seedcamp-companies:
+          url: https://seedcamp.com/our-companies/
+          strategy: portfolio
+        seedcamp-news:
+          url: https://seedcamp.com/views/
+          strategy: news
+        balderton:
+          url: https://www.balderton.com/news/category/portfolio-news/
+          strategy: news
+    us:
+      enabled: true
+      scope: Companies headquartered in the United States
+      sources:
+        yc-companies:
+          url: https://www.ycombinator.com/companies
+          strategy: portfolio
+        south-park-commons:
+          url: https://www.southparkcommons.com/companies
+          strategy: portfolio
+        a16z-portfolio:
+          url: https://a16z.com/portfolio/
+          strategy: portfolio
+        accel-news:
+          url: https://www.accel.com/news/portfolio
+          strategy: news
+    eu:
+      enabled: true
+      scope: Companies headquartered in a European Union member state
+      sources:
+        tech-eu:
+          url: https://tech.eu/feed/
+          strategy: news
+        sifted:
+          url: https://sifted.eu/feed/?post_type=article
+          strategy: news
+  observations: {}
+  companies: {}

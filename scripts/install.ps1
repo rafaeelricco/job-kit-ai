@@ -19,10 +19,10 @@ Usage: install.ps1                 # interactive menu (console required)
 
 Targets:
   aside        Aside skills - full copy into the Aside skills root
-  agents       Coding-agent skills (job-profile, job-list,
+  agents       Coding-agent skills (job-company-scout, job-profile, job-list,
                job-match, job-stories, job-inbox, job-humanize,
                job-profile-root, job-store, job-resume-refine, job-resume-review)
-  browser-use  Browser skills (job-scout, job-apply, job-prep) plus the browser-use
+  browser-use  Browser skills (job-company-scout, job-scout, job-apply, job-prep) plus the browser-use
                driver skill into coding-agent homes; driven by the local
                browser-use CLI
   all          aside + agents + browser-use, skipping absent
@@ -97,7 +97,7 @@ function Invoke-RunAll {
 function Invoke-InteractiveMenu {
   Write-Host '1. Aside skills'
   Write-Host '2. Coding-agent skills'
-  Write-Host '3. browser-use skills (job-scout + job-apply + job-prep in coding agents)'
+  Write-Host '3. browser-use skills (job-company-scout + job-scout + job-apply + job-prep in coding agents)'
   Write-Host '4. All of the above'
   Write-Host '5. Quit'
   Write-Host -NoNewline 'Select component to install (number): '
