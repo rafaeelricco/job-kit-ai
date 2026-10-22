@@ -151,9 +151,10 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
             next_start = found[end + 1]["start"] if end + 1 < len(found) else len(segment)
             before = segment[previous_end:found[start]["start"]]
             after = segment[found[end]["end"]:next_start]
-            prefix_parts = CLAUSE_JOINER.split(before)
+            prefix_parts = CLAUSE_JOINER.split(before.replace("(", ";").replace(")", ";"))
             prefix = prefix_parts[-1] if len(prefix_parts) > 1 or start == 0 else ""
-            suffix = CLAUSE_JOINER.split(after)[0]
+            # An immediate parenthesis can hold this wage's period; a later one starts an aside.
+            suffix = CLAUSE_JOINER.split(after.lstrip(" \t(").split("(", 1)[0])[0]
             counted = [fig for fig in found[start:end + 1] if fig["currency"]]
             start = end + 1
             # "Including bonus" describes the wage; a separate bonus amount is not a wage.

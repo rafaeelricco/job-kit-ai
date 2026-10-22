@@ -105,7 +105,10 @@ class PayCliTests(unittest.TestCase):
 
     def test_parenthesized_periods_and_bonus_inclusive_wages(self):
         cases = (("$1,000 (per week)", "52000", True),
+                 ("$1,000 (base) per week", "52000", True),
                  ("$50,000 (monthly)", "600000", False),
+                 ("$40/hour (annual bonus $2,000)", "83200", False),
+                 ("$40/hour ($2,000 annual bonus)", "83200", False),
                  ("$8,000 monthly including annual bonus", "96000", False))
         code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
                                   "rows": [{"url": str(i), "salary": phrase} for i, (phrase, _, _) in enumerate(cases)]})
