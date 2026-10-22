@@ -71,8 +71,8 @@ routed URL for every `search_in` entry.
   load or parse (a file the browser downloads instead of showing has
   no body) is skipped and named under Gaps, never a route failure.
   Slug = first path segment, except a Greenhouse embed URL
-  (`/embed/job_app`) whose slug is the `for` query value; no `for` →
-  skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
+  (`/embed/job_app` or `/embed/job_board`) whose slug is the `for` query
+  value; no `for` → skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
   separate Lever instance: skip it, do not GET `api.lever.co`. New = (1) not in (2).
   List-only = (3) not in (1) or (2), sorted; the window is the 100
   list-only slugs from index (UTC days since 1970-01-01 × 100) mod
