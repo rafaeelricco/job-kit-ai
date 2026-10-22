@@ -31,7 +31,7 @@ SYMBOLS = (("R$", "BRL"), ("CA$", "CAD"), ("C$", "CAD"), ("A$", "AUD"), ("AU$", 
 # a space, no-break space, narrow no-break space or apostrophe may group thousands ("6 257", "120'000");
 # a digit glued to a letter ("B2B", "Q3") is not a figure
 NUMBER = re.compile(r"(?<![A-Za-z])(\d{1,3}(?:[ \u00a0\u202f'\u2019]\d{3})+(?![\d.,])|\d[\d.,]*\d|\d)\s*([kKmM](?![A-Za-z]))?")
-RANGE_GAP = re.compile(r"^\s*(?:-|\u2013|to)\s*$", re.IGNORECASE)
+RANGE_GAP = re.compile(r"^\s*(?:-|\u2013|\u2014|to)\s*$", re.IGNORECASE)
 SCHEDULE_BEFORE = re.compile(r"\b(?:hours?|hrs?)\s*$", re.IGNORECASE)
 CLAUSE_JOINER = re.compile(r"(?:[+;,()]|\b(?:plus|and|or)\b)", re.IGNORECASE)
 BONUS_LABEL = re.compile(r"\bbonus\b", re.IGNORECASE)

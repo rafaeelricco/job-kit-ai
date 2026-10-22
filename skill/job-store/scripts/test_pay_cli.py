@@ -87,12 +87,21 @@ class PayCliTests(unittest.TestCase):
                 code, out = self.run_pay({"min": floor, "rows": []})
                 self.assertEqual(code, 1)
                 self.assertIn("pay_error", out)
+
         for row in ({"url": "missing"}, {"url": "number", "salary": 50000},
                     {"url": "bool", "salary": False}, {"url": None, "salary": None}):
             with self.subTest(row=row):
                 code, out = self.run_pay({"min": {"currency": "", "monthly": "", "annual": ""}, "rows": [row]})
                 self.assertEqual(code, 1)
                 self.assertIn("pay_error", out)
+
+    def test_range_dashes_have_identical_pay_and_floor_decisions(self):
+        payload = {"min": {"currency": "USD", "monthly": "7500", "annual": "90000"},
+                   "rows": [{"url": dash, "salary": "£45" + dash + "55k"} for dash in ("-", "–", "—")]}
+        code, out = self.run_pay(payload)
+        self.assertEqual(code, 0)
+        self.assertEqual([(row["pay_usd_year"], row["below_min"]) for row in out["rows"]],
+                         [("60200-73600", True)] * 3)
 
 
 if __name__ == "__main__":
