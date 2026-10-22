@@ -22,5 +22,6 @@ route through `job-profile/SKILL.md` or enter its mutation flow. Resolve
 
 This explicit request authorizes web research, discovery history, and changes
 to discovery-owned inputs. This skill writes only `data/search_packs.yaml` and
-its sibling staging file. It does not run `/job-scout` or `/job-apply`, contact
+its per-run `data/search_packs.yaml.{run token}.tmp` stage. It does not run
+`/job-scout` or `/job-apply`, contact
 companies, send messages, or schedule future work.

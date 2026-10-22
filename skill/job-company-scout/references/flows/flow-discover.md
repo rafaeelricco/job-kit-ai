@@ -131,7 +131,9 @@ careers packs. A failed or incomplete read can never trigger that disable.
 ## Stage and report
 
 Build one surgical YAML edit that preserves comments, ordering, and every
-operator-owned entry. Write it to a sibling `data/search_packs.yaml.tmp`.
+operator-owned entry. Write it to `data/search_packs.yaml.{run token}.tmp`,
+where `{run token}` is unique to this run — never the bare
+`data/search_packs.yaml.tmp`, which `/job-profile` owns.
 Parse the complete staged document and validate it against
 `job-profile/references/schemas/schema-search-packs.md`. On write, parse, or schema failure, remove the
 staging file, name the path and error, and report that nothing was written.
