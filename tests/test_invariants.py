@@ -684,6 +684,20 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("then `first_seen` descending", prep)
         self.assertNotIn("then `first_seen` ascending", prep)
 
+    def test_discovery_markets_qualify_by_territory_headquarters(self):
+        discovery = instruction_text(harness.SKILL / "job-company-scout" / "references" / "flows" / "flow-discover.md")
+        self.assertIn("every market requires explicit headquarters or principal operating-base evidence", discovery)
+        self.assertIn("the united kingdom is not a member", discovery)
+        self.assertNotIn("for the uk market, require", discovery)
+        template = (harness.SKILL / "job-profile" / "templates" / "data" / "search_packs.yaml").read_text(encoding="utf-8")
+        for market in ("    uk:\n", "    us:\n", "    eu:\n"):
+            self.assertIn(market, template)
+
+    def test_company_list_limit_is_not_a_coverage_cap(self):
+        search = instruction_text(FLOW_SEARCH)
+        self.assertIn("the limit is not a coverage cap", search)
+        self.assertIn("never `list_truncated`; the next run resumes from state", search)
+
     def test_unscored_rows_are_reported_apart_from_low_scores(self):
         rank = instruction_text(FLOW_RANK)
         match_gate = instruction_text(FLOW_MATCH_GATE)

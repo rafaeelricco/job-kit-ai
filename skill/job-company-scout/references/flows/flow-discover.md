@@ -51,12 +51,16 @@ Investor, accelerator, and ATS tenant hosts are not company identity. If the
 official host or identity is uncertain, leave the item in the source's
 `pending_urls`; do not create a guessed company key.
 
-Qualify each selected market against its configured `scope`. For the UK
-market, require explicit UK headquarters or principal operating-base evidence.
-The latter must establish operational headquarters, not just a regional
-operation; explicit headquarters outside the UK disqualifies the UK membership.
-A UK office, incorporation record,
-investor relationship, or accelerator relationship alone is insufficient.
+Qualify each selected market against its configured `scope`. Every market
+requires explicit headquarters or principal operating-base evidence inside its
+territory: `uk` is the United Kingdom, `us` is the United States, and `eu` is
+the European Union member group in `job-profile/scripts/geography.json` (the
+United Kingdom is not a member). Any other market id takes its territory from
+`scope`. The operating-base evidence must establish operational headquarters,
+not just a regional operation; explicit headquarters outside the territory
+disqualifies that membership. A local office, incorporation record (including
+a US-state incorporation for a company run elsewhere), investor relationship,
+or accelerator relationship alone is insufficient.
 Qualify profile relevance only when the company's documented work or market
 fits the loaded profile; honor `exclude_companies` before qualifying or adding
 a board. Record rejected decisions with their reason and supporting URLs.

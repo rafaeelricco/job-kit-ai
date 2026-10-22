@@ -87,6 +87,18 @@ packs:
       location: location.name
       date: first_published
 
+  # Large-company list (market-research enriched CSV). Set csv, then enable.
+  - id: companies-uk-us-eu
+    surface: companies
+    enabled: false
+    location: keep-only
+    route_required: true
+    route:
+      kind: companies
+      csv: /path/to/top_1500_companies_enriched.csv
+      regions: [UK, US, EU]
+      tiers: [A]
+
 # Company discovery is explicit through /job-company-scout. Its state belongs
 # here; company discovery never starts a job search or application workflow.
 discovery:
@@ -112,6 +124,32 @@ discovery:
           strategy: news
         balderton:
           url: https://www.balderton.com/news/category/portfolio-news/
+          strategy: news
+    us:
+      enabled: true
+      scope: Companies headquartered in the United States
+      sources:
+        yc-companies:
+          url: https://www.ycombinator.com/companies
+          strategy: portfolio
+        south-park-commons:
+          url: https://www.southparkcommons.com/companies
+          strategy: portfolio
+        a16z-portfolio:
+          url: https://a16z.com/portfolio/
+          strategy: portfolio
+        accel-news:
+          url: https://www.accel.com/news/portfolio
+          strategy: news
+    eu:
+      enabled: true
+      scope: Companies headquartered in a European Union member state
+      sources:
+        tech-eu:
+          url: https://tech.eu/feed/
+          strategy: news
+        sifted:
+          url: https://sifted.eu/feed/?post_type=article
           strategy: news
   observations: {}
   companies: {}

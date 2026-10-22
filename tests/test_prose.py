@@ -493,6 +493,16 @@ def route_defect(pack: Pack) -> Optional[str]:
         if not entry.startswith(("https://", "http://")):
             return "careers route requires an HTTP(S) entry"
         return None
+    if kind == "companies":
+        if pack.value(4, "location") != "keep-only":
+            return "companies route requires location: keep-only"
+        csv_path = pack.value(6, "csv") or ""
+        if not re.match(r"^(/|[A-Za-z]:[\\/])", csv_path):
+            return "companies route requires an absolute csv path"
+        empty = [key for key in ("regions", "tiers") if (pack.value(6, key) or "[]") == "[]"]
+        if empty:
+            return "companies route omits " + ", ".join(empty)
+        return None
     if kind == "json":
         fields, tokens = ROUTE_FIELDS, ROUTE_TOKENS
     elif kind == "board":
@@ -553,6 +563,23 @@ class SearchPackRouteTests(unittest.TestCase):
             ("kind: careers", "kind: unknown", "not json, board, or careers"),
         ):
             with self.subTest(reason=reason, replacement=new):
+                self.assertIn(reason, route_defect(search_packs(deck.replace(old, new))[0]))
+
+    def test_companies_route_requires_csv_regions_and_tiers(self):
+        deck = (
+            "packs:\n  - id: companies\n    surface: companies\n    location: keep-only\n"
+            "    route:\n      kind: companies\n      csv: /data/companies.csv\n"
+            "      regions: [UK, US, EU]\n      tiers: [A]\n"
+        )
+        self.assertIsNone(route_defect(search_packs(deck)[0]))
+        self.assertIsNone(route_defect(search_packs(deck.replace("/data", "D:\\data"))[0]))
+        for old, new, reason in (
+            ("    location: keep-only\n", "", "location: keep-only"),
+            ("/data/companies.csv", "companies.csv", "absolute csv path"),
+            ("[UK, US, EU]", "[]", "omits regions"),
+            ("      tiers: [A]\n", "", "omits tiers"),
+        ):
+            with self.subTest(reason=reason):
                 self.assertIn(reason, route_defect(search_packs(deck.replace(old, new))[0]))
 
     def test_deck_parses(self):

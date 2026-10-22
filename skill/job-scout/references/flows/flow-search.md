@@ -12,7 +12,8 @@ true key → no bound). Every date control and date keep below reads it.
 
 `worldwide` → each formulation once, location unfiltered: location control unset. A `search_in` list → cycle its entries. A pack with `location: keep-only` runs under a `search_in` list as under `worldwide`: each formulation once, location control unset, `search_in` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
 
-For `route.kind: careers`, use **Declared careers listings** below. JSON GET
+For `route.kind: careers`, use **Declared careers listings** below; for
+`route.kind: companies`, use **Company list routes** below. JSON GET
 rules apply only to `json` and `board` routes. Validate selected deck pack fields
 against `job-profile/references/schemas/schema-search-packs.md`; an ad-hoc URL
 pack is not a deck pack and is exempt. Research memory is not a search input. Scout never writes the deck.
@@ -121,6 +122,29 @@ capped at five pages and 40 kept candidates; a cap records
 Apply the common keep rules below, then existing extract, geography, match,
 and persistence rules. A successfully inspected empty listing is a
 zero-result run; a failed or interrupted listing is not.
+
+## Company list routes
+
+A `kind: companies` route runs `./scripts/collect_companies.py` from the
+job-scout skill root, launcher as job-match's score node, with stdin
+`{"csv", "state", "pack", "regions", "tiers", "positions", "limit"}`: `csv`,
+`regions`, and `tiers` from the route, `state` as Profile root
+`scout/runtime/{pack id}.json` (create the directory), `pack` as the pack id,
+`positions` from Constraints, and `limit` 40. A `collect_error` or unreadable
+script records `defect: route_failed`. The script is the surface: no browser
+origin, no DOM fallback, no formulations.
+
+Each returned candidate already carries the board route's title match as
+`matched_query`, `ats` as `channel`, and the pack id as `source`. Apply the
+common keep rules below, reading its `location` for location keep, then
+normalize URLs. Name each `boards.failed` row and each `boards.unsupported`
+row under Gaps, and give `boards.no_ats` as one count; every attempted board
+failing records `defect: route_failed`. A posting is handed off once per
+board listing: candidates lost to a run that ends before persist return only
+when their board relists them.
+The limit is not a coverage cap: print
+`Coverage: {fetched} boards fetched, {remaining} pending, {queued} candidates queued`
+and record `pass`, never `list_truncated`; the next run resumes from state.
 
 ## DOM search
 

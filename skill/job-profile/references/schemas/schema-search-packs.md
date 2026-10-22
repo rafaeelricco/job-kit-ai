@@ -13,7 +13,7 @@ The root is a mapping with required `packs` (a list) and optional `discovery`
 | --- | --- |
 | `id` | Required, non-empty string, unique in `packs`. |
 | `surface` | Required non-empty string. Known labels are `linkedin-jobs`, `open-web`, `social`, and `careers`; other operator labels are allowed. |
-| `entry` | Required absolute `http(s)` URL. |
+| `entry` | Required absolute `http(s)` URL, except on a pack with `route.kind: companies`, where it is absent. |
 | `enabled` | Optional boolean; absent means `true`. |
 | `formulations` | Optional non-empty list of strings. |
 | `route_required` | Optional boolean. |
@@ -35,6 +35,7 @@ present but incomplete route is invalid, even if the pack is disabled.
 | `json` | `url` contains `{formulation}` and `{page}`; non-empty `pages`, `items`, and `posting_url` strings. |
 | `board` | `ats` is an ATS family supported by `job-store/references/schemas/schema-dossier.md`; `url` contains `{slug}`; non-empty `items`, `posting_url`, and `title` strings. `location`, `date`, and `listed` paths and `slug_lists` are optional. |
 | `careers` | The pack has `surface: careers`, `location: keep-only`, and its required `entry` is an official company careers URL. Optional `company_id` and `company` identify an operator-authored route. A discovery-created route must have both fields and `managed_by: job-company-scout`. |
+| `companies` | The pack has `location: keep-only`. `csv` is an absolute local path to a company CSV with `row_id`, `region`, `tier`, `company_name`, `ats`, and `ats_tenant` columns (the market-research enriched list); non-empty `regions` list of `UK`, `US`, `EU`; non-empty `tiers` list of `A`, `B`, `C`. |
 
 A `surface: careers` pack without `location: keep-only` fails validation.
 Existing careers packs without a route remain DOM searches. A careers route's
@@ -70,7 +71,7 @@ has optional `markets`, `observations`, and `companies` mappings.
 Each `markets.<market-id>` mapping has required boolean `enabled`, non-empty
 `scope`, and a `sources` mapping. Each source has an absolute `http(s)` `url`
 and `strategy`, either `news` or `portfolio`. Source names are stable identifiers.
-The initial UK market is configured in `job-profile/templates/data/search_packs.yaml`.
+The template configures `uk`, `us`, and `eu` markets in `job-profile/templates/data/search_packs.yaml`.
 
 ### Source observations
 
