@@ -33,7 +33,7 @@ SYMBOLS = (("R$", "BRL"), ("CA$", "CAD"), ("C$", "CAD"), ("A$", "AUD"), ("AU$", 
 NUMBER = re.compile(r"(?<![A-Za-z])(\d{1,3}(?:[ \u00a0\u202f'\u2019]\d{3})+(?![\d.,])|\d[\d.,]*\d|\d)\s*([kKmM](?![A-Za-z]))?")
 RANGE_GAP = re.compile(r"^\s*(?:-|\u2013|\u2014|to)\s*$", re.IGNORECASE)
 SCHEDULE_BEFORE = re.compile(r"\b(?:hours?|hrs?)\s*$", re.IGNORECASE)
-CLAUSE_JOINER = re.compile(r"(?:[+;,()]|\b(?:plus|and|or)\b)", re.IGNORECASE)
+CLAUSE_JOINER = re.compile(r"(?:[+;,]|\b(?:plus|and|or)\b)", re.IGNORECASE)
 BONUS_LABEL = re.compile(r"\bbonus\b", re.IGNORECASE)
 CURRENCY_TOKEN = re.compile("|".join(re.escape(symbol) for symbol, _ in SYMBOLS)
                             + r"|US\$|(?<![A-Za-z])[A-Z]{3}(?![A-Za-z])")
@@ -156,7 +156,10 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
             suffix = CLAUSE_JOINER.split(after)[0]
             counted = [fig for fig in found[start:end + 1] if fig["currency"]]
             start = end + 1
-            if BONUS_LABEL.search(prefix) or BONUS_LABEL.search(suffix):
+            # "Including bonus" describes the wage; a separate bonus amount is not a wage.
+            label = re.split(r"\b(?:including|includes?|with)\b", prefix + " " + suffix,
+                             maxsplit=1, flags=re.IGNORECASE)[0]
+            if BONUS_LABEL.search(label):
                 continue
             values = [(parse_amount(fig["token"], fig["scale"]), fig["currency"]) for fig in counted]
             values = [(amount, currency) for amount, currency in values if amount is not None]
