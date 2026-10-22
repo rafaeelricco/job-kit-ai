@@ -350,9 +350,9 @@ class EnumDriftTests(unittest.TestCase):
         the template omits but an operator deck may declare; each one is a
         template gap, not an alias defect.
         """
-        # The template ships the board-API pack for Ashby but not the DOM
-        # `site:` pack, though it ships both for Greenhouse and Lever.
-        operator_only = frozenset({"ashby"})
+        # The template ships board-API packs only, and no LinkedIn or
+        # hiring.cafe pack; stored dossiers still carry these sources.
+        operator_only = frozenset({"ashby", "greenhouse", "hiring-cafe", "linkedin-jobs"})
         declared = frozenset(
             re.findall(r"(?m)^  - id:\s*(\S+)", DECK.read_text(encoding="utf-8"))
         )
@@ -565,7 +565,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         )
         self.assertIn(
             "a `surface: careers` pack without `location: keep-only` fails validation",
-            mutate,
+            instruction_text(harness.SKILL / "job-profile" / "references" / "schemas" / "schema-search-packs.md"),
         )
 
     def test_packs_listing_shows_default_role_token(self):
@@ -654,10 +654,14 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("a dom candidate's `matched_query` is the expanded formulation whose echo proved the run", search)
         self.assertIn("has no proven run and is not a candidate", search)
         self.assertIn("the pack declares its surfaces; a run never adds one", search)
-        self.assertIn("an expanded pack formulation, or a `positions[]` entry on a `kind: board` route", schema)
+        self.assertIn("an expanded pack formulation, or a `positions[]` entry on a `kind: board` or `kind: careers` route", schema)
+        self.assertIn("outside a declared careers route", search)
+        self.assertIn("use the board route's whole-word `positions[]` title matching rule", search)
         self.assertIn("is not a provenance and the row does not persist", schema)
 
     def test_board_slugs_are_discovered_new_first(self):
+        discovery = instruction_text(harness.SKILL / "job-company-scout" / "references" / "flows" / "flow-discover.md")
+        self.assertIn("if no corresponding template pack exists, use a declared careers pack", discovery)
         search = instruction_text(FLOW_SEARCH)
         prep = instruction_text(FLOW_PREP)
         self.assertIn(
@@ -667,7 +671,11 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("get new first", search)
         self.assertIn("(3) every row of each `slug_lists` url", search)
         self.assertIn("get new first, then the window", search)
-        self.assertIn("there is no board-registry file", search)
+        self.assertIn("there is no separate board-registry file", search)
+        self.assertIn("get explicit seeds first", search)
+        self.assertIn("excluding every tenant already attempted", search)
+        self.assertIn("disabled explicit tenants are excluded from every seed source", search)
+        self.assertIn("(utc days since 1970-01-01) mod seed count", search)
         self.assertNotIn("`data/boards.yaml` is an optional seed", search)
         self.assertNotIn(
             "slugs are the `data/boards.yaml` rows whose `ats` equals the pack's; none → `defect: no_boards`",
