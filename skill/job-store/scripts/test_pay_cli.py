@@ -22,10 +22,10 @@ class PayCliTests(unittest.TestCase):
             ("$50,000 per year, $4,167 per month", "50000", True),
             ("$8,000 monthly + 30 days vacation per year", "96000", False),
             ("$40 - $50 per hour + $2,000 annual bonus", "83200-104000", False),
-            ("R$ 30.000 + annual bonus", "71300", False),
+            ("R$ 30.000 / mês + annual bonus", "71300", False),
             ("$8,000 monthly, annual leave included", "96000", False),
             ("$40 - $50 per hour", "83200-104000", False),
-            ("R$ 30.000", "71300", False),
+            ("R$ 30.000 / mês", "71300", False),
         )
         payload = {"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
                    "rows": [{"url": str(i), "salary": phrase} for i, (phrase, _, _) in enumerate(cases)]}

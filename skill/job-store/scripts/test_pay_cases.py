@@ -4,13 +4,16 @@ import unittest
 
 from pay import pay_payload
 
-RATES = {"USD": 1.0, "GBP": 1.25, "EUR": 1.1, "BRL": 0.2}
+RATES = {"USD": 1.0, "GBP": 1.25, "EUR": 1.1, "BRL": 0.2, "INR": 0.0105, "MXN": 0.053}
 MIN = {"currency": "USD", "monthly": "5000", "annual": "60000"}
 
 CASES = (  # phrase → pay_usd_year at RATES
-    # no printed period: decided on the USD value, so large local-currency monthly pay stays monthly
-    ("R$ 22.000 - R$ 30.000 (CLT)", "52800-72000"),
-    ("R$ 25.000", "60000"),
+    # no printed period: the USD value and the face amount must guess the same period
+    ("R$ 22.000 - R$ 30.000 (CLT)", "—"),
+    ("R$ 25.000", "—"),
+    ("R$ 4.000", "—"),
+    ("INR 1,200,000", "—"),
+    ("MXN 300,000", "—"),
     # a schedule is not a pay period; only figures carrying or ranged with a currency count
     ("40 hrs/week at $60/hr", "124800"),
     ("$1.2M OTE", "1200000"),

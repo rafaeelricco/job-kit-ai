@@ -11,6 +11,7 @@ CASES = (  # phrase → pay_usd_year at RATES
     ("€4,500 per month", "59400"),
     ("R$ 20.000 / mês", "48000"),
     ("$3K - $7K", "36000-84000"),          # no period, largest < 20000 → month
+    ("R$ 15.000", "36000"),                # no period: USD value and face amount both read month
     ("$80k–$155k", "80000-155000"),
     ("US $143,800; United Kingdom £90,300", "112900-143800"),
     ("350 - 400 EUR/day", "100100-114400"),

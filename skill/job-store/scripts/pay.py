@@ -181,6 +181,10 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
                 if largest < 10:
                     continue  # a lone figure this small is no wage
                 period = guessed_period(largest)
+                # USD cutoffs misread low-value currencies; a face amount that reads as
+                # another period leaves the pay unknown rather than inflated
+                if period != guessed_period(max(amount for amount, _ in values)):
+                    period = ""
             out.extend((amount, currency, period) for amount, currency in values)
     return out
 
