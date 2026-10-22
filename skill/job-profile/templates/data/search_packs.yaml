@@ -21,7 +21,8 @@
 #                     kind json: url with {formulation} and {page}, plus
 #                     pages, items, posting_url.
 #                     kind board: ats, url with {slug}, plus items,
-#                     posting_url, title, optional slug_lists.
+#                     posting_url, title, optional slug_lists (http(s)
+#                     URLs or paths under the profile, e.g. data/boards/lever.csv).
 #                     kind careers: official company careers page; requires
 #                     surface careers and location: keep-only.
 #   boards[]          Optional company boards for a kind: board pack. Each row

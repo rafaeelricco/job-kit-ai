@@ -450,7 +450,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertNotIn("legally_allowed_to_work_in_us", search)
         self.assertIn("location unknown → keep", search)
         self.assertIn("no kit-true flag → keep", search)
-        self.assertIn("still gets stored slugs (2)", search)
+        self.assertIn("still collects stored slugs (2)", search)
         self.assertIn("`/embed/job_app`", search)
         self.assertIn("the `for` query value", search)
         self.assertIn("jobs.eu.lever.co", search)
@@ -598,6 +598,10 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("possible duplicate of scout/jobs/{other}", queue)
         self.assertIn("`new` and not dead-by-log", queue)
         self.assertIn("`applied`, `interview`, or `offer`", queue)
+        self.assertIn("`pay below min per scout/jobs/{filename}: {pay_usd_year}`", queue)
+        self.assertIn("clauses 1, 2, 4, 6, and 7 have none", queue)
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("a row dropped for `below_min` leaves the persist set the same way", gate)
 
     def test_zero_keep_runs_are_a_named_defect(self):
         search = instruction_text(FLOW_SEARCH)
@@ -644,8 +648,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("owns no dossier under its pre-fold url", extract)
         self.assertNotIn("closure lookup still finds", extract)
         self.assertNotIn("a posting that redirects → replace", extract)
-        self.assertIn("they are not refilled from the search surface", extract)
-        self.assertIn("a row extract later marks `dead` is not refilled", search)
+        self.assertIn("no pack has a candidate cap", search)
+        self.assertNotIn("pack cap", extract)
         self.assertIn("set its date control to the `date_posted` window when it has one", search)
 
     def test_dom_candidates_carry_a_proven_formulation(self):
@@ -668,14 +672,13 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             "`site:` cards on a `kind: board` pack are slug sources, not candidates",
             search,
         )
-        self.assertIn("get new first", search)
-        self.assertIn("(3) every row of each `slug_lists` url", search)
-        self.assertIn("get new first, then the window", search)
+        self.assertIn("(3) every row of each `slug_lists` entry", search)
+        self.assertIn("no slug is skipped or deferred to a later run", search)
+        self.assertNotIn("the window", search)
         self.assertIn("there is no separate board-registry file", search)
-        self.assertIn("get explicit seeds first", search)
-        self.assertIn("excluding every tenant already attempted", search)
         self.assertIn("disabled explicit tenants are excluded from every seed source", search)
-        self.assertIn("(utc days since 1970-01-01) mod seed count", search)
+        self.assertIn('"slugs": <explicit seeds, (1), and (2)>', search)
+        self.assertNotIn("mod seed count", search)
         self.assertNotIn("`data/boards.yaml` is an optional seed", search)
         self.assertNotIn(
             "slugs are the `data/boards.yaml` rows whose `ats` equals the pack's; none → `defect: no_boards`",
@@ -698,16 +701,32 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("the limit is not a coverage cap", search)
         self.assertIn("never `list_truncated`; the next run resumes from state", search)
 
-    def test_unscored_rows_are_reported_apart_from_low_scores(self):
+    def test_stack_diagnostic_does_not_gate_full_matching(self):
         rank = instruction_text(FLOW_RANK)
         match_gate = instruction_text(FLOW_MATCH_GATE)
+        reader = instruction_text(FLOW_READ)
         self.assertIn("either list empty → unscored (`—`)", rank)
-        self.assertIn("reports it as gaps `unscorable`, never as `score<=7`", rank)
+        self.assertIn("keep that diagnostic value and continue to job match", rank)
         self.assertIn("never invent requirements from the profile", rank)
-        self.assertIn("kit drop, unscorable, score≤7", rank)
-        self.assertIn("`score` is `—` → `unscorable: no requirements printed` when `required_skills` is `—`", match_gate)
-        self.assertIn("integer `score` ≤ 7 → `score<=7`", match_gate)
-        self.assertNotIn("`score` is `—` or integer ≤ 7", match_gate)
+        self.assertIn("every input row proceeds to match below", match_gate)
+        self.assertIn("including low or unknown rank `score`", match_gate)
+        self.assertIn("rank `score` is diagnostic only; it never filters a row", match_gate)
+        self.assertIn("(`match_score` ≥ 70)", match_gate)
+        self.assertIn("confidence` is below `0.9`", match_gate)
+        self.assertIn("re-score it before the bar below", match_gate)
+        self.assertIn("low or unknown `score` does not prevent a new dossier", reader)
+
+        obsolete = (
+            "score<=7",
+            "score≤7",
+            "integer `score` ≤ 7",
+            "integer `score` 8–10",
+            "unscored rows get no new dossier",
+        )
+        for text in (rank, match_gate, reader):
+            for phrase in obsolete:
+                with self.subTest(text=text[:40], phrase=phrase):
+                    self.assertNotIn(phrase, text)
 
     def test_normalizer_is_the_shipped_script(self):
         section = instruction_section(SCHEMA_DOSSIER, "## URL normalize", "## File format")
@@ -728,6 +747,16 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
     def test_dossier_validator_matches_readers(self):
         rule = FLOW_READ.read_text(encoding="utf-8").partition("Required keys:")[2].partition(".")[0]
         self.assertEqual(tuple(re.findall(r"`([^`]+)`", rule)), validate_dossier.KEYS)
+
+    def test_pay_floor_replaces_currency(self):
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("`pay.py` `below_min`", gate)
+        self.assertIn("currency is never one", gate)
+        self.assertNotIn("market_currencies", gate)
+        preflight = instruction_text(FLOW_PREFLIGHT)
+        self.assertIn("`exclude_hire_from`), `exclude_companies`, `prune_score_max`", preflight)
+        self.assertIn("`market_currencies`, `salary_expectations.salary_range_usd`, or a `min` / `target` with `amount` or `period`, or any other valued key", preflight)
+        self.assertNotIn("capped at 40", preflight)
 
 
 if __name__ == "__main__":

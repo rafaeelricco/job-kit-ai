@@ -1,0 +1,165 @@
+import json
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+SCRIPT = Path(__file__).with_name("pay.py")
+
+
+class PayCliTests(unittest.TestCase):
+    def run_pay(self, payload):
+        proc = subprocess.run([sys.executable, str(SCRIPT)],
+                              input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                              capture_output=True, check=False)
+        return proc.returncode, json.loads(proc.stdout.decode("utf-8"))
+
+    def test_periods_belong_to_wages_not_other_amounts_or_benefits(self):
+        cases = (
+            ("$50,000 per year or $4,167 per month", "50000", True),
+            ("$4,167 per month or $50,000 per year", "50000", True),
+            ("$50,000 per year ($4,167 per month)", "50000", True),
+            ("$50,000 per year, $4,167 per month", "50000", True),
+            ("$8,000 monthly + 30 days vacation per year", "96000", False),
+            ("$40 - $50 per hour + $2,000 annual bonus", "83200-104000", False),
+            ("R$ 30.000 / mês + annual bonus", "71300", False),
+            ("$8,000 monthly, annual leave included", "96000", False),
+            ("$40 - $50 per hour", "83200-104000", False),
+            ("R$ 30.000 / mês", "71300", False),
+        )
+        payload = {"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                   "rows": [{"url": str(i), "salary": phrase} for i, (phrase, _, _) in enumerate(cases)]}
+        code, out = self.run_pay(payload)
+        self.assertEqual(code, 0)
+        for row, (phrase, pay, below) in zip(out["rows"], cases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), (pay, below))
+
+    def test_utf8_stdin_period_word(self):
+        payload = {"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                   "rows": [{"url": "b", "salary": "R$ 25.000 / mês"}]}
+        proc = subprocess.run([sys.executable, str(SCRIPT)],
+                              input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                              capture_output=True, check=False)
+        self.assertEqual(proc.returncode, 0)
+        row = json.loads(proc.stdout.decode("utf-8"))["rows"][0]
+        # 25000 x 12 x 0.198059 = 59400, under the 60000 floor: "mês" was read as month
+        self.assertEqual((row["pay_usd_year"], row["below_min"]), ("59400", True))
+
+    def test_partial_currency_conversion_stays_unknown(self):
+        for salary in ("USD 50,000 per year; AED 300,000 per year",
+                       "AED 300,000 per year; USD 50,000 per year"):
+            with self.subTest(salary=salary):
+                code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                          "rows": [{"url": "mixed", "salary": salary}]})
+                self.assertEqual(code, 0)
+                self.assertEqual(out["rows"], [{"url": "mixed", "pay_usd_year": "—", "below_min": False}])
+
+    def test_empty_floor_forms_pass_without_dropping(self):
+        floors = ({}, {"min": None}, {"min": {}},
+                  {"min": {"currency": None, "monthly": None, "annual": None}},
+                  {"min": {"currency": " ", "monthly": None}},
+                  {"min": {"currency": "", "monthly": "", "annual": ""}})
+        for fields in floors:
+            with self.subTest(fields=fields):
+                payload = dict(fields, rows=[{"url": "low", "salary": "USD 10000/year"}])
+                code, out = self.run_pay(payload)
+                self.assertEqual(code, 0, out)
+                self.assertIsNone(out["min_usd_year"])
+                self.assertEqual(out["rows"], [{"url": "low", "pay_usd_year": "10000", "below_min": False}])
+
+    def test_null_salary_preserves_other_rows(self):
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": "unknown", "salary": None},
+                                           {"url": "low", "salary": "USD 10000/year"}]})
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["rows"], [{"url": "unknown", "pay_usd_year": "—", "below_min": False},
+                                       {"url": "low", "pay_usd_year": "10000", "below_min": True}])
+
+    def test_invalid_floor_and_salary_shapes_remain_errors(self):
+        invalid_floors = (False, [], "", 0, {"currency": "USD"},
+                          {"currency": "USD", "monthly": None, "annual": 60000},
+                          {"currency": "USD", "monthly": True, "annual": 12},
+                          {"currency": "USD", "monthly": 5000, "annual": 82000},
+                          {"currency": "XYZ", "monthly": 5000, "annual": 60000})
+        for floor in invalid_floors:
+            with self.subTest(floor=floor):
+                code, out = self.run_pay({"min": floor, "rows": []})
+                self.assertEqual(code, 1)
+                self.assertIn("pay_error", out)
+
+        for row in ({"url": "missing"}, {"url": "number", "salary": 50000},
+                    {"url": "bool", "salary": False}, {"url": None, "salary": None}):
+            with self.subTest(row=row):
+                code, out = self.run_pay({"min": {"currency": "", "monthly": "", "annual": ""}, "rows": [row]})
+                self.assertEqual(code, 1)
+                self.assertIn("pay_error", out)
+
+    def test_range_dashes_have_identical_pay_and_floor_decisions(self):
+        payload = {"min": {"currency": "USD", "monthly": "7500", "annual": "90000"},
+                   "rows": [{"url": dash, "salary": "£45" + dash + "55k"} for dash in ("-", "–", "—")]}
+        code, out = self.run_pay(payload)
+        self.assertEqual(code, 0)
+        self.assertEqual([(row["pay_usd_year"], row["below_min"]) for row in out["rows"]],
+                         [("60200-73600", True)] * 3)
+
+    def test_parenthesized_periods_and_bonus_inclusive_wages(self):
+        cases = (("$1,000 (per week)", "52000", True),
+                 ("$1,000 (base) per week", "52000", True),
+                 ("$50,000 (monthly)", "600000", False),
+                 ("$40/hour (annual bonus $2,000)", "83200", False),
+                 ("$40/hour ($2,000 annual bonus)", "83200", False),
+                 ("$8,000 monthly including annual bonus", "96000", False))
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, (phrase, _, _) in enumerate(cases)]})
+        self.assertEqual(code, 0)
+        for row, (phrase, pay, below) in zip(out["rows"], cases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), (pay, below))
+
+    def test_bonus_descriptions_do_not_discard_base_wages(self):
+        phrases = ("USD 50,000/year bonus included", "USD 50,000/year no bonus",
+                   "USD 50,000/year bonus eligible", "USD 50,000/year plus USD 2,000 annual bonus",
+                   "USD 50,000/year (annual bonus USD 2,000)", "USD 50,000 bonus included",
+                   "USD 4,167 bonus included", "USD 50,000/year or USD 4,167/month bonus included",
+                   "USD 4,167/month bonus included or USD 50,000/year",
+                   "Bonus eligible salary USD 50,000/year")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        for row, phrase in zip(out["rows"], phrases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), ("50000", True))
+
+    def test_descriptive_bonus_words_do_not_turn_separate_bonuses_into_wages(self):
+        phrases = ("USD 50,000/year plus USD 6,000 annual bonus included",
+                   "USD 50,000/year plus USD 6,000 annual bonus eligible",
+                   "USD 50,000/year plus USD 6,000 bonus included",
+                   "USD 50,000/year plus annual bonus included USD 6,000",
+                   "USD 50,000/year + USD 6,000 bonus included",
+                   "USD 50,000/year (USD 6,000 bonus included)",
+                   "USD 50,000/year and USD 6,000 annual bonus included",
+                   "USD 50,000/year, USD 6,000 annual bonus included",
+                   "USD 50,000/year; USD 6,000 annual bonus included",
+                   "USD 50,000/year or more plus USD 6,000 annual bonus included",
+                   "USD 50,000/year NY or remote plus USD 6,000 annual bonus included",
+                   "USD 50,000/year or more (USD 6,000 bonus included)")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        for row, phrase in zip(out["rows"], phrases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), ("50000", True))
+
+    def test_parenthesized_alternative_wage_keeps_bonus_description(self):
+        phrases = ("USD 50,000/year or (USD 6,000/month bonus included)",
+                   "USD 50,000/year or USD 6,000/month bonus included")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        self.assertEqual([(row["pay_usd_year"], row["below_min"]) for row in out["rows"]],
+                         [("50000-72000", False)] * 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

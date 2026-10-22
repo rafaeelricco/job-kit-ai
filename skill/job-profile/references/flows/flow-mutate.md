@@ -54,7 +54,6 @@ Print `Profile root: /abs/path` before the first diff of the session.
 | `positions`                    | list of strings                                    |
 | `location.search_in`           | list of strings, or `worldwide` only when explicit |
 | `location.exclude_hire_from`   | list of strings                                    |
-| `market_currencies`            | list of strings                                    |
 | `exclude_companies`            | list of strings                                    |
 | `work_model.*` / `job_types.*` | bool, only when explicit                           |
 | `date_posted`                  | one of `24_hours`, `week`, `month`, `all_time`     |
@@ -199,6 +198,14 @@ prints the diff for one yes.
 ## `card refresh`
 
 Derive every field in `./references/schemas/schema-profile-card.md` from files on disk only.
+A legacy `salary_expectations.salary_range_usd` (`"min-max"`, yearly USD) moves
+in the same confirm cycle: `min` becomes `{currency: USD, monthly: <min ÷ 12>, annual: <min>}`
+and `target` `{currency: USD, monthly: <max ÷ 12>, annual: <max>}` (monthly rounded to
+whole units), each only when still empty, then `salary_range_usd` is deleted. A
+`min` or `target` still in the `{amount, currency, period}` shape converts the same
+way: `annual` = amount × 12 for a month, amount for a year, and `monthly` = `annual` ÷ 12.
+A legacy `market_currencies` is deleted.
+The operator may edit the proposed `min` and `target` before yes.
 Print the full proposed `data/profile_card.yaml` as the cycle diff, then the
 Protocol write path. Empty fields stay `""` / `[]`.
 

@@ -10,16 +10,16 @@ Packs **list** only (list my boards / packs): print `### Packs` and stop — no 
 
 ## Read set (profile data under Profile root; contract under the loaded skill root)
 
-| Path                                                    | Supplies                                                                                                                                                                                                     |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `data/basics.yaml`                                      | residence country, citizenships, permits                                                                                                                                                                     |
-| `data/job_search.yaml`                                  | work_model, job_types, date_posted, positions, location (`search_in`, `exclude_hire_from`), market_currencies, exclude_companies, salary_range_usd, notice_period, open_to_relocation, `employment_routes.*` |
-| `./references/contracts/contract-geography.md`          | shared residence and hiring-geography rules                                                                                                                                                                  |
-| `data/answers.yaml`                                     | `qa[]`, `pending[]`                                                                                                                                                                                          |
-| `data/skills.yaml`, `experiences.yml`, `languages.yaml` | card                                                                                                                                                                                                         |
-| `data/profile_card.yaml`                                | card, when present — else derive in memory                                                                                                                                                                   |
-| `data/search_packs.yaml`                                | deck: pack ids, `entry`, `enabled`, route requirement, route, tokens — one pack is one surface                                                                                                               |
-| `data/cvs.yaml`                                         | CV: `adapt_per_vacancy` (absent → true) and `base`                                                                                                                                                           |
+| Path                                                    | Supplies                                                                                                                                                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/basics.yaml`                                      | residence country, citizenships, permits                                                                                                                                                                                         |
+| `data/job_search.yaml`                                  | work_model, job_types, date_posted, positions, location (`search_in`, `exclude_hire_from`), exclude_companies, `salary_expectations` min and target (monthly · annual), notice_period, open_to_relocation, `employment_routes.*` |
+| `./references/contracts/contract-geography.md`          | shared residence and hiring-geography rules                                                                                                                                                                                      |
+| `data/answers.yaml`                                     | `qa[]`, `pending[]`                                                                                                                                                                                                              |
+| `data/skills.yaml`, `experiences.yml`, `languages.yaml` | card                                                                                                                                                                                                                             |
+| `data/profile_card.yaml`                                | card, when present — else derive in memory                                                                                                                                                                                       |
+| `data/search_packs.yaml`                                | deck: pack ids, `entry`, `enabled`, route requirement, route, tokens — one pack is one surface                                                                                                                                   |
+| `data/cvs.yaml`                                         | CV: `adapt_per_vacancy` (absent → true) and `base`                                                                                                                                                                               |
 
 Glob `data/*.{yaml,yml}`. A missing optional file is a blank field, never a stop.
 An unreadable file → stop and name it.
@@ -42,8 +42,8 @@ owner; job-scout preflight derives its card and constraints from it:
 - Profile card: primary role · top skills · industries · languages
 - Constraints: citizenships · residence country · work model · job types ·
   positions · search scope (`location.search_in`) · date_posted ·
-  `location.exclude_hire_from` · market_currencies · exclude_companies ·
-  salary_range_usd · accepted employment routes · relocation · derived
+  `location.exclude_hire_from` · exclude_companies ·
+  pay min · pay target · accepted employment routes · relocation · derived
   `residence.regions`
 
 Keep the Profile card's four fields above. In the readable Constraints block,
@@ -106,7 +106,7 @@ Print **only** these — this skill's own Gaps allowlist:
 
 - `basics.country` when empty or unresolved
 - `basics.citizenships` when empty
-- `salary_expectations.salary_range_usd`
+- `salary_expectations.min`
 - `availability.notice_period`
 - `employment_routes.employer_of_record`
 - `job_search` `positions` when empty

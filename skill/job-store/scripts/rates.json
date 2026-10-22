@@ -1,0 +1,23 @@
+{
+  "source": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+  "retrieved_at": "2026-10-22",
+  "usd_per": {
+    "USD": 1,
+    "EUR": 1.1205,
+    "GBP": 1.337591,
+    "BRL": 0.198059,
+    "CAD": 0.71256,
+    "AUD": 0.701189,
+    "NZD": 0.56809,
+    "SGD": 0.782745,
+    "MXN": 0.053303,
+    "HKD": 0.127554,
+    "INR": 0.010546,
+    "PLN": 0.256437,
+    "CHF": 1.21648,
+    "SEK": 0.100837,
+    "DKK": 0.149906,
+    "NOK": 0.106836,
+    "JPY": 0.006368
+  }
+}

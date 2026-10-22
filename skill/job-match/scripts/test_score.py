@@ -163,6 +163,60 @@ class ContainsTokenTests(unittest.TestCase):
 
 
 class ScoreAllTests(unittest.TestCase):
+    def test_missing_stack_and_full_stack_use_overall_score(self):
+        cases = (
+            (["Python"], [], {}, (100, "excellent_match", 0.75)),
+            ([], ["Python"], {}, (100, "excellent_match", 0.75)),
+            (
+                ["Python"],
+                ["Python"],
+                {"seniority": 0, "location": 0, "domain": 0, "language": 0},
+                (65, "weak_match", 1.0),
+            ),
+        )
+        for skills, required_skills, overrides, expected in cases:
+            with self.subTest(skills=skills, required_skills=required_skills):
+                cells = {
+                    "seniority": 15,
+                    "location": 10,
+                    "domain": 5,
+                    "language": 5,
+                    "preferences": 5,
+                }
+                cells.update(overrides)
+                payload = {
+                    "candidate": {
+                        "roles": ["Engineer"],
+                        "skills": skills,
+                        "years_experience": 6,
+                    },
+                    "jobs": [
+                        {
+                            "url": "u",
+                            "title": "Engineer",
+                            "required_skills": required_skills,
+                            "years_experience": "6+ years",
+                        }
+                    ],
+                    "matches": [
+                        {"url": "u", "score_breakdown": breakdown(**cells)}
+                    ],
+                }
+
+                result = score_all(payload)[0]
+
+                self.assertNotIn("score_error", result)
+                self.assertEqual(
+                    (
+                        result["match_score"],
+                        result["decision"],
+                        result["confidence"],
+                    ),
+                    expected,
+                )
+                if not skills or not required_skills:
+                    self.assertIsNone(result["score_breakdown"]["primary_stack"])
+
     def test_object_payload_derives_then_scores(self):
         payload = {
             "candidate": {

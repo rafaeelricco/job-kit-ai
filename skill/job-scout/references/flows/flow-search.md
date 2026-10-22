@@ -24,22 +24,21 @@ search engine for slug discovery, then GETs the route. That harvest
 is not a second surface and not a DOM fallback: `entry` already
 declared the host. A bot-wall, captcha, throttle, or empty interrupt on that
 harvest records `defect: surface_interrupted` for the harvest and
-still GETs stored slugs (2), list slugs (3), and explicit boards; it does not stop the pack or mark route
+still collects stored slugs (2), list slugs (3), and explicit boards; it does not stop the pack or mark route
 GETs unsubmitted. A `kind: json` pack runs once
 per expanded formulation; a `kind: board` pack runs once per board
 slug. Location remains a keep filter instead of repeating the same
 routed URL for every `search_in` entry.
 
-- `kind: json` and `kind: board` are supported. Open `entry` to establish its browser origin,
+- `kind: json` and `kind: board` are supported. A `kind: json` route opens `entry` to establish its browser origin,
   substitute the percent-encoded formulation and 1-based page into `url`, then
   GET that URL from page context.
 - Resolve `items` and `pages` as dot paths in each JSON response. Resolve
   `posting_url` inside every item, normalize it, and retain the expanded
   formulation as `matched_query`. Populate standard candidate fields exposed by
   the item; absent fields remain `—` for posting-page extraction.
-- Start at page 1 and stop at the configured total, when a page adds no new
-  posting URL, or at the five-page and 40-candidate caps. Either cap as
-  the reason for stopping → `defect: list_truncated`, as on a DOM run.
+- Start at page 1 and stop at the configured total or when a page adds no new
+  posting URL.
 - A successful GET of the exact substituted URL is submission proof. An enabled
   `route_required: true` pack without a complete supported route, or any present
   incomplete route, records `defect: query_not_submitted` and scans nothing.
@@ -49,49 +48,41 @@ routed URL for every `search_in` entry.
 - `kind: board` needs `ats` (`job-store/references/schemas/schema-dossier.md`
   "ATS family" vocabulary), a `url` containing `{slug}`, and `items`,
   `posting_url`, `title` dot paths; `location`, `date`, and `listed` are
-  optional dot paths; `slug_lists` is an optional list of http(s) URLs.
+  optional dot paths; `slug_lists` is an optional list of http(s) URLs or
+  paths relative to Profile root (passed to the collector as absolute paths).
   `items: $` names the response root. First collect enabled `pack.boards`.
   Validate each board root against the shared search-pack schema, including
   ATS family and regional instance; invalid seeds are named under Gaps and
-  never requested. Extract tenants with the URL rules below, not company IDs.
-  Disabled explicit tenants are excluded from every seed source in this pack.
-  Deduplicate valid explicit seeds by instance and lowercased tenant, sort by
-  that key, and rotate left by (UTC days since 1970-01-01) mod seed count;
-  no seeds skips rotation. GET explicit seeds first, then the remaining
-  sources below, excluding every tenant already attempted. The existing
-  40-candidate keep cap includes explicit seeds; unvisited seeds are reported
-  as truncated coverage, never as successful checks. Collect remaining slugs
+  never requested. Extract tenants with the URL rules below, not company IDs,
+  and deduplicate valid explicit seeds by instance and lowercased tenant.
+  Disabled explicit tenants are excluded from every seed source in this pack:
+  drop them from (1) and (2) before the collector runs, and drop any collector
+  candidate whose `slug` is one. Collect slugs
   unique by lowercased slug: (1) each `site:` result URL this run;
   (2) every readable store dossier whose url host is this ATS family;
-  (3) every row of each `slug_lists` URL. Read a list by opening it as
-  the tab's page (a list host may send no CORS header) and taking the
-  body text: a JSON array of strings is slugs; a CSV with a `url` column
-  takes that URL's slug only when its host is this ATS family, else
-  skips the row; a CSV with no `url` column uses its `slug` column.
-  Return the tab to `entry` before route GETs. A list that fails to
-  load or parse (a file the browser downloads instead of showing has
-  no body) is skipped and named under Gaps, never a route failure.
+  (3) every row of each `slug_lists` entry. Run `./scripts/collect.py`
+  (launcher per `job-match/references/flows/flow-match.md` **score**) once with
+  `{"route", "slugs": <explicit seeds, (1), and (2)>, "lists": <slug_lists>, "positions", "date_posted", "now"}`;
+  it reads every list (a JSON array of strings is slugs; a CSV with a `url` column
+  takes that URL's slug only when its host is this ATS family, else skips the
+  row; a CSV with no `url` column uses its `slug` column) and GETs every slug.
+  A list it reports `failed` is named under Gaps, never a route failure.
+  A `collect_error`, exit 1, an unreadable script, or no Python 3 launcher →
+  `defect: route_failed` for the pack, naming the error; no candidates.
   Slug = first path segment, except a Greenhouse embed URL
-  (`/embed/job_app` or `/embed/job_board`) whose slug is the `for` query
-  value; no `for` → skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
-  separate Lever instance: skip it, do not GET `api.lever.co`. New = (1) not in (2).
-  List-only = (3) not in (1) or (2), sorted; the window is the 100
-  list-only slugs from index (UTC days since 1970-01-01 × 100) mod
-  their count, wrapping. GET new first, then the window, then
-  remaining (2) oldest min `last_seen` first.
-  One GET per slug, `{slug}` percent-encoded, serial. Stop at the
-  40-candidate keep cap. No enabled valid explicit or remaining slugs → `defect: no_boards`, scan
+  (`/embed/…`, including `/embed/job_app` and `/embed/job_board`) whose slug is the `for` query value; no `for` →
+  skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
+  separate Lever instance: skip it, do not GET `api.lever.co`.
+  One GET per slug, `{slug}` percent-encoded; no slug is skipped or deferred
+  to a later run. No valid enabled explicit seed and empty (1)+(2)+(3) → `defect: no_boards`, scan
   nothing. `site:` cards on a `kind: board` pack are slug sources,
   not candidates; candidates come only from a successful route GET.
-  Company = the explicit board's `name`, else the `site:` card company, else the store company, else
-  a list row `name`, else the slug. Per item: `posting_url` normalized; `matched_query` = the
-  first `positions[]` entry the item's `title` contains as whole
-  words, case-insensitive, punctuation ignored — no entry → drop the
-  item; `listed` resolving to `false` → drop; `channel` = `ats`.
-  `date` is ISO-8601 or Unix epoch (seconds or milliseconds) and
-  feeds the `date_posted` keep. When the date path is present, order
-  items by `date` descending before keep. A slug whose GET fails,
-  returns non-JSON, or lacks the `items` path is a zero-keep run;
+  Company = the explicit board's `name` (matched by the candidate's `slug`), else the `site:` card company, else the store company, else
+  the collector's `company` (list row `name`, else the slug). Per candidate: `url` normalized;
+  `matched_query` = the first `positions[]` entry the `title` contains as whole
+  words, case-insensitive, punctuation ignored (the collector drops items with none,
+  items whose `listed` resolves to `false`, and dated items outside `date_posted`);
+  `channel` = `ats`. A slug the collector reports `failed` is a zero-keep run;
   every slug failing → `defect: route_failed`.
 
 ## Declared careers listings
@@ -116,9 +107,8 @@ applications, and category links. Use the board route's whole-word
 when present (else the observed employer), its `id` as `source`, and `ats`
 as `channel`. Populate only printed fields; absent fields remain `—`.
 
-Follow listing pagination until exhausted or a page adds no new posting URL,
-capped at five pages and 40 kept candidates; a cap records
-`defect: list_truncated`. Do not require a search box or formulation echo.
+Follow listing pagination until exhausted or a page adds no new posting URL.
+Do not require a search box or formulation echo.
 Apply the common keep rules below, then existing extract, geography, match,
 and persistence rules. A successfully inspected empty listing is a
 zero-result run; a failed or interrupted listing is not.
@@ -159,9 +149,7 @@ deck; there is no separate board-registry file.
 
 Surface filter controls matching Constraints `date_posted`, `work_model`,
 `job_types`, and location (location omitted on a `location: keep-only` pack) — no others → set them before scanning. Paginate until
-no next page or a page adds no new result URL, capped at five pages per
-formulation run. A zero-keep page is not a stop. Cap hit →
-`defect: list_truncated`.
+no next page or a page adds no new result URL. A zero-keep page is not a stop.
 
 For DOM runs, proof is the surface echo matching the submitted string;
 otherwise record `defect: query_not_submitted`. A DOM candidate's
@@ -180,11 +168,11 @@ this run; a `site:` search-engine run may carry that query to one other engine
 first, and a run that recovers on another engine counts as submitted. Still
 empty → stop the pack there: every built run after the interrupted one
 is unsubmitted, and the verdict is `defect: surface_interrupted`. A
-`kind: board` harvest interrupt is the exception above: explicit and stored-slug
-GETs still run. A query that
+`kind: board` harvest interrupt is the exception above: explicit-board and
+stored-slug collection still runs. A query that
 never kept cards in the run and is contradicted by no re-test stays a zero.
 
-Load `job-profile/references/contracts/contract-geography.md` for geographic membership and explicit authorization requirements. Drop a card whose company slug (schema-dossier "Filename" rule) is in `exclude_companies`. Keep a card whose work_model intersects kit-true flags (unknown → keep; no kit-true flag → keep) and that matches Constraints `job_types` and `date_posted`. Location keep (first match): remote or hybrid-with-remote with printed permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per the geography contract → drop; `worldwide` → keep; remote or hybrid-with-remote → keep; onsite or location-restricted → keep only if it matches a `search_in` entry (synonym OK); location unknown → keep (gate re-applies after extract). Unknown geographic membership or authorization stays unknown, never a country-based drop from employer location alone. Cap 40 per pack: the cap counts kept candidates at search time, and a row extract later marks `dead` is not refilled. Normalize URL per `job-store/references/schemas/schema-dossier.md`.
+Load `job-profile/references/contracts/contract-geography.md` for geographic membership and explicit authorization requirements. Drop a card whose company slug (schema-dossier "Filename" rule) is in `exclude_companies`. Keep a card whose work_model intersects kit-true flags (unknown → keep; no kit-true flag → keep) and that matches Constraints `job_types` and `date_posted`. Location keep (first match): remote or hybrid-with-remote with printed permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per the geography contract → drop; `worldwide` → keep; remote or hybrid-with-remote → keep; onsite or location-restricted → keep only if it matches a `search_in` entry (synonym OK); location unknown → keep (gate re-applies after extract). Unknown geographic membership or authorization stays unknown, never a country-based drop from employer location alone. Every kept candidate goes to extract; no pack has a candidate cap. Normalize URL per `job-store/references/schemas/schema-dossier.md`.
 
 `channel` ∈ `direct_email` | `dm_request` | `founder` | `ats`. Unknown = `—`.
 

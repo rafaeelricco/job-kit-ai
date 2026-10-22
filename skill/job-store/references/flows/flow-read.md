@@ -71,7 +71,9 @@ Join and re-find on normalized `url` only, normalizing the stored value too (sch
 named `{first_seen}-{company}--{title}.md`; the date is the day it was created, so
 it does not track `last_seen`, and a `-2` suffix means two dossiers share one base,
 told apart only by `url`. `uncertain` rows and `dead` rows never seen live have no
-dossier. `score` ≤ 7 and unscored rows get no new dossier; files from before this gate may still exist.
+dossier. Low or unknown `score` does not prevent a new dossier.
+Scout admission follows `job-scout/references/flows/flow-match-gate.md`:
+the reviewed Job Match decision must be at least `possible_match`.
 
 ## `last_seen` on a dead job
 
