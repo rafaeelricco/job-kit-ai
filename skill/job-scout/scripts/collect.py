@@ -88,7 +88,7 @@ def url_slug(raw: str, ats: str) -> Optional[str]:
     host = (parts.hostname or "").lower()
     if parts.scheme not in ("http", "https") or ats.lower() not in host or host in EU_LEVER_HOSTS:
         return None
-    if ats.lower() == "greenhouse" and parts.path.rstrip("/") == "/embed/job_app":
+    if ats.lower() == "greenhouse" and parts.path.startswith("/embed/"):
         found = parse_qs(parts.query).get("for", [""])[0]
         return found or None
     segment = unquote(parts.path.strip("/").split("/")[0])
@@ -97,7 +97,7 @@ def url_slug(raw: str, ats: str) -> Optional[str]:
 
 def list_slugs(text: str, ats: str) -> Tuple[List[Tuple[str, str]], int]:
     """((slug, name) per row, count of rows skipped): JSON array of strings; CSV `url` column (host must be this
-    ATS family; Greenhouse /embed/job_app takes `for`); CSV `slug` column otherwise."""
+    ATS family; Greenhouse /embed/ takes `for`); CSV `slug` column otherwise."""
     text = text.lstrip("\ufeff")
     if text.lstrip().startswith("["):
         data = json.loads(text)

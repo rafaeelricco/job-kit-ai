@@ -75,6 +75,20 @@ class CollectCliTests(unittest.TestCase):
                 self.assertTrue(out["slugs"][1]["error"])
                 self.assertCountEqual(calls, ["/jobs/good", "/jobs/" + broken, "/jobs/good2"])
 
+    def test_embedded_boards_keep_distinct_slugs_and_skip_missing_for(self):
+        csv = ("name,url\n"
+               "Acme,https://boards.greenhouse.io/embed/job_board?for=acme\n"
+               "Globex,https://boards.greenhouse.io/embed/job_board?for=globex\n"
+               "Initech,https://boards.greenhouse.io/embed/job_app?for=initech\n"
+               "Missing,https://boards.greenhouse.io/embed/job_board\n"
+               "Empty,https://boards.greenhouse.io/embed/job_board?for=\n")
+        with board_server({"/list.csv": csv}) as (origin, calls):
+            out = self.run_collect(origin, lists=[origin + "/list.csv"])
+            self.assertEqual([row["slug"] for row in out["candidates"]], ["acme", "globex", "initech"])
+            self.assertEqual([row["company"] for row in out["candidates"]], ["Acme", "Globex", "Initech"])
+            self.assertEqual((out["lists"][0]["slugs"], out["lists"][0]["skipped"]), (3, 2))
+            self.assertCountEqual(calls, ["/list.csv", "/jobs/acme", "/jobs/globex", "/jobs/initech"])
+
     def test_utf8_in_and_out(self):
         payload = {"route": {"ats": "lever"}, "positions": ["Engenheiro de Software Sênior"]}
         run = subprocess.run([sys.executable, str(SCRIPT)],

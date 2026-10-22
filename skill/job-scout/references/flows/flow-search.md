@@ -57,7 +57,7 @@ routed URL for every `search_in` entry.
   A `collect_error`, exit 1, an unreadable script, or no Python 3 launcher →
   `defect: route_failed` for the pack, naming the error; no candidates.
   Slug = first path segment, except a Greenhouse embed URL
-  (`/embed/job_app`) whose slug is the `for` query value; no `for` →
+  (`/embed/…`) whose slug is the `for` query value; no `for` →
   skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
   separate Lever instance: skip it, do not GET `api.lever.co`.
   One GET per slug, `{slug}` percent-encoded; no slug is skipped or deferred
