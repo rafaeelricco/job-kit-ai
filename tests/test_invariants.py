@@ -680,16 +680,32 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("then `first_seen` descending", prep)
         self.assertNotIn("then `first_seen` ascending", prep)
 
-    def test_unscored_rows_are_reported_apart_from_low_scores(self):
+    def test_stack_diagnostic_does_not_gate_full_matching(self):
         rank = instruction_text(FLOW_RANK)
         match_gate = instruction_text(FLOW_MATCH_GATE)
+        reader = instruction_text(FLOW_READ)
         self.assertIn("either list empty → unscored (`—`)", rank)
-        self.assertIn("reports it as gaps `unscorable`, never as `score<=7`", rank)
+        self.assertIn("keep that diagnostic value and continue to job match", rank)
         self.assertIn("never invent requirements from the profile", rank)
-        self.assertIn("kit drop, unscorable, score≤7", rank)
-        self.assertIn("`score` is `—` → `unscorable: no requirements printed` when `required_skills` is `—`", match_gate)
-        self.assertIn("integer `score` ≤ 7 → `score<=7`", match_gate)
-        self.assertNotIn("`score` is `—` or integer ≤ 7", match_gate)
+        self.assertIn("every input row proceeds to match below", match_gate)
+        self.assertIn("including low or unknown rank `score`", match_gate)
+        self.assertIn("rank `score` is diagnostic only; it never filters a row", match_gate)
+        self.assertIn("(`match_score` ≥ 70)", match_gate)
+        self.assertIn("confidence` is below `0.9`", match_gate)
+        self.assertIn("re-score it before the bar below", match_gate)
+        self.assertIn("low or unknown `score` does not prevent a new dossier", reader)
+
+        obsolete = (
+            "score<=7",
+            "score≤7",
+            "integer `score` ≤ 7",
+            "integer `score` 8–10",
+            "unscored rows get no new dossier",
+        )
+        for text in (rank, match_gate, reader):
+            for phrase in obsolete:
+                with self.subTest(text=text[:40], phrase=phrase):
+                    self.assertNotIn(phrase, text)
 
     def test_normalizer_is_the_shipped_script(self):
         section = instruction_section(SCHEMA_DOSSIER, "## URL normalize", "## File format")

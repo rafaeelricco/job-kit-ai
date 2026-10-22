@@ -2,13 +2,12 @@
 
 Input: `status=live` rows that passed `./flow-gate.md`, with Rank `score`.
 
-Drop to Gaps, no dossier:
+Every input row proceeds to Match below, including low or unknown Rank `score`.
+Rank `score` is diagnostic only; it never filters a row.
 
-- `score` is `—` → `unscorable: no requirements printed` when `required_skills` is `—`, else `unscorable: no profile skills`
-- integer `score` ≤ 7 → `score<=7`
-- then match (below) fails
-
-Keep: integer `score` 8–10 and match decision at/above `possible_match` (`match_score` ≥ 70).
+Keep: match decision at/above `possible_match` (`match_score` ≥ 70)
+after the existing validation and re-scoring below.
+Drop to Gaps, no dossier, only for the Match failures defined below.
 
 Match: resolve the installed `job-match` skill root, then derive CandidateProfile
 once per its `references/schemas/schema-state.md`. Load `references/workers/worker-extract.md`,
