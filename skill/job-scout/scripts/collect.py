@@ -16,6 +16,7 @@ or {"collect_error": "..."} with exit 1. A failed slug or list is reported, neve
 """
 
 import csv
+import http.client
 import io
 import json
 import re
@@ -275,7 +276,7 @@ def http_fetch(url: str) -> Tuple[int, str, Optional[str]]:
             return response.status, response.read().decode("utf-8", errors="replace"), None
     except urllib.error.HTTPError as error:
         return error.code, "", error.headers.get("Retry-After")
-    except (urllib.error.URLError, OSError, ValueError) as error:
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as error:
         return 0, str(error), None
 
 
