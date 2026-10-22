@@ -31,6 +31,10 @@ SYMBOLS = (("R$", "BRL"), ("CA$", "CAD"), ("C$", "CAD"), ("A$", "AUD"), ("AU$", 
 NUMBER = re.compile(r"(?<![A-Za-z])(\d{1,3}(?:[ \u00a0\u202f'\u2019]\d{3})+(?![\d.,])|\d[\d.,]*\d|\d)\s*([kKmM](?![A-Za-z]))?")
 RANGE_GAP = re.compile(r"^\s*(?:-|\u2013|to)\s*$", re.IGNORECASE)
 SCHEDULE_BEFORE = re.compile(r"\b(?:hours?|hrs?)\s*$", re.IGNORECASE)
+CLAUSE_JOINER = re.compile(r"(?:[+;,()]|\b(?:plus|and|or)\b)", re.IGNORECASE)
+BONUS_LABEL = re.compile(r"\bbonus\b", re.IGNORECASE)
+CURRENCY_TOKEN = re.compile("|".join(re.escape(symbol) for symbol, _ in SYMBOLS)
+                            + r"|US\$|(?<![A-Za-z])[A-Z]{3}(?![A-Za-z])")
 CODE_BEFORE = re.compile(r"(?<![A-Za-z])([A-Z]{3})\s*$")
 CODE_AFTER = re.compile(r"^\s*([A-Z]{3})(?![A-Za-z])")
 PERIOD_AFTER_MARK = re.compile(
@@ -84,12 +88,15 @@ def currency_before(prefix: str) -> str:
 
 
 def printed_period(segment: str, tail: str) -> str:
-    """The period marker after the counted figures, else anywhere; "" when none is printed."""
+    """Read the period from one wage group's bounded suffix, then its prefix."""
     for text in (tail, segment):
         for pattern in (PERIOD_AFTER_MARK, PERIOD_ADJECTIVE):
             for match in pattern.finditer(text):
                 if pattern is PERIOD_AFTER_MARK and SCHEDULE_BEFORE.search(text[: match.start()]):
                     continue  # "hrs/week", "hours per week": a schedule, not a pay period
+                if (match.group(1).lower() in ("annual", "annually")
+                        and re.match(r"\s+(?:leave|bonus)\b", text[match.end():], re.IGNORECASE)):
+                    continue  # "annual leave" and "annual bonus" are not salary periods
                 return PERIODS[match.group(1).lower()]
     return ""
 
@@ -118,7 +125,7 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
                 currency = after.group(1) if after else ""
             found.append({"token": match.group(1), "scale": scale, "currency": currency,
                           "start": match.start(), "end": match.end()})
-        links = [bool(RANGE_GAP.match(segment[left["end"]: right["start"]]))
+        links = [bool(RANGE_GAP.match(CURRENCY_TOKEN.sub("", segment[left["end"]:right["start"]])))
                  for left, right in zip(found, found[1:])]
         for index, linked in enumerate(links):  # the high end's k/M reaches a small low end
             left, right = found[index], found[index + 1]
@@ -133,18 +140,33 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
                 if linked and bool(left["currency"]) != bool(right["currency"]):
                     left["currency"] = right["currency"] = left["currency"] or right["currency"]
                     changed = True
-        counted = [fig for fig in found if fig["currency"]]
-        values = [(parse_amount(fig["token"], fig["scale"]), fig["currency"]) for fig in counted]
-        values = [(amount, currency) for amount, currency in values if amount is not None]
-        if not values:
-            continue
-        period = printed_period(segment, segment[counted[-1]["end"]:])
-        if not period:
-            largest = max(amount * rates.get(currency, 1.0) for amount, currency in values)
-            if largest < 10:
-                continue  # a lone figure this small is no wage
-            period = guessed_period(largest)
-        out.extend((amount, currency, period) for amount, currency in values)
+        start = 0
+        for end in range(len(found)):
+            if end < len(links) and links[end]:
+                continue
+            # A range shares its period; unrelated amounts have separate contexts.
+            previous_end = found[start - 1]["end"] if start else 0
+            next_start = found[end + 1]["start"] if end + 1 < len(found) else len(segment)
+            before = segment[previous_end:found[start]["start"]]
+            after = segment[found[end]["end"]:next_start]
+            prefix_parts = CLAUSE_JOINER.split(before)
+            prefix = prefix_parts[-1] if len(prefix_parts) > 1 or start == 0 else ""
+            suffix = CLAUSE_JOINER.split(after)[0]
+            counted = [fig for fig in found[start:end + 1] if fig["currency"]]
+            start = end + 1
+            if BONUS_LABEL.search(prefix) or BONUS_LABEL.search(suffix):
+                continue
+            values = [(parse_amount(fig["token"], fig["scale"]), fig["currency"]) for fig in counted]
+            values = [(amount, currency) for amount, currency in values if amount is not None]
+            if not values:
+                continue
+            period = printed_period(prefix, suffix)
+            if not period:
+                largest = max(amount * rates.get(currency, 1.0) for amount, currency in values)
+                if largest < 10:
+                    continue  # a lone figure this small is no wage
+                period = guessed_period(largest)
+            out.extend((amount, currency, period) for amount, currency in values)
     return out
 
 
