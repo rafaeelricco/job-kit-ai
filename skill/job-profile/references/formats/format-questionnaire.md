@@ -17,8 +17,8 @@ and every `job_search.yaml` key:
 - work model, job types, date filters
 - positions, `location.search_in` (list | `worldwide`),
   `location.exclude_hire_from`,
-  `market_currencies`, `exclude_companies`
-- salary, `bonus`, `equity`, `salary_history.last`, notice, relocation,
+  `exclude_companies`
+- salary min and target (currency, monthly and annual each), `bonus`, `equity`, `salary_history.last`, notice, relocation,
   `availability.*` commitments, `consents.*`, `employment_routes.*`
 
 Ask each `search_packs.yaml` `packs[].enabled` flag. Never offer to enable a

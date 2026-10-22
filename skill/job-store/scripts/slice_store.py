@@ -8,7 +8,7 @@ stdin: ``{"root": abs Profile root, "select": "new" | "all" | "<file>.md",
 
 Without ``out``: ``{"count", "filter": [{file, company, title, location,
 work_model, work_auth, hiring_route, eligibility, eligibility_evidence,
-salary}], "gaps": [{path, reason}]}``. With ``out``: writes
+salary, pay_usd_year}], "gaps": [{path, reason}]}``. With ``out``: writes
 ``out/extract-NN.json`` = ``{"excerpts": [<= batch rows]}`` for the selected rows
 minus ``skip`` and prints ``{"count", "batches": [paths], "gaps"}``. A bad
 payload prints ``{"slice_error": "..."}`` with exit 1.
@@ -34,6 +34,7 @@ FILTER_KEYS = (
     "eligibility",
     "eligibility_evidence",
     "salary",
+    "pay_usd_year",
 )
 JOB_FACT_KEYS = (
     "seniority",

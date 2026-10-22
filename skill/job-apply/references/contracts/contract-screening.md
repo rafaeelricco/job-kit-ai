@@ -116,9 +116,10 @@ the option meaning other, not listed, or prefer not to say; none → rule 7.
 - Own company / CNPJ / invoicing entity: a yes/no ask prints
   `employment_routes.contractor_entity` only when it is exactly `Yes` or `No`;
   empty or any other value → rule 7. Free text prints a non-empty value verbatim.
-- Salary period: `salary_range_usd` is yearly. A monthly ask divides the
-  figure by 12, rounded to 100; a daily ask by 260, rounded to 10; an hourly
-  ask by 2080, rounded to 5.
+- Salary period: `salary_expectations.min` and `.target` each store `monthly`
+  and `annual` in their own `currency`. A monthly ask uses `monthly` and a yearly
+  ask `annual`, verbatim. Other periods derive from `annual`: weekly ÷52, rounded
+  to 10; daily ÷260, rounded to 10; hourly ÷2080, rounded to 5.
 
 - Language level is the printed self-assessment, paired with the language name. Never assert a certification, test score, or bare letter grade.
 - Never name an employer's client. Use only a domain phrase already present in a Fact file.
@@ -131,24 +132,24 @@ the option meaning other, not listed, or prefer not to say; none → rule 7.
 
 Keep two bands separate:
 
-- `ours` = `salary_expectations.salary_range_usd` (`ours.min`, `ours.max`), the accepted band, not the answer.
+- `ours` = `salary_expectations` (`ours.min`, the floor; `ours.target`, the ask), each `{currency, monthly, annual}`; `ours.target` in a row means the figure for the asked period per "Salary period".
 - `job` = USD figures printed by the posting (`job.min`, `job.max`); either may be absent.
 
 If the posting prints figures in another currency, answer `job.max` in that
 currency (`job.min` when only it is printed) — never convert. An ask in
-another currency with no figure printed in it, or an empty `ours` with none
-printed, follows resolution rule 7; `ours` never answers a non-USD ask.
+another currency with no figure printed in it, or an empty `ours.target` with none
+printed, follows resolution rule 7; `ours.target` answers only an ask in its own currency.
 
 Otherwise use the first matching row:
 
-| #   | Condition                             | Figure                    |
-| --- | ------------------------------------- | ------------------------- |
-| 1   | no `job.min`, no `job.max`            | `ours.max`                |
-| 2   | both printed, `job.min >= ours.max`   | `(job.min + job.max) / 2` |
-| 3   | both printed                          | `job.max`                 |
-| 4   | `job.min` only, `job.min >= ours.max` | `job.min`                 |
-| 5   | `job.min` only                        | `ours.max`                |
-| 6   | `job.max` only                        | `job.max`                 |
+| #   | Condition                                | Figure                    |
+| --- | ---------------------------------------- | ------------------------- |
+| 1   | no `job.min`, no `job.max`               | `ours.target`             |
+| 2   | both printed, `job.min >= ours.target`   | `(job.min + job.max) / 2` |
+| 3   | both printed                             | `job.max`                 |
+| 4   | `job.min` only, `job.min >= ours.target` | `job.min`                 |
+| 5   | `job.min` only                           | `ours.target`             |
+| 6   | `job.max` only                           | `job.max`                 |
 
 Rows 2 and 4 meet an outpaying posting; never substitute an `ours` number for a `job`
 operand. One-figure asks use the figure. Range asks use that figure as high and `job.min`
@@ -157,12 +158,12 @@ stored range.
 
 Before staging any salary answer, including a prepared value, check the result
 is `>= job.min` and `<= job.max` wherever those bounds exist, comparing figures
-in the same currency and period. For USD, its annual equivalent must also be
-`>= ours.min` when that floor is present. Check both endpoints of a range.
+in the same currency and period. In `ours.min`'s currency, its annual equivalent must also be
+`>= ours.min.annual` when that floor is present. Check both endpoints of a range.
 Name any broken bound and follow resolution rule 7 directly; never fall through
 to another answer source.
 
-A midpoint of `ours` answers no row.
+`ours.min` answers no row.
 
 ## Sponsorship and authorization
 

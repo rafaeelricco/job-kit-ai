@@ -598,6 +598,10 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("possible duplicate of scout/jobs/{other}", queue)
         self.assertIn("`new` and not dead-by-log", queue)
         self.assertIn("`applied`, `interview`, or `offer`", queue)
+        self.assertIn("`pay below min per scout/jobs/{filename}: {pay_usd_year}`", queue)
+        self.assertIn("clauses 1, 2, 4, 6, and 7 have none", queue)
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("a row dropped for `below_min` leaves the persist set the same way", gate)
 
     def test_zero_keep_runs_are_a_named_defect(self):
         search = instruction_text(FLOW_SEARCH)
@@ -706,6 +710,16 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
     def test_dossier_validator_matches_readers(self):
         rule = FLOW_READ.read_text(encoding="utf-8").partition("Required keys:")[2].partition(".")[0]
         self.assertEqual(tuple(re.findall(r"`([^`]+)`", rule)), validate_dossier.KEYS)
+
+    def test_pay_floor_replaces_currency(self):
+        gate = instruction_text(FLOW_GATE)
+        self.assertIn("`pay.py` `below_min`", gate)
+        self.assertIn("currency is never one", gate)
+        self.assertNotIn("market_currencies", gate)
+        preflight = instruction_text(FLOW_PREFLIGHT)
+        self.assertIn("`exclude_hire_from`), `exclude_companies`, `prune_score_max`", preflight)
+        self.assertIn("`market_currencies`, `salary_expectations.salary_range_usd`, or a `min` / `target` with `amount` or `period`, or any other valued key", preflight)
+        self.assertNotIn("capped at 40", preflight)
 
 
 if __name__ == "__main__":
