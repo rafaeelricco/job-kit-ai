@@ -46,6 +46,15 @@ class PayCliTests(unittest.TestCase):
         # 25000 x 12 x 0.198059 = 59400, under the 60000 floor: "mês" was read as month
         self.assertEqual((row["pay_usd_year"], row["below_min"]), ("59400", True))
 
+    def test_partial_currency_conversion_stays_unknown(self):
+        for salary in ("USD 50,000 per year; AED 300,000 per year",
+                       "AED 300,000 per year; USD 50,000 per year"):
+            with self.subTest(salary=salary):
+                code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                          "rows": [{"url": "mixed", "salary": salary}]})
+                self.assertEqual(code, 0)
+                self.assertEqual(out["rows"], [{"url": "mixed", "pay_usd_year": "—", "below_min": False}])
+
 
 if __name__ == "__main__":
     unittest.main()

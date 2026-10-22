@@ -223,12 +223,10 @@ def pay_payload(payload: object, rates: Dict[str, float]) -> Tuple[int, Dict[str
                 or not isinstance(row.get("salary"), str)):
             return 1, {"pay_error": "rows[{0}]: need string url and salary".format(index)}
         values = [
-            value for value in (
-                yearly_usd(amount, currency, period, rates)
-                for amount, currency, period in figures(row["salary"], rates))
-            if value is not None
+            yearly_usd(amount, currency, period, rates)
+            for amount, currency, period in figures(row["salary"], rates)
         ]
-        if not values:
+        if not values or any(value is None for value in values):
             out.append({"url": row["url"], "pay_usd_year": "—", "below_min": False})
             continue
         low, high = min(values), max(values)
