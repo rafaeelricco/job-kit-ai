@@ -140,10 +140,13 @@ single owner of the pack, board, discovery, and route schema. Operator-provided
 board rows and discovery market/source configuration remain ordinary confirmed
 `packs` edits under the protocol above. `/job-company-scout` owns discovery
 history and entries marked `managed_by: job-company-scout`; do not manually
-rewrite that history through this flow.
+rewrite that history or those entries through this flow, except `enable` /
+`disable`, which may flip their `enabled`.
 
 - `list` — read-only. Use the `flow-show.md` Packs format and route statuses.
-- `enable` / `disable` — flip `enabled` on a named `id`. No id match → say so.
+- `enable` / `disable` — flip `enabled` on a named pack `id`; with a pack `id`
+  and a `company_id` (`packs enable <id> <company_id>`), flip `enabled` on that
+  pack's one `boards[]` row instead, including a discovery-owned row. No match → say so.
   Enabling must satisfy the route invariant before the staged file is renamed.
 - `formulations` — replace the list on one pack with strings the user typed. Never
   compose a formulation, never widen one, never look a term up. Empty list →

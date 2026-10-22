@@ -128,6 +128,8 @@ relevance is rejected, memberships are rejected in every tracked market,
 or the company is explicitly excluded by the profile, disable
 only its discovery-owned board rows and
 careers packs. A failed or incomplete read can never trigger that disable.
+When a qualified company reuses a disabled row or pack, leave it disabled and
+report the exact `/job-profile packs enable <id> [<company_id>]` command.
 
 ## Stage and report
 
