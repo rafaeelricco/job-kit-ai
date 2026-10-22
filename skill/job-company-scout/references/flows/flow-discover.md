@@ -46,6 +46,7 @@ source's date precision. Keep event dates such as `2025`, `2025-04`, or
 Company identity is its verified official website host, lowercased with
 leading `www.` removed. Verify the company website from a reliable source, then
 verify its name and any rebrand aliases against official company evidence.
+Store `website` as published; never rewrite it to the key host.
 Investor, accelerator, and ATS tenant hosts are not company identity. If the
 official host or identity is uncertain, leave the item in the source's
 `pending_urls`; do not create a guessed company key.

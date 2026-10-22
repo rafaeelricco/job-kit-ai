@@ -99,7 +99,7 @@ from an investor, accelerator, or ATS tenant. Each company value has:
 | Key | Shape |
 | --- | --- |
 | `name` | Verified current company name. |
-| `website` | Absolute official `http(s)` website URL whose host matches the key. |
+| `website` | Absolute official `http(s)` website URL as published; its host, lowercased with a leading `www.` removed, equals the key. |
 | `aliases` | List of verified former names or official hostnames for rebrands. |
 | `first_seen_at` | ISO-8601 timestamp; immutable after creation. |
 | `last_checked_at` | ISO-8601 timestamp of the latest company check. |
