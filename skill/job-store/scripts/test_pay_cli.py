@@ -117,6 +117,17 @@ class PayCliTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertEqual((row["pay_usd_year"], row["below_min"]), (pay, below))
 
+    def test_bonus_descriptions_do_not_discard_base_wages(self):
+        phrases = ("USD 50,000/year bonus included", "USD 50,000/year no bonus",
+                   "USD 50,000/year bonus eligible", "USD 50,000/year plus USD 2,000 annual bonus",
+                   "USD 50,000/year (annual bonus USD 2,000)")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        for row, phrase in zip(out["rows"], phrases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), ("50000", True))
+
 
 if __name__ == "__main__":
     unittest.main()
