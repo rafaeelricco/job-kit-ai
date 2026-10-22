@@ -13,9 +13,9 @@ true key → no bound). Every date control and date keep below reads it.
 `worldwide` → each formulation once, location unfiltered: location control unset. A `search_in` list → cycle its entries. A pack with `location: keep-only` runs under a `search_in` list as under `worldwide`: each formulation once, location control unset, `search_in` applied at keep and gate only. Never infer keep-only from the surface; only the pack declares it. Any other present `location` value records `defect: query_not_submitted` and scans nothing, as an incomplete route does.
 
 For `route.kind: careers`, use **Declared careers listings** below. JSON GET
-rules apply only to `json` and `board` routes. Validate selected pack fields
-against `job-profile/references/schemas/schema-search-packs.md`; research memory is
-not a search input. Scout never writes the deck.
+rules apply only to `json` and `board` routes. Validate selected deck pack fields
+against `job-profile/references/schemas/schema-search-packs.md`; an ad-hoc URL
+pack is not a deck pack and is exempt. Research memory is not a search input. Scout never writes the deck.
 
 When a pack has a JSON or board route, consume it before any DOM search, except a
 `kind: board` pack first runs `site:{entry host} {formulation}` on a
