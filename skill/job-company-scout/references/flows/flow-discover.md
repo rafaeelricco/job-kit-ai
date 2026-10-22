@@ -133,7 +133,10 @@ or the company is explicitly excluded by the profile, disable
 only its discovery-owned board rows and
 careers packs. A failed or incomplete read can never trigger that disable.
 When a qualified company reuses a disabled row or pack, leave it disabled and
-report the exact `/job-profile packs enable <id> [<company_id>]` command.
+report the exact enable command: `/job-profile packs enable <pack id> <company_id>`
+for a reused `boards[]` row, or `/job-profile packs enable <pack id>` for a
+reused careers pack. Never add a `company_id` to a careers pack's command;
+`packs enable` reads a second argument as a `boards[]` row.
 
 ## Stage and report
 
