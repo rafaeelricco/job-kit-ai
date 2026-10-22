@@ -120,13 +120,42 @@ class PayCliTests(unittest.TestCase):
     def test_bonus_descriptions_do_not_discard_base_wages(self):
         phrases = ("USD 50,000/year bonus included", "USD 50,000/year no bonus",
                    "USD 50,000/year bonus eligible", "USD 50,000/year plus USD 2,000 annual bonus",
-                   "USD 50,000/year (annual bonus USD 2,000)")
+                   "USD 50,000/year (annual bonus USD 2,000)", "USD 50,000 bonus included",
+                   "USD 4,167 bonus included", "USD 50,000/year or USD 4,167/month bonus included",
+                   "USD 4,167/month bonus included or USD 50,000/year",
+                   "Bonus eligible salary USD 50,000/year")
         code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
                                   "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
         self.assertEqual(code, 0)
         for row, phrase in zip(out["rows"], phrases):
             with self.subTest(phrase=phrase):
                 self.assertEqual((row["pay_usd_year"], row["below_min"]), ("50000", True))
+
+    def test_descriptive_bonus_words_do_not_turn_separate_bonuses_into_wages(self):
+        phrases = ("USD 50,000/year plus USD 6,000 annual bonus included",
+                   "USD 50,000/year plus USD 6,000 annual bonus eligible",
+                   "USD 50,000/year plus USD 6,000 bonus included",
+                   "USD 50,000/year plus annual bonus included USD 6,000",
+                   "USD 50,000/year + USD 6,000 bonus included",
+                   "USD 50,000/year (USD 6,000 bonus included)",
+                   "USD 50,000/year and USD 6,000 annual bonus included",
+                   "USD 50,000/year, USD 6,000 annual bonus included",
+                   "USD 50,000/year; USD 6,000 annual bonus included")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        for row, phrase in zip(out["rows"], phrases):
+            with self.subTest(phrase=phrase):
+                self.assertEqual((row["pay_usd_year"], row["below_min"]), ("50000", True))
+
+    def test_parenthesized_alternative_wage_keeps_bonus_description(self):
+        phrases = ("USD 50,000/year or (USD 6,000/month bonus included)",
+                   "USD 50,000/year or USD 6,000/month bonus included")
+        code, out = self.run_pay({"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
+                                  "rows": [{"url": str(i), "salary": phrase} for i, phrase in enumerate(phrases)]})
+        self.assertEqual(code, 0)
+        self.assertEqual([(row["pay_usd_year"], row["below_min"]) for row in out["rows"]],
+                         [("50000-72000", False)] * 2)
 
 
 if __name__ == "__main__":

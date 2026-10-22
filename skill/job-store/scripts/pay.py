@@ -160,8 +160,14 @@ def figures(phrase: str, rates: Optional[Dict[str, float]] = None) -> List[Tuple
             # "Including bonus" describes the wage; a separate bonus amount is not a wage.
             label = re.split(r"\b(?:including|includes?|with)\b", prefix + " " + suffix,
                              maxsplit=1, flags=re.IGNORECASE)[0]
-            label = re.sub(r"\b(?:no\s+bonus|bonus[\s-]+(?:included|eligible))\b", "", label,
-                           flags=re.IGNORECASE)
+            # Descriptions can qualify a base wage or an alternative wage quote,
+            # but must not erase the label on an additional, separately priced bonus.
+            separate_amount = (bool(out) and not re.search(r"\bor\b", before, re.IGNORECASE)
+                               and (previous_end == 0 or re.search(
+                                   r"[+(,]|\b(?:plus|and)\b", before, re.IGNORECASE)))
+            if not separate_amount:
+                label = re.sub(r"\b(?:no\s+bonus|bonus[\s-]+(?:included|eligible))\b", "", label,
+                               flags=re.IGNORECASE)
             if BONUS_LABEL.search(label):
                 continue
             values = [(parse_amount(fig["token"], fig["scale"]), fig["currency"]) for fig in counted]
