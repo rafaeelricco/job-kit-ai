@@ -22,7 +22,7 @@ Options:
   --dry-run   Print the plan, link nothing
   -h, --help  Show this help
 
-Links job-scout, job-apply and job-prep (with their shared dependencies) into
+Links job-company-scout, job-scout, job-apply and job-prep (with their shared dependencies) into
 every coding-agent home present, then offers the browser-use CLI, a Chromium
 browser, and the driver skill for anything still missing.
 

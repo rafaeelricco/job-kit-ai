@@ -4,13 +4,13 @@
 
 # Skill folder names under skill/ for coding agents.
 CORE_SKILL_NAMES="job-profile-root job-store"
-SKILL_NAMES="job-profile job-list job-match job-stories job-inbox job-humanize job-resume-refine job-resume-review ${CORE_SKILL_NAMES}"
+SKILL_NAMES="job-company-scout job-profile job-list job-match job-stories job-inbox job-humanize job-resume-refine job-resume-review ${CORE_SKILL_NAMES}"
 # Browser-channel skills: same agent homes, installed only by the `browser-use`
 # target, which needs the browser-use CLI to drive a real browser.
 BROWSER_SKILL_NAMES="job-scout job-apply job-prep"
 # Extra names `install browser-use` links beside BROWSER_SKILL_NAMES.
 # Uninstall preserves dependencies used by agents while that channel remains.
-BROWSER_SHARED_DEPS="job-match job-list job-profile job-resume-refine job-humanize captcha-solver ${CORE_SKILL_NAMES}"
+BROWSER_SHARED_DEPS="job-company-scout job-match job-list job-profile job-resume-refine job-humanize captcha-solver ${CORE_SKILL_NAMES}"
 
 # agents_names_for_root ROOT REPO
 # Prints SKILL_NAMES, omitting BROWSER_SHARED_DEPS when ROOT still has a

@@ -89,6 +89,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'scripts\common.sh',
   'scripts\browser-use\install.sh',
   'skill\captcha-solver\SKILL.md',
+  'skill\job-company-scout\SKILL.md',
   'skill\job-apply\SKILL.md',
   'skill\job-prep\SKILL.md',
   'skill\job-resume-refine\SKILL.md',
@@ -149,7 +150,7 @@ Install channels:
   all          Aside + coding agents + browser-use, skipping absent (default)
   agents       Coding agents only (fails when no agent home exists)
   aside        Aside skills (fails when Aside is not set up)
-  browser-use  job-scout + job-apply + job-prep plus the browser-use driver
+  browser-use  job-company-scout + job-scout + job-apply + job-prep plus the browser-use driver
                skill into coding-agent homes (needs an agent home)
   fetch        Refresh the installed release bundle, install no skills
 
