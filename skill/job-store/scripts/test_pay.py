@@ -43,7 +43,7 @@ class PayTests(unittest.TestCase):
         self.assertEqual((out["min_usd_year"], out["rows"][0]["below_min"]), (None, False))
 
     def test_bad_payload(self):
-        for payload in ([], {"rows": []}, {"min": MIN, "rows": [{"url": "a"}]}):
+        for payload in ([], {"rows": None}, {"min": MIN, "rows": [{"url": "a"}]}):
             code, out = pay_payload(payload, RATES)
             self.assertEqual(code, 1)
             self.assertIn("pay_error", out)

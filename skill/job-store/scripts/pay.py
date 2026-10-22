@@ -6,11 +6,13 @@ the job-apply ones (`contract-screening.md` "Salary period"): hour 2080, day 260
 week 52, month 12. Currencies convert through `rates.json` beside this script.
 
 stdin: {"min": {"currency": "USD", "monthly": "5000", "annual": "60000"},
-        "rows": [{"url": "...", "salary": "£80,000 - £100,000" | "—"}, ...]}
+        "rows": [{"url": "...", "salary": "£80,000 - £100,000" | "—" | null}, ...]}
 stdout: {"min_usd_year": 60000,
          "rows": [{"url": "...", "pay_usd_year": "107000-134000" | "—", "below_min": false}, ...]}
-in input order, or {"pay_error": "..."} with exit 1. An unparseable phrase, an
-unknown currency or an empty min is "—" / below_min false: unknown pay never drops.
+in input order, or {"pay_error": "..."} with exit 1. Unknown or unconvertible
+pay is "—" / below_min false: unknown pay never drops. A missing, null or wholly
+empty min disables the floor without hiding known pay. A partially filled min is
+an error.
 The floor is min.annual in USD; min.monthly × 12 must match it within 12.
 """
 
@@ -179,9 +181,12 @@ def yearly_usd(amount: float, currency: str, period: str, rates: Dict[str, float
 
 
 def min_usd_year(floor: object, rates: Dict[str, float]) -> Optional[int]:
+    if floor is None:
+        return None
     if not isinstance(floor, dict):
         raise ValueError("min must be an object with currency, monthly and annual")
-    raw = {key: floor.get(key) for key in ("currency", "monthly", "annual")}
+    raw = {key: "" if floor.get(key) is None else floor.get(key)
+           for key in ("currency", "monthly", "annual")}
     for key in ("monthly", "annual"):
         if isinstance(raw[key], bool) or not isinstance(raw[key], (str, int, float)):
             raise ValueError("min: {0} must be a number or string".format(key))
@@ -207,24 +212,24 @@ def min_usd_year(floor: object, rates: Dict[str, float]) -> Optional[int]:
 
 
 def pay_payload(payload: object, rates: Dict[str, float]) -> Tuple[int, Dict[str, object]]:
-    shape = "stdin must be an object with a min object and a rows array of {url, salary} strings"
+    shape = "stdin must be an object with an optional min object or null and a rows array of {url, salary} rows"
     if not isinstance(payload, dict):
         return 1, {"pay_error": shape}
     rows = payload.get("rows")
-    if not isinstance(rows, list) or "min" not in payload:
+    if not isinstance(rows, list):
         return 1, {"pay_error": shape}
     try:
-        floor = min_usd_year(payload["min"], rates)
+        floor = min_usd_year(payload.get("min"), rates)
     except ValueError as error:
         return 1, {"pay_error": str(error)}
     out: List[Dict[str, object]] = []
     for index, row in enumerate(rows):
         if (not isinstance(row, dict) or not isinstance(row.get("url"), str)
-                or not isinstance(row.get("salary"), str)):
-            return 1, {"pay_error": "rows[{0}]: need string url and salary".format(index)}
+                or "salary" not in row or (row["salary"] is not None and not isinstance(row["salary"], str))):
+            return 1, {"pay_error": "rows[{0}]: need string url and present string or null salary".format(index)}
         values = [
             yearly_usd(amount, currency, period, rates)
-            for amount, currency, period in figures(row["salary"], rates)
+            for amount, currency, period in figures(row["salary"] if row["salary"] is not None else "—", rates)
         ]
         if not values or any(value is None for value in values):
             out.append({"url": row["url"], "pay_usd_year": "—", "below_min": False})
