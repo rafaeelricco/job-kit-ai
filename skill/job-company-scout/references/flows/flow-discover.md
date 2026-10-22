@@ -8,8 +8,10 @@ messages, or scheduled work.
 
 ## Read-only profile context
 
-Follow `job-profile`'s read-only path and use its `flow-show.md` read set and
-derivation rules for Profile root, Profile card, and Constraints. Load
+Profile root comes from `job-profile-root`, loaded by `SKILL.md`. Use
+`job-profile/references/flows/flow-show.md`'s read set and derivation rules for
+the Profile card and Constraints; do not route through `job-profile/SKILL.md`.
+Load
 `job-profile/references/schemas/schema-search-packs.md` as the sole schema for
 the deck and discovery extension. Do not enter the profile mutation flow.
 

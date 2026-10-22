@@ -9,12 +9,16 @@ argument-hint: "[all | <market-id> ...]"
 Discover companies from configured market sources and maintain their verified
 company and careers-board records in `data/search_packs.yaml`.
 
+Profile root: load the `job-profile-root` skill now; obey it end-to-end. A
+`job-profile-root` stop means no profile, so stop here; never scaffold one.
+
 On explicit `/job-company-scout` invocation or a direct request to discover
-companies or boards, load `job-profile`'s read-only
-path for the active Profile root, card, and constraints. Read
+companies or boards, read `job-profile/references/flows/flow-show.md` for the
+read set and card and constraints derivation. Read
 `job-profile/references/schemas/schema-search-packs.md` and
-`./references/flows/flow-discover.md`, then follow the discovery flow. Never enter
-`job-profile`'s mutation path.
+`./references/flows/flow-discover.md`, then follow the discovery flow. Never
+route through `job-profile/SKILL.md` or enter its mutation flow. Resolve
+`data/*` against Profile root.
 
 This explicit request authorizes web research, discovery history, and changes
 to discovery-owned inputs. This skill writes only `data/search_packs.yaml` and
