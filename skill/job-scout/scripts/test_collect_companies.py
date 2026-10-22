@@ -166,6 +166,25 @@ class CoverageRegressionTest(unittest.TestCase):
         fake = Fake({"https://brit.wd3.myworkdayjobs.com/wday/cxs/brit/britcareers/jobs": page})
         self.assertEqual(len(board_jobs("workday", "brit/wd3/britcareers", POSITIONS, fake)), 50)
 
+    def test_failed_fetch_keeps_sent_postings(self):
+        fake = Fake({"https://boards-api.greenhouse.io/v1/boards/acme/jobs": gh("Software Engineer")})
+        _, first = collect(self.payload(), fake, "2026-10-20T00:00:00+00:00")
+        self.assertEqual(len(first["candidates"]), 1)
+        fake.routes["https://boards-api.greenhouse.io/v1/boards/acme/jobs"] = FetchError("HTTP 503")
+        _, failed = collect(self.payload(), fake, "2026-10-21T00:00:00+00:00")
+        self.assertEqual(len(failed["boards"]["failed"]), 1)
+        fake.routes["https://boards-api.greenhouse.io/v1/boards/acme/jobs"] = gh("Software Engineer")
+        _, recovered = collect(self.payload(), fake, "2026-10-22T00:00:00+00:00")
+        self.assertEqual(recovered["candidates"], [])
+
+    def test_positions_change_keeps_listed_postings_sent(self):
+        fake = Fake({"https://boards-api.greenhouse.io/v1/boards/acme/jobs": gh("Software Engineer")})
+        _, first = collect(self.payload(), fake, "2026-10-20T00:00:00+00:00")
+        self.assertEqual(len(first["candidates"]), 1)
+        collect(self.payload(positions=["Data Scientist"]), fake, "2026-10-21T00:00:00+00:00")
+        _, back = collect(self.payload(), fake, "2026-10-22T00:00:00+00:00")
+        self.assertEqual(back["candidates"], [])
+
     def test_non_string_checked_at_does_not_crash(self):
         with open(self.state, "w", encoding="utf-8") as f:
             json.dump({"boards": {"US-001": {"checked_at": 5}}, "queue": [{"title": "no url"}]}, f)

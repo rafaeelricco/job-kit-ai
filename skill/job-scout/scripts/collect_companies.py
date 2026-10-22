@@ -10,7 +10,8 @@ CSV columns read: row_id, region, tier, company_name, ats, ats_tenant, and
 optional ats_evidence (an EU Greenhouse or EU Lever host makes the row
 unsupported). State is {"boards": {row_id: {"checked_at", "status", "error"?,
 "sent"?}}, "queue": [..]}, written atomically; a re-fetched board queues only
-matched urls not in its `sent` list. Queued candidates are emitted before any new fetch; boards
+matched urls not in its `sent` list, which a failed fetch keeps. Queued
+candidates are emitted before any new fetch; boards
 are fetched never-checked first, then oldest checked_at, then row_id, each at
 most once per call, until the queue reaches `limit` or no board is left. A
 fetch error, HTTP 429/5xx, or a missing response path marks the board
@@ -260,12 +261,18 @@ def collect(payload: Any, fetch: Fetch, now: str) -> Tuple[int, Dict[str, Any]]:
             found = board_jobs(row["ats"], row["ats_tenant"], payload["positions"], fetch)
         except FetchError as exc:
             message = str(exc) or "fetch failed"
-            boards[row["row_id"]] = {"checked_at": now, "status": "failed", "error": message}
+            failure = {"checked_at": now, "status": "failed", "error": message}
+            # Keep `sent` so a recovered board does not hand off the same postings again.
+            sent = record(row["row_id"]).get("sent")
+            if isinstance(sent, list):
+                failure["sent"] = sent
+            boards[row["row_id"]] = failure
             failed.append({"row_id": row["row_id"], "ats": row["ats"], "error": message})
             continue
         fetched += 1
         # `sent`: matched urls already handed off or queued from this board; a
         # re-fetch queues only new ones, and closed postings fall out of it.
+        # Still-listed urls stay in it when the positions change.
         sent = record(row["row_id"]).get("sent")
         sent = set(sent) if isinstance(sent, list) else set()
         matched = []
@@ -281,7 +288,9 @@ def collect(payload: Any, fetch: Fetch, now: str) -> Tuple[int, Dict[str, Any]]:
                           "source": payload["pack"], "channel": "ats", "author": UNKNOWN,
                           "contact": UNKNOWN, "date": item["date"], "matched_query": query,
                           "location": item["location"]})
-        boards[row["row_id"]] = {"checked_at": now, "status": "done", "sent": matched}
+        listed = {item["url"] for item in found}
+        kept = [url for url in sorted(sent) if url in listed and url not in matched]
+        boards[row["row_id"]] = {"checked_at": now, "status": "done", "sent": matched + kept}
     emit, state["queue"] = queue[:limit], queue[limit:]
     try:
         write_state(payload["state"], state)
