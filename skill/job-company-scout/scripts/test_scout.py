@@ -389,6 +389,51 @@ class ScoutTests(unittest.TestCase):
                         scout.record(root, run["run_id"], task["id"], result)
             self.assertEqual(scout.publish_pending(root, ["uk"])["errors"], [])
 
+    def test_saved_company_review_for_a_removed_market_does_not_block_start(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0), ("us", "https://us.example/portfolio", 0)],
+                                {"acme.example": company()})
+            run = scout.start(root, ["uk"], 50, False)
+            review = next(t for t in run["tasks"] if t["kind"] == "company")
+            scout.record(root, run["run_id"], review["id"], findings(review))
+            document = load_profile(root)
+            del document["discovery"]["markets"]["uk"]
+            write_document(root, document)
+            following = scout.start(root, ["us"], 50, False)
+            self.assertEqual(following["publication"]["errors"], [])
+            self.assertTrue(following["tasks"])
+
+    def test_status_ignores_removed_markets_and_unpublished_links(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0), ("us", "https://us.example/portfolio", 3)])
+            scout.start(root, ["uk", "us"], 1, False)
+            document = load_profile(root)
+            del document["discovery"]["markets"]["us"]
+            write_document(root, document)
+            run = scout.start(root, ["uk"], 1, False)
+            source = run["tasks"][0]
+            result = findings(source)
+            result["page"]["links"] = [SOURCE + "/new-company"]
+            scout.record(root, run["run_id"], source["id"], result)
+            state = scout.status(root)
+            self.assertEqual(state["pending_by_market"], {})
+            self.assertEqual(state["awaiting_publication"], 1)
+
+    def test_complete_crawl_under_all_markets_supersedes_single_market_incomplete_one(self):
+        document = load_profile(self.root)
+        document["discovery"]["markets"]["us"] = {"enabled": True, "scope": "Companies headquartered in us",
+                                                  "sources": {"same": {"url": SOURCE, "strategy": "portfolio"}}}
+        document["discovery"]["observations"][SOURCE]["pending_urls"] = []
+        write_document(self.root, document)
+        for markets, complete in ((["uk"], False), (["all"], True)):
+            run = scout.start(self.root, markets, 1, False)
+            task = run["tasks"][0]
+            result = findings(task)
+            result["page"]["complete"] = complete
+            scout.record(self.root, run["run_id"], task["id"], result)
+            scout.publish_pending(self.root, markets)
+        self.assertEqual(scout.status(self.root)["progress"]["source_incomplete_cycles"], 0)
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

@@ -257,6 +257,8 @@ def _candidate_items(connection: sqlite3.Connection, entries: list[dict[str, Any
     rows = connection.execute("SELECT url,market,source_url,first_seen_order FROM coverage WHERE active=1 AND pending=1 ORDER BY first_seen_order").fetchall()
     grouped: dict[str, dict[str, Any]] = {}
     for row in rows:
+        if (row["market"], row["source_url"]) not in order_by_source:
+            continue  # another market's backlog stays active for status, not for this run
         data = grouped.setdefault(row["url"], {"kind": "item", "url": row["url"], "origins": [], "_source_indexes": []})
         origin = {"market": row["market"], "source_url": row["source_url"]}
         data["origins"].append(origin)
@@ -542,7 +544,7 @@ def start(profile_root: Any, markets: Any, batch_size: int = DEFAULT_BATCH_SIZE,
     try:
         _initialize(connection)
         # A saved checkpoint is always replayed before this invocation selects more work.
-        publication = _publish_pending_connection(root, connection, _all_entries(document))
+        publication = _publish_pending_connection(root, connection, document)
         if publication["errors"]:
             run_id = uuid.uuid4().hex
             return {"run_id": run_id, "tasks": [], "assignments": _assignments([]), "publication": publication}
@@ -551,7 +553,7 @@ def start(profile_root: Any, markets: Any, batch_size: int = DEFAULT_BATCH_SIZE,
         entries = _source_entries(document, selected)
         connection.execute("BEGIN IMMEDIATE")
         try:
-            _seed_coverage(connection, entries)
+            _seed_coverage(connection, _all_entries(document))
             candidates = _candidate_items(connection, entries, selected)
             candidates = [candidate for candidate in candidates if not _awaiting_overlap(connection, candidate)]
             pending_resumes = sorted((c for c in candidates if c["_existing_state"] == "pending"),
@@ -832,10 +834,9 @@ def _all_entries(document: Any) -> list[dict[str, Any]]:
     return _source_entries(document, _validate_markets(document, ["all"]))
 
 
-def _publish_pending_connection(root: Path, connection: sqlite3.Connection,
-                                entries: list[dict[str, Any]]) -> dict[str, Any]:
+def _publish_pending_connection(root: Path, connection: sqlite3.Connection, document: Any) -> dict[str, Any]:
     # A saved checkpoint is finished research; publish it whatever markets this
-    # invocation selected, as long as its origins are still configured.
+    # invocation selected, as long as its markets and origins are still configured.
     try:
         import deck
     except ImportError as exc:
@@ -844,13 +845,16 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection,
     published = 0
     errors = []
     summaries = []
-    active_sources = {(entry["market"], entry["source_url"]) for entry in entries}
+    enabled_markets = set(_validate_markets(document, ["all"]))
+    active_sources = {(entry["market"], entry["source_url"]) for entry in _all_entries(document)}
     for result_row in rows:
         task = _task_metadata(connection, result_row)
         if task is None:
             errors.append({"task_id": result_row["task_id"], "error": "saved task metadata is missing"})
             break
         task_origins = json.loads(task["origins_json"])
+        if not set(json.loads(task["markets_json"])).issubset(enabled_markets):
+            continue
         if task["kind"] in ("item", "source") and any(
                 (origin.get("market"), origin.get("source_url")) not in active_sources
                 for origin in task_origins):
@@ -915,7 +919,7 @@ def publish_pending(profile_root: Any, markets: Any) -> dict[str, Any]:
     if connection is None:
         return {"published": 0, "errors": []}
     try:
-        return _publish_pending_connection(root, connection, _all_entries(document))
+        return _publish_pending_connection(root, connection, document)
     finally:
         connection.close()
 
@@ -935,9 +939,9 @@ def status(profile_root: Any) -> dict[str, Any]:
             return empty
         state_counts = {row["state"]: row["count"] for row in connection.execute("SELECT state,COUNT(*) AS count FROM tasks GROUP BY state")}
         result_counts = {row["delivery_state"]: row["count"] for row in connection.execute("SELECT delivery_state,COUNT(*) AS count FROM results GROUP BY delivery_state")} if "results" in tables else {}
-        # `active` only marks the last start's selection; report every market's backlog.
-        coverage_count = connection.execute("SELECT COUNT(DISTINCT url) FROM coverage WHERE pending=1").fetchone()[0] if "coverage" in tables else 0
-        coverage_by_market = connection.execute("SELECT market,COUNT(DISTINCT url) AS n FROM coverage WHERE pending=1 GROUP BY market").fetchall() if "coverage" in tables else []
+        # `active` marks links every enabled market still lists as pending in the deck.
+        coverage_count = connection.execute("SELECT COUNT(DISTINCT url) FROM coverage WHERE pending=1 AND active=1").fetchone()[0] if "coverage" in tables else 0
+        coverage_by_market = connection.execute("SELECT market,COUNT(DISTINCT url) AS n FROM coverage WHERE pending=1 AND active=1 GROUP BY market").fetchall() if "coverage" in tables else []
         progress = {"item_pending": coverage_count, "source_pending": 0, "company_pending": 0}
         if "tasks" in tables:
             for row in connection.execute("SELECT kind,COUNT(*) AS n FROM tasks WHERE state IN ('pending','failed') GROUP BY kind"):
@@ -945,11 +949,13 @@ def status(profile_root: Any) -> dict[str, Any]:
                     progress["source_pending"] = row["n"]
                 elif row["kind"] == "company":
                     progress["company_pending"] = row["n"]
-        # A later crawl of the same source supersedes an earlier incomplete one.
-        incomplete_cycles = connection.execute("""
-            SELECT COUNT(*) FROM cycles c WHERE kind='source' AND state='incomplete'
-            AND id=(SELECT MAX(id) FROM cycles WHERE kind='source' AND cycle_key=c.cycle_key)
-        """).fetchone()[0] if "cycles" in tables else 0
+        # A later crawl of the same source supersedes an earlier incomplete one,
+        # whatever market selection that crawl ran under.
+        latest_by_source: dict[str, str] = {}
+        if "cycles" in tables:
+            for row in connection.execute("SELECT cycle_key,state FROM cycles WHERE kind='source' ORDER BY id"):
+                latest_by_source[row["cycle_key"].rsplit("|", 1)[0]] = row["state"]
+        incomplete_cycles = sum(1 for state in latest_by_source.values() if state == "incomplete")
         progress["source_incomplete_cycles"] = incomplete_cycles
         pending = coverage_count + progress["source_pending"] + progress["company_pending"] + incomplete_cycles
         return {"pending": pending, "awaiting_publication": result_counts.get("awaiting_publication", 0),
