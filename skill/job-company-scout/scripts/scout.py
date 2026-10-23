@@ -759,8 +759,6 @@ def _source_cycle_complete(connection: sqlite3.Connection, cycle_id: int | None,
     if not rows:
         return False
     tasks_by_id = {row["id"]: row for row in rows}
-    graph: dict[str, list[str]] = {}
-    pages: dict[str, dict[str, Any]] = {}
     has_terminal = False
     for task in rows:
         if task["id"] in prospective:
@@ -776,36 +774,18 @@ def _source_cycle_complete(connection: sqlite3.Connection, cycle_id: int | None,
         page = payload.get("page", {})
         if not isinstance(page, dict):
             return False
-        children = []
-        for child_url in page.get("next_pages", []):
+        children = page.get("next_pages", [])
+        for child_url in children:
             child_id = _task_id("source", child_url, json.loads(task["markets_json"]),
                                 json.loads(task["origins_json"]), cycle_id)
             if child_id not in tasks_by_id:
                 return False
-            children.append(child_id)
-        if not children:
-            if page.get("complete") is not True:
-                return False
+        # A pagination bar may link back to earlier pages; only the page's own
+        # completion claim decides whether the crawl reached its end.
+        if page.get("complete") is True:
             has_terminal = True
-        graph[task["id"]] = children
-        pages[task["id"]] = page
-    colors: dict[str, int] = {}
-
-    def visit(task_id: str) -> bool:
-        color = colors.get(task_id, 0)
-        if color == 1:
+        elif not children:
             return False
-        if color == 2:
-            return True
-        colors[task_id] = 1
-        for child in graph[task_id]:
-            if not visit(child):
-                return False
-        colors[task_id] = 2
-        return True
-
-    if not all(visit(task_id) for task_id in graph):
-        return False
     return has_terminal
 
 
