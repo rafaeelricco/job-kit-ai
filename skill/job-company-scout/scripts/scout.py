@@ -542,7 +542,7 @@ def start(profile_root: Any, markets: Any, batch_size: int = DEFAULT_BATCH_SIZE,
     try:
         _initialize(connection)
         # A saved checkpoint is always replayed before this invocation selects more work.
-        publication = _publish_pending_connection(root, connection, selected, entries)
+        publication = _publish_pending_connection(root, connection, _all_entries(document))
         if publication["errors"]:
             run_id = uuid.uuid4().hex
             return {"run_id": run_id, "tasks": [], "assignments": _assignments([]), "publication": publication}
@@ -810,8 +810,14 @@ def _prospective_source_complete(connection: sqlite3.Connection, current_task: s
     return _source_cycle_complete(connection, current_task["cycle_id"], {current_task["id"]: current_result})
 
 
-def _publish_pending_connection(root: Path, connection: sqlite3.Connection, markets: list[str],
+def _all_entries(document: Any) -> list[dict[str, Any]]:
+    return _source_entries(document, _validate_markets(document, ["all"]))
+
+
+def _publish_pending_connection(root: Path, connection: sqlite3.Connection,
                                 entries: list[dict[str, Any]]) -> dict[str, Any]:
+    # A saved checkpoint is finished research; publish it whatever markets this
+    # invocation selected, as long as its origins are still configured.
     try:
         import deck
     except ImportError as exc:
@@ -820,19 +826,14 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection, mark
     published = 0
     errors = []
     summaries = []
-    selected_markets = set(markets)
     active_sources = {(entry["market"], entry["source_url"]) for entry in entries}
     for result_row in rows:
         task = _task_metadata(connection, result_row)
         if task is None:
             errors.append({"task_id": result_row["task_id"], "error": "saved task metadata is missing"})
             break
-        task_markets = set(json.loads(task["markets_json"]))
         task_origins = json.loads(task["origins_json"])
-        if not task_markets.issubset(selected_markets):
-            continue
         if task["kind"] in ("item", "source") and any(
-                origin.get("market") not in selected_markets or
                 (origin.get("market"), origin.get("source_url")) not in active_sources
                 for origin in task_origins):
             continue
@@ -886,13 +887,12 @@ def publish_pending(profile_root: Any, markets: Any) -> dict[str, Any]:
     """Replay saved result checkpoints in order, stopping at the first publication error."""
     root = _root_path(profile_root)
     document = _load_document(root)
-    selected = _validate_markets(document, markets)
-    entries = _source_entries(document, selected)
+    _validate_markets(document, markets)
     connection = _connect(root)
     if connection is None:
         return {"published": 0, "errors": []}
     try:
-        return _publish_pending_connection(root, connection, selected, entries)
+        return _publish_pending_connection(root, connection, _all_entries(document))
     finally:
         connection.close()
 

@@ -339,6 +339,20 @@ class ScoutTests(unittest.TestCase):
             urls = [t["url"] for t in scout.start(root, ["uk", "us"], 50, False)["tasks"] if t["kind"] == "company"]
             self.assertEqual(urls, ["https://beta.example/"])
 
+    def test_single_market_resume_publishes_saved_multi_market_result(self):
+        with tempfile.TemporaryDirectory() as folder:
+            other_source = "https://us.example/companies"
+            root = make_profile(folder, [("uk", SOURCE, 1), ("us", other_source, 0)])
+            document = load_profile(root)
+            document["discovery"]["observations"][other_source]["pending_urls"] = [SOURCE + "/company-0"]
+            write_document(root, document)
+            run = scout.start(root, ["uk", "us"], 1, False)
+            task = run["tasks"][0]
+            self.assertEqual(task["markets"], ["uk", "us"])
+            scout.record(root, run["run_id"], task["id"], findings(task))
+            self.assertEqual(scout.start(root, ["uk"], 1, False)["publication"]["published"], 1)
+            self.assertEqual(scout.status(root)["awaiting_publication"], 0)
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]
