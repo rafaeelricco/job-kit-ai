@@ -907,7 +907,11 @@ def status(profile_root: Any) -> dict[str, Any]:
                     progress["source_pending"] = row["n"]
                 elif row["kind"] == "company":
                     progress["company_pending"] = row["n"]
-        incomplete_cycles = connection.execute("SELECT COUNT(*) FROM cycles WHERE kind='source' AND state='incomplete'").fetchone()[0] if "cycles" in tables else 0
+        # A later crawl of the same source supersedes an earlier incomplete one.
+        incomplete_cycles = connection.execute("""
+            SELECT COUNT(*) FROM cycles c WHERE kind='source' AND state='incomplete'
+            AND id=(SELECT MAX(id) FROM cycles WHERE kind='source' AND cycle_key=c.cycle_key)
+        """).fetchone()[0] if "cycles" in tables else 0
         progress["source_incomplete_cycles"] = incomplete_cycles
         pending = coverage_count + progress["source_pending"] + progress["company_pending"] + incomplete_cycles
         return {"pending": pending, "awaiting_publication": result_counts.get("awaiting_publication", 0),

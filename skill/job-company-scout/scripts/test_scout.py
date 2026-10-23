@@ -272,6 +272,20 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(load_profile(root)["discovery"]["observations"][SOURCE]["last_successful_check_at"], STAMP)
             self.assertEqual(scout.status(root)["progress"]["source_incomplete_cycles"], 0)
 
+    def test_status_forgets_incomplete_crawl_after_a_complete_one(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0)])
+            for complete in (False, True):
+                run = scout.start(root, ["uk"], 1, False)
+                task = run["tasks"][0]
+                result = findings(task)
+                result["page"]["complete"] = complete
+                scout.record(root, run["run_id"], task["id"], result)
+                scout.publish_pending(root, ["uk"])
+            state = scout.status(root)
+            self.assertEqual(state["progress"]["source_incomplete_cycles"], 0)
+            self.assertEqual(state["pending"], 0)
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]
