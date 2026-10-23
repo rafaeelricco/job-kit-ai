@@ -446,6 +446,24 @@ class ScoutTests(unittest.TestCase):
             self.assertNotIn(task["url"], load_profile(root)["discovery"]["observations"][SOURCE]["pending_urls"])
             self.assertEqual(scout.start(root, ["uk"], 1, False)["tasks"][0]["kind"], "source")
 
+    def test_saved_result_publishes_after_one_origin_is_disabled(self):
+        second_source = "https://second.example/portfolio"
+        document = load_profile(self.root)
+        document["discovery"]["markets"]["uk"]["sources"]["other"] = {"url": second_source, "strategy": "portfolio"}
+        document["discovery"]["observations"][second_source] = {
+            "first_seen_at": OLD, "last_checked_at": OLD, "last_successful_check_at": OLD,
+            "seen_urls": [SOURCE + "/company-0"], "pending_urls": [SOURCE + "/company-0"]}
+        write_document(self.root, document)
+        run = self.start(200)
+        shared = next(t for t in run["tasks"] if t["url"] == SOURCE + "/company-0")
+        scout.record(self.root, run["run_id"], shared["id"], findings(shared))
+        document = load_profile(self.root)
+        document["discovery"]["markets"]["uk"]["sources"]["other"]["enabled"] = False
+        write_document(self.root, document)
+        self.assertEqual(self.start(1)["publication"]["published"], 1)
+        self.assertEqual(scout.status(self.root)["awaiting_publication"], 0)
+        self.assertNotIn(shared["url"], load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"])
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

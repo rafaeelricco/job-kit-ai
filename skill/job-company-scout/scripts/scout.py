@@ -856,16 +856,28 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection, docu
         if task is None:
             errors.append({"task_id": result_row["task_id"], "error": "saved task metadata is missing"})
             break
-        task_origins = json.loads(task["origins_json"])
-        if not set(json.loads(task["markets_json"])).issubset(enabled_markets):
-            continue
-        if task["kind"] in ("item", "source") and any(
-                (origin.get("market"), origin.get("source_url")) not in active_sources
-                for origin in task_origins):
+        # Narrow the result to markets and origins still enabled. One with none
+        # left is retired, so it neither waits forever nor blocks its link.
+        task_markets = [m for m in json.loads(task["markets_json"]) if m in enabled_markets]
+        task_origins = [o for o in json.loads(task["origins_json"])
+                        if o.get("market") in task_markets and (o.get("market"), o.get("source_url")) in active_sources]
+        if task["kind"] in ("item", "source"):
+            task_markets = [m for m in task_markets if any(o["market"] == m for o in task_origins)]
+        if not task_markets:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                connection.execute("UPDATE results SET delivery_state='superseded' WHERE run_id=? AND task_id=?",
+                                   (result_row["run_id"], task["id"]))
+                connection.execute("UPDATE tasks SET state='superseded' WHERE id=?", (task["id"],))
+                connection.commit()
+            except BaseException:
+                connection.rollback()
+                raise
+            summaries.append({"task_id": task["id"], "superseded": "its markets or sources are no longer enabled"})
             continue
         result = json.loads(result_row["payload_json"])
         result.update({"kind": task["kind"], "url": task["url"],
-                       "markets": list(json.loads(task["markets_json"])), "origins": task_origins})
+                       "markets": task_markets, "origins": task_origins})
         if task["kind"] == "source":
             result["pagination_complete"] = _prospective_source_complete(connection, task, result)
         if task["kind"] == "item":
