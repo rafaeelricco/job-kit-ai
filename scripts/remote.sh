@@ -303,11 +303,15 @@ fetch_kit() (
     if [ -L "${dest}/.git" ] || { [ -e "${dest}/.git" ] && [ ! -d "${dest}/.git" ]; }; then
       die "cannot migrate a cache with a .git file or symlink: ${dest}; use a separate JOB_KIT_HOME or install from the local checkout"
     fi
-    # Only a prior complete release bundle can be discarded after an update.
-    # A source checkout, including one with local edits, keeps its full backup.
+    # Only a prior release bundle can be discarded after an update. Judge it by
+    # what every bundle has shipped (VERSION, ownership files, no .git), not by
+    # this revision's KIT_REQUIRED_FILES: a release that adds a required file
+    # must not turn the next upgrade of an older bundle into a legacy
+    # migration. A source checkout, including one with local edits, keeps its
+    # full backup.
     if [ ! -e "${dest}/.git" ] \
       && release_version_file "${dest}/VERSION" >/dev/null \
-      && [ -z "$(kit_checkout_missing "${dest}")" ]; then
+      && [ -z "$(kit_owned_missing "${dest}")" ]; then
       retain_backup=0
     fi
   fi

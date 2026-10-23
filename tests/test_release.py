@@ -443,6 +443,19 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertTrue(backups[0].is_dir())
         self.each_shell(scenario)
 
+    def test_upgrade_from_older_bundle_layout_discards_backup(self):
+        def scenario(f):
+            self.success(f.run("fetch"))
+            # Older releases predate skills this revision requires.
+            shutil.rmtree(f.package / "skill/job-company-scout")
+            result = f.run("fetch", version="v1.0.1")
+            self.success(result)
+            self.assertEqual((f.package / "VERSION").read_text(), "v1.0.1\n")
+            self.assertTrue((f.package / "skill/job-company-scout/SKILL.md").is_file())
+            self.assertEqual(f.backups(), [])
+            self.assertNotIn("legacy", result.stdout + result.stderr)
+        self.each_shell(scenario)
+
     def test_source_archive_migration_preserves_cache_alias(self):
         def scenario(f):
             self.success(f.run("fetch"))
