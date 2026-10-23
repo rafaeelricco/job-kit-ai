@@ -127,7 +127,9 @@ on macOS or `C:/profiles/candidate` on Windows. Do not pass the placeholder itse
 
    A complete item/company result requires a verified identity, supporting
    evidence, and resolved relevance/selected-market decisions. Failure to
-   establish them remains pending. Use a source result's `next_pages` to save
+   establish them remains pending. When an item page verifiably names no
+   company (an opinion piece, a fund recap), record `complete` with empty
+   `companies` so the link is retired instead of retried forever. Use a source result's `next_pages` to save
    every reusable continuation. If a surface has no durable pagination URL,
    retain incomplete coverage so a later run can restart and deduplicate;
    never invent a cursor or report completion. The coordinator computes

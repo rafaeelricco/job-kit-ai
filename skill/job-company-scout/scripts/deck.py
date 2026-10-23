@@ -399,8 +399,10 @@ def _validate_result(result, document=None):
             for market in markets:
                 if market not in company["markets"] or company["markets"][market]["status"] == "pending":
                     raise ValueError("complete item/company result has unresolved market evidence for {}".format(market))
-    if result["outcome"] == "complete" and result["kind"] in ("item", "company") and not companies:
-        raise ValueError("complete item/company result requires a verified company record")
+    # An item page can verifiably name no company (an opinion piece, a fund
+    # recap); a complete result with no companies retires that link.
+    if result["outcome"] == "complete" and result["kind"] == "company" and not companies:
+        raise ValueError("complete company result requires a verified company record")
     if result["kind"] == "source":
         page = result.get("page")
         _require_mapping(page, "result.page")

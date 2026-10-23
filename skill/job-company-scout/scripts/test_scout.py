@@ -434,6 +434,18 @@ class ScoutTests(unittest.TestCase):
             scout.publish_pending(self.root, markets)
         self.assertEqual(scout.status(self.root)["progress"]["source_incomplete_cycles"], 0)
 
+    def test_item_page_naming_no_company_is_retired(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 1)])
+            run = scout.start(root, ["uk"], 1, False)
+            task = run["tasks"][0]
+            result = findings(task)
+            result["companies"] = {}
+            scout.record(root, run["run_id"], task["id"], result)
+            self.assertEqual(scout.publish_pending(root, ["uk"])["published"], 1)
+            self.assertNotIn(task["url"], load_profile(root)["discovery"]["observations"][SOURCE]["pending_urls"])
+            self.assertEqual(scout.start(root, ["uk"], 1, False)["tasks"][0]["kind"], "source")
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]
@@ -469,7 +481,7 @@ class ScoutTests(unittest.TestCase):
         run = self.start(1)
         task = run["tasks"][0]
         bad = findings(task)
-        bad["companies"] = {}
+        bad["companies"] = {"acme.example": {}}
         with self.assertRaises(ValueError):
             scout.record(self.root, run["run_id"], task["id"], bad)
         self.assertEqual(scout.status(self.root)["awaiting_publication"], 0)
