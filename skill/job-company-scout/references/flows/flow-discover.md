@@ -154,7 +154,9 @@ on macOS or `C:/profiles/candidate` on Windows. Do not pass the placeholder itse
 
    Counters include pending, awaiting publication, published, failed, attempted,
    and pending source/company progress. Before the first research run there
-   is no operational state; use inspect for counts in the existing deck.
+   is no operational state, so report the zero counters and say research has
+   not run yet. Do not run inspect here: it needs the research environment,
+   which `status` never creates.
 
 Repeating the market invocation resumes unfinished research. Tasks without a
 recorded result remain pending; no lease timeout or manual unlock is required.
