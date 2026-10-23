@@ -236,6 +236,43 @@ class DeckTests(unittest.TestCase):
         self.assertEqual(result["packs"][1]["boards"][0]["company_id"], "new.example")
         self.assertIs(result["packs"][1]["boards"][0]["enabled"], False)
 
+    def test_publication_handles_operator_deck_layouts(self):
+        def empty_packs(text):
+            start, end = text.index("packs:\n"), text.index("discovery:")
+            return text[:start] + "packs: []\n" + text[end:]
+
+        def zero_indented_packs(text):
+            start, end = text.index("packs:\n"), text.index("discovery:")
+            header, *items = text[start:end].split("\n")
+            return text[:start] + "\n".join([header] + [line[2:] for line in items]) + text[end:]
+
+        def wide_discovery(text):
+            start = text.index("discovery:")
+            lines = text[start:].split("\n")
+            widened = [" " * (2 * (len(line) - len(line.lstrip(" ")))) + line.lstrip(" ") for line in lines]
+            return text[:start] + "\n".join(widened)
+
+        layouts = {
+            "empty packs": empty_packs,
+            "empty boards": lambda text: text.replace("      title: title\n", "      title: title\n    boards: []\n"),
+            "zero-indented packs": zero_indented_packs,
+            "wide discovery": wide_discovery,
+            "key between packs and discovery": lambda text: text.replace("discovery:", "notes: operator\ndiscovery:"),
+        }
+        careers = {"ATS": "https://jobs.ashbyhq.com/acme", "careers page": "https://acme.example/careers"}
+        for layout, transform in layouts.items():
+            for destination, url in careers.items():
+                with self.subTest(layout=layout, destination=destination), tempfile.TemporaryDirectory() as folder:
+                    root = make_profile(folder)
+                    path = root / "data/search_packs.yaml"
+                    path.write_text(transform(path.read_text(encoding="utf-8")), encoding="utf-8")
+                    deck.validate_deck(load_profile(root))
+                    deck.publish_result(root, item_result(companies={"acme.example": company(careers=url)}))
+                    document = load_profile(root)
+                    self.assertIn("acme.example", document["discovery"]["companies"])
+                    self.assertNotIn(SOURCE + "/company-0", document["discovery"]["observations"][SOURCE]["pending_urls"])
+                    self.assertTrue(path.read_text(encoding="utf-8").startswith("# operator header"))
+
     def test_custom_careers_pack_has_no_invented_api_and_reuses_disabled_pack(self):
         custom = company(careers="https://acme.example/careers")
         result = item_result(companies={"acme.example": custom})

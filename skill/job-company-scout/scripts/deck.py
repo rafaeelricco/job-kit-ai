@@ -1175,15 +1175,25 @@ def _surgical_text(original_text, original_document, updated_document):
     patches.sort(key=lambda patch: (patch[0], patch[1]), reverse=True)
     result_text = original_text
     last_start = None
-    for start, end, replacement in patches:
-        if last_start is not None and end > last_start:
-            raise ValueError("overlapping surgical YAML edits")
-        result_text = result_text[:start] + replacement + result_text[end:]
-        last_start = start
-    parsed = _load_text(result_text, "staged search deck")
-    validate_deck(parsed)
-    if parsed != updated_document:
-        raise ValueError("surgical YAML patch did not preserve the intended deck semantics")
+    try:
+        for start, end, replacement in patches:
+            if last_start is not None and end > last_start:
+                raise ValueError("overlapping surgical YAML edits")
+            result_text = result_text[:start] + replacement + result_text[end:]
+            last_start = start
+        parsed = _load_text(result_text, "staged search deck")
+        validate_deck(parsed)
+        if parsed != updated_document:
+            raise ValueError("surgical YAML patch did not preserve the intended deck semantics")
+    except ValueError:
+        # Fixed-column splices cannot follow every valid operator layout (flow
+        # `[]` values, zero-indented sequences, keys between packs and
+        # discovery). The round-trip dump still keeps comments and key order.
+        result_text = rendered
+        parsed = _load_text(result_text, "rendered search deck")
+        validate_deck(parsed)
+        if parsed != updated_document:
+            raise ValueError("rendered search deck did not preserve the intended deck semantics")
     return result_text
 
 
