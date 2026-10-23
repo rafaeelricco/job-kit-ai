@@ -318,6 +318,27 @@ class ScoutTests(unittest.TestCase):
             urls = {t["url"] for t in scout.start(root, ["uk"], 50, False)["tasks"]}
             self.assertEqual(urls, {SOURCE, stuck, "https://acme.example/"})
 
+    def test_company_losing_a_market_is_not_reviewed_twice_in_one_cycle(self):
+        acme, beta = company("acme.example"), company("beta.example")
+        for data in (acme, beta):
+            data["markets"]["us"] = dict(data["markets"]["uk"])
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0), ("us", "https://us.example/portfolio", 0)],
+                                {"acme.example": acme, "beta.example": beta})
+            run = scout.start(root, ["uk", "us"], 50, False)
+            for task in run["tasks"]:
+                if task["kind"] == "source":
+                    scout.record(root, run["run_id"], task["id"], findings(task))
+            first = next(t for t in run["tasks"] if t["url"] == "https://acme.example/")
+            result = findings(first)
+            reviewed = result["companies"]["acme.example"]
+            reviewed["markets"]["us"] = {"status": "rejected", "reason": "Headquarters moved.",
+                                         "evidence_urls": ["https://acme.example/about"]}
+            scout.record(root, run["run_id"], first["id"], result)
+            scout.publish_pending(root, ["uk", "us"])
+            urls = [t["url"] for t in scout.start(root, ["uk", "us"], 50, False)["tasks"] if t["kind"] == "company"]
+            self.assertEqual(urls, ["https://beta.example/"])
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

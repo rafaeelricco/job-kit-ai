@@ -448,6 +448,12 @@ def _company_work(connection: sqlite3.Connection, document: Any, markets: list[s
         if not isinstance(website, str):
             continue
         url = _canonical_url(website)
+        # A review that dropped a market changes the qualifying set, not the need
+        # for another review in this cycle.
+        reviewed = connection.execute("SELECT markets_json FROM tasks WHERE cycle_id=? AND kind='company' AND url=? "
+                                      "AND state IN ('published','awaiting_publication')", (cycle_id, url)).fetchall()
+        if any(set(qualifying) <= set(json.loads(row[0])) for row in reviewed):
+            continue
         task = {"kind": "company", "url": url, "markets": qualifying, "origins": [], "company_id": str(company_id),
                 "_cycle_id": cycle_id}
         task["_task_id"] = _task_id("company", url, qualifying, [], cycle_id)
