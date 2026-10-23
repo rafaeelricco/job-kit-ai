@@ -353,6 +353,24 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(scout.start(root, ["uk"], 1, False)["publication"]["published"], 1)
             self.assertEqual(scout.status(root)["awaiting_publication"], 0)
 
+    def test_record_rejects_a_result_conflicting_with_one_awaiting_publication(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 2)], {"old.example": company("old.example")})
+            run = scout.start(root, ["uk"], 2, False)
+            first, second = [t for t in run["tasks"] if t["kind"] == "item"]
+            renamed = company("new.example")
+            aliased = company("new.example")
+            aliased["aliases"] = ["old.example"]
+            for task, record in ((first, renamed), (second, aliased)):
+                result = findings(task)
+                result["companies"] = {"new.example": record}
+                if task is first:
+                    scout.record(root, run["run_id"], task["id"], result)
+                else:
+                    with self.assertRaises(ValueError):
+                        scout.record(root, run["run_id"], task["id"], result)
+            self.assertEqual(scout.publish_pending(root, ["uk"])["errors"], [])
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

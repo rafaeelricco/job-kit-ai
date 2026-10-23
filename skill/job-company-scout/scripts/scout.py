@@ -698,7 +698,25 @@ def record(profile_root: Any, run_id: str, task_id: str, result: Any) -> dict[st
             enriched["pagination_complete"] = _prospective_source_complete(connection, row, enriched)
         try:
             import deck
-            deck.merge_result(document, enriched)
+            # Validate against the deck as it will be once earlier saved results
+            # publish, so two results that conflict are caught here, not later.
+            projected = document
+            for pending_row in connection.execute("SELECT * FROM results WHERE delivery_state='awaiting_publication' "
+                                                  "AND task_id<>? ORDER BY created_order", (task_id,)).fetchall():
+                pending_task = _task_metadata(connection, pending_row)
+                if pending_task is None:
+                    continue
+                pending_result = json.loads(pending_row["payload_json"])
+                pending_result.update({"kind": pending_task["kind"], "url": pending_task["url"],
+                                       "markets": json.loads(pending_task["markets_json"]),
+                                       "origins": json.loads(pending_task["origins_json"])})
+                if pending_task["kind"] == "source":
+                    pending_result["pagination_complete"] = _prospective_source_complete(connection, pending_task, pending_result)
+                try:
+                    projected = deck.merge_result(projected, pending_result)
+                except ValueError:
+                    continue  # publication reports that result's own error
+            deck.merge_result(projected, enriched)
         except (ImportError, AttributeError) as exc:
             raise ValueError("Company Scout deck validation adapter is unavailable") from exc
         source_discovery = document.get("discovery", {})
