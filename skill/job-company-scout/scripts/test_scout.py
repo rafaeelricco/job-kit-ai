@@ -227,6 +227,24 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(len(matching), 1)
             self.assertEqual(matching[0]["markets"], ["us"])
 
+    def test_shared_source_keeps_link_pending_for_the_market_not_yet_run(self):
+        document = load_profile(self.root)
+        document["discovery"]["markets"]["us"] = {"enabled": True, "scope": "Companies headquartered in us",
+                                                  "sources": {"same": {"url": SOURCE, "strategy": "portfolio"}}}
+        write_document(self.root, document)
+        run = self.start(1)
+        task = run["tasks"][0]
+        self.record_and_publish(run, task)
+        self.assertIn(task["url"], load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"])
+        us = scout.start(self.root, ["us"], 200, False)
+        self.assertIn(task["url"], [t["url"] for t in us["tasks"]])
+        self.assertNotIn(task["id"], [t["id"] for t in self.start(200)["tasks"]])
+        self.assertEqual(scout.status(self.root)["pending_by_market"], {"uk": 122, "us": 123})
+        follow_up = next(t for t in us["tasks"] if t["url"] == task["url"])
+        scout.record(self.root, us["run_id"], follow_up["id"], findings(follow_up))
+        scout.publish_pending(self.root, ["us"])
+        self.assertNotIn(task["url"], load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"])
+
     def test_status_cli_does_not_need_yaml_dependency(self):
         proc = subprocess.run([sys.executable, "-I", str(SCRIPT)],
             input=json.dumps({"op": "status", "profile_root": str(self.root)}), text=True,

@@ -246,7 +246,7 @@ def _seed_coverage(connection: sqlite3.Connection, entries: list[dict[str, Any]]
             connection.execute("""
                 INSERT INTO coverage(url,market,source_url,pending,active,first_seen_order)
                 VALUES(?,?,?,1,1,?)
-                ON CONFLICT(url,market,source_url) DO UPDATE SET pending=1,active=1
+                ON CONFLICT(url,market,source_url) DO UPDATE SET active=1
             """, (url, entry["market"], entry["source_url"], order))
 
 
@@ -860,6 +860,11 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection,
                        "markets": list(json.loads(task["markets_json"])), "origins": task_origins})
         if task["kind"] == "source":
             result["pagination_complete"] = _prospective_source_complete(connection, task, result)
+        if task["kind"] == "item":
+            # Markets that already finished this link let the deck drop a shared pending entry.
+            result["researched_markets"] = {origin["source_url"]: [row[0] for row in connection.execute(
+                "SELECT market FROM coverage WHERE url=? AND source_url=? AND pending=0 ORDER BY market",
+                (task["url"], origin["source_url"]))] for origin in task_origins}
         try:
             summary = deck.publish_result(root, result)
         except Exception as exc:

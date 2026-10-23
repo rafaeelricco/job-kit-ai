@@ -584,6 +584,17 @@ def _url_equal(left, right):
         return left == right
 
 
+def _source_markets(discovery, source_url):
+    markets = set()
+    for market, spec in discovery.get("markets", {}).items():
+        if not _is_mapping(spec) or spec.get("enabled", True) is False:
+            continue
+        for source in (spec.get("sources") or {}).values():
+            if _is_mapping(source) and source.get("enabled", True) is not False and _url_equal(source.get("url"), source_url):
+                markets.add(market)
+    return markets
+
+
 def _merge_observation_result(discovery, result):
     checked_at = result["checked_at"]
     kind, outcome = result["kind"], result["outcome"]
@@ -596,9 +607,14 @@ def _merge_observation_result(discovery, result):
             if outcome == "complete":
                 url = canonical_url(result["url"])
                 _append_unique(observation["seen_urls"], url, lambda item: canonical_url(item))
-                observation["pending_urls"] = [
-                    current for current in observation["pending_urls"] if not _url_equal(current, url)
-                ]
+                # pending_urls is shared by every market configuring this source;
+                # keep the link until each of those markets has researched it.
+                researched = set(result["markets"])
+                researched.update((result.get("researched_markets") or {}).get(origin["source_url"], []))
+                if _source_markets(discovery, origin["source_url"]) <= researched:
+                    observation["pending_urls"] = [
+                        current for current in observation["pending_urls"] if not _url_equal(current, url)
+                    ]
         elif outcome == "complete":
             page = result["page"]
             for url in page["links"]:
