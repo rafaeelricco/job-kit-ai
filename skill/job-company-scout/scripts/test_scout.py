@@ -305,6 +305,19 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(scout.publish_pending(root, ["uk"])["published"], 1)
             self.assertEqual(scout.status(root)["failed"], 1)
 
+    def test_failing_source_does_not_block_other_refresh_work(self):
+        stuck = "https://stuck.example/portfolio"
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0), ("uk", stuck, 0)], {"acme.example": company()})
+            for _ in range(2):
+                run = scout.start(root, ["uk"], 50, False)
+                for task in run["tasks"]:
+                    scout.record(root, run["run_id"], task["id"],
+                                 findings(task, "failed" if task["url"] == stuck else "complete"))
+                scout.publish_pending(root, ["uk"])
+            urls = {t["url"] for t in scout.start(root, ["uk"], 50, False)["tasks"]}
+            self.assertEqual(urls, {SOURCE, stuck, "https://acme.example/"})
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

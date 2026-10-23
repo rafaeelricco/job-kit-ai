@@ -356,13 +356,16 @@ def _has_open_refresh_work(connection: sqlite3.Connection, entries: list[dict[st
         group = (entry["source_url"], tuple(sorted(e["market"] for e in entries if e["source_url"] == entry["source_url"])))
         if group not in source_groups:
             source_groups.append(group)
+    # An open cycle whose only outstanding tasks already failed must not hold back
+    # other refresh work; those failures are retried after the fresh work.
+    unattempted = ("SELECT 1 FROM cycles c JOIN tasks t ON t.cycle_id=c.id WHERE c.kind=? AND c.cycle_key=? "
+                   "AND c.state='open' AND t.state IN ('pending','awaiting_publication') LIMIT 1")
     for source_url, market_tuple in source_groups:
         key = source_url + "|" + _json(list(market_tuple))
-        if connection.execute("SELECT 1 FROM cycles WHERE kind='source' AND cycle_key=? AND state='open' LIMIT 1", (key,)).fetchone():
+        if connection.execute(unattempted, ("source", key)).fetchone():
             return True
     company_key = _json(sorted(markets))
-    return bool(connection.execute("SELECT 1 FROM cycles WHERE kind='company' AND cycle_key=? AND state='open' LIMIT 1",
-                                   (company_key,)).fetchone())
+    return bool(connection.execute(unattempted, ("company", company_key)).fetchone())
 
 
 def _source_work(connection: sqlite3.Connection, entries: list[dict[str, Any]], seed_new: bool) -> list[dict[str, Any]]:
