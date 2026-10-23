@@ -357,6 +357,25 @@ class ReleaseArchiveTests(unittest.TestCase):
                     self.assertEqual(result.returncode, case["exit"], result.stderr)
                     self.assertEqual(json.loads(result.stdout), case["stdout"])
 
+            profile = unrelated / "company-profile"
+            (profile / "data").mkdir(parents=True)
+            (profile / "data/job_search.yaml").write_text("positions: [Software Engineer]\n", encoding="utf-8")
+            deck = profile / "data/search_packs.yaml"
+            deck.write_text("packs: []\ndiscovery:\n  markets:\n    uk:\n      enabled: true\n"
+                            "      scope: Companies headquartered in the United Kingdom\n"
+                            "      sources: {}\n  observations: {}\n  companies: {}\n", encoding="utf-8")
+            before = deck.read_bytes()
+            helper = root / "job-kit/skill/job-company-scout/scripts/scout.py"
+            for op in ("inspect", "status"):
+                with self.subTest(company_scout_op=op):
+                    result = subprocess.run([sys.executable, str(helper)], input=json.dumps({
+                        "op": op, "profile_root": str(profile), "markets": ["uk"]}),
+                        capture_output=True, text=True, cwd=unrelated, timeout=30)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIsInstance(json.loads(result.stdout), dict)
+                    self.assertFalse((profile / "scout").exists())
+                    self.assertEqual(deck.read_bytes(), before)
+
 
 class ReleaseInstallerTests(unittest.TestCase):
     def each_shell(self, scenario):
