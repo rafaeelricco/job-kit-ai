@@ -216,7 +216,7 @@ Protocol write path. Empty fields stay `""` / `[]`.
 | salary, notice, relocation, availability, consents, EOR: `employment_routes.*`, `salary_expectations.*`, `salary_history.*`, `availability.*`, `consents.*` | Print what is on disk. Editing is `continue fill`, or a human editing `data/job_search.yaml`. |
 | experiences, skills, languages, projects, basics, profiles                                                                                                  | Print what is on disk. Editing is `continue fill`.                                            |
 | identity (LinkedIn username)                                                                                                                                | Print what is on disk. Editing is `continue fill`.                                            |
-| "find me boards"                                                                                                                                            | Hand off `job-company-scout`; profile editing performs no research.                       |
+| "find me boards"                                                                                                                                            | Hand off `job-company-scout`; profile editing performs no research.                           |
 | Copy another profile's data                                                                                                                                 | Refuse. Never read a donor Profile root; values come from the operator for _this_ profile.    |
 
 A suggestion is never a write. An unanswered suggestion stays a suggestion.

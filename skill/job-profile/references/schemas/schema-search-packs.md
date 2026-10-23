@@ -9,17 +9,17 @@ this schema before writing. Preserve unrelated keys and comments when editing.
 The root is a mapping with required `packs` (a list) and optional `discovery`
 (a mapping). Pack `id` values are unique strings. A pack has:
 
-| Key | Shape and meaning |
-| --- | --- |
-| `id` | Required, non-empty string, unique in `packs`. |
-| `surface` | Required non-empty string. Known labels are `linkedin-jobs`, `open-web`, `social`, and `careers`; other operator labels are allowed. |
-| `entry` | Required absolute `http(s)` URL, except on a pack with `route.kind: companies`, where it is absent. |
-| `enabled` | Optional boolean; absent means `true`. |
-| `formulations` | Optional non-empty list of strings. |
-| `route_required` | Optional boolean. |
-| `location` | Optional, exactly `keep-only`. |
-| `route` | Optional mapping defined below. |
-| `boards` | Optional list of employer boards, defined below. Only a board route consumes this list. |
+| Key              | Shape and meaning                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`             | Required, non-empty string, unique in `packs`.                                                                                       |
+| `surface`        | Required non-empty string. Known labels are `linkedin-jobs`, `open-web`, `social`, and `careers`; other operator labels are allowed. |
+| `entry`          | Required absolute `http(s)` URL, except on a pack with `route.kind: companies`, where it is absent.                                  |
+| `enabled`        | Optional boolean; absent means `true`.                                                                                               |
+| `formulations`   | Optional non-empty list of strings.                                                                                                  |
+| `route_required` | Optional boolean.                                                                                                                    |
+| `location`       | Optional, exactly `keep-only`.                                                                                                       |
+| `route`          | Optional mapping defined below.                                                                                                      |
+| `boards`         | Optional list of employer boards, defined below. Only a board route consumes this list.                                              |
 
 Unknown keys are retained by edits; they do not make a pack valid for a route
 unless this schema defines them. An enabled pack with `route_required: true`
@@ -30,11 +30,11 @@ present but incomplete route is invalid, even if the pack is disabled.
 
 `route` is one of these mappings:
 
-| `kind` | Required fields |
-| --- | --- |
-| `json` | `url` contains `{formulation}` and `{page}`; non-empty `pages`, `items`, and `posting_url` strings. |
-| `board` | `ats` is an ATS family supported by `job-store/references/schemas/schema-dossier.md`; `url` contains `{slug}`; non-empty `items`, `posting_url`, and `title` strings. `location`, `date`, and `listed` paths and `slug_lists` are optional. |
-| `careers` | The pack has `surface: careers`, `location: keep-only`, and its required `entry` is an official company careers URL. Optional `company_id` and `company` identify an operator-authored route. A discovery-created route must have both fields and `managed_by: job-company-scout`. |
+| `kind`      | Required fields                                                                                                                                                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `json`      | `url` contains `{formulation}` and `{page}`; non-empty `pages`, `items`, and `posting_url` strings.                                                                                                                                                                                               |
+| `board`     | `ats` is an ATS family supported by `job-store/references/schemas/schema-dossier.md`; `url` contains `{slug}`; non-empty `items`, `posting_url`, and `title` strings. `location`, `date`, and `listed` paths and `slug_lists` are optional.                                                       |
+| `careers`   | The pack has `surface: careers`, `location: keep-only`, and its required `entry` is an official company careers URL. Optional `company_id` and `company` identify an operator-authored route. A discovery-created route must have both fields and `managed_by: job-company-scout`.                |
 | `companies` | The pack has `location: keep-only`. `csv` is an absolute local path to a company CSV with `row_id`, `region`, `tier`, `company_name`, `ats`, and `ats_tenant` columns (the market-research enriched list); non-empty `regions` list of `UK`, `US`, `EU`; non-empty `tiers` list of `A`, `B`, `C`. |
 
 A `surface: careers` pack without `location: keep-only` fails validation.
@@ -79,13 +79,13 @@ The template configures `uk`, `us`, and `eu` markets in `job-profile/templates/d
 the host, removes a default port and fragment, and preserves the path and
 query; an empty path becomes `/`. Each value has:
 
-| Key | Shape and update rule |
-| --- | --- |
-| `first_seen_at` | ISO-8601 timestamp; set once when the source is first observed. |
-| `last_checked_at` | ISO-8601 timestamp of the latest attempt, including a failed read. |
+| Key                        | Shape and update rule                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `first_seen_at`            | ISO-8601 timestamp; set once when the source is first observed.                                                        |
+| `last_checked_at`          | ISO-8601 timestamp of the latest attempt, including a failed read.                                                     |
 | `last_successful_check_at` | ISO-8601 timestamp of the latest complete successful inspection, or null until one succeeds; retain it after failures. |
-| `seen_urls` | List of normalized source-item URLs discovered in a successful inspection. |
-| `pending_urls` | List of discovered item URLs not yet successfully inspected. Remove an item only after successful inspection. |
+| `seen_urls`                | List of normalized source-item URLs discovered in a successful inspection.                                             |
+| `pending_urls`             | List of discovered item URLs not yet successfully inspected. Remove an item only after successful inspection.          |
 
 On read or parse failure, preserve prior evidence, `seen_urls`, pending work,
 and `last_successful_check_at`; record the failed attempt in
@@ -97,18 +97,18 @@ and `last_successful_check_at`; record the failed attempt in
 leading `www.` removed. The host must come from an official company site, not
 from an investor, accelerator, or ATS tenant. Each company value has:
 
-| Key | Shape |
-| --- | --- |
-| `name` | Verified current company name. |
-| `website` | Absolute official `http(s)` website URL as published; its host, lowercased with a leading `www.` removed, equals the key. |
-| `aliases` | List of verified former names or official hostnames for rebrands. |
-| `first_seen_at` | ISO-8601 timestamp; immutable after creation. |
-| `last_checked_at` | ISO-8601 timestamp of the latest company check. |
-| `last_successful_check_at` | ISO-8601 timestamp of the latest successful company inspection, or null until one succeeds; preserve on failure. |
-| `relevance` | Mapping with `status` (`pending`, `qualified`, or `rejected`), `reason`, and `evidence_urls` (list of URLs). |
-| `markets` | Mapping from market id to `{status, reason, evidence_urls}`. Status is `pending`, `qualified`, or `rejected`. |
-| `careers` | Mapping with `status` (`unknown`, `not_found`, or `found`). A `found` record also has its official careers `url`; `unknown` means inspection failed or is incomplete. |
-| `evidence` | List of evidence records, defined below. |
+| Key                        | Shape                                                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                     | Verified current company name.                                                                                                                                        |
+| `website`                  | Absolute official `http(s)` website URL as published; its host, lowercased with a leading `www.` removed, equals the key.                                             |
+| `aliases`                  | List of verified former names or official hostnames for rebrands.                                                                                                     |
+| `first_seen_at`            | ISO-8601 timestamp; immutable after creation.                                                                                                                         |
+| `last_checked_at`          | ISO-8601 timestamp of the latest company check.                                                                                                                       |
+| `last_successful_check_at` | ISO-8601 timestamp of the latest successful company inspection, or null until one succeeds; preserve on failure.                                                      |
+| `relevance`                | Mapping with `status` (`pending`, `qualified`, or `rejected`), `reason`, and `evidence_urls` (list of URLs).                                                          |
+| `markets`                  | Mapping from market id to `{status, reason, evidence_urls}`. Status is `pending`, `qualified`, or `rejected`.                                                         |
+| `careers`                  | Mapping with `status` (`unknown`, `not_found`, or `found`). A `found` record also has its official careers `url`; `unknown` means inspection failed or is incomplete. |
+| `evidence`                 | List of evidence records, defined below.                                                                                                                              |
 
 Before creating a company, check existing keys and verified hostname aliases.
 Never merge on a name match alone. An officially verified hostname change
