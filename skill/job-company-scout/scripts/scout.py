@@ -137,8 +137,10 @@ def _connect(root: Path, *, create: bool = False, readonly: bool = False) -> sql
     if readonly:
         if not path.is_file():
             return None
-        uri = path.as_uri() + "?mode=ro"
-        connection = sqlite3.connect(uri, uri=True, timeout=15)
+        # Not `mode=ro`: SQLite must be able to roll back a hot journal left by a
+        # killed writer, and `query_only` still blocks every write from here.
+        connection = sqlite3.connect(str(path), timeout=15)
+        connection.execute("PRAGMA query_only=ON")
     else:
         if create:
             path.parent.mkdir(parents=True, exist_ok=True)

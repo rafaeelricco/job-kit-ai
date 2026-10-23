@@ -373,6 +373,23 @@ class ScoutTests(unittest.TestCase):
             companies = [t["url"] for t in run["tasks"] if t["kind"] == "company"]
             self.assertEqual(companies, ["https://old.example/", "https://new.example/"])
 
+    def test_status_reads_after_a_writer_dies_mid_transaction(self):
+        self.start(2)
+        database = self.root / "scout/runtime/company-scout/state.sqlite3"
+        crash = (
+            "import os, sqlite3, sys\n"
+            "c = sqlite3.connect(sys.argv[1], isolation_level=None)\n"
+            "c.execute('PRAGMA cache_size=1')\n"
+            "c.execute('BEGIN IMMEDIATE')\n"
+            "c.execute('CREATE TABLE filler(x TEXT)')\n"
+            "for _ in range(3000): c.execute('INSERT INTO filler VALUES(?)', ('x' * 500,))\n"
+            "os._exit(9)\n")
+        subprocess.run([sys.executable, "-c", crash, str(database)], check=False)
+        self.assertTrue(database.with_name("state.sqlite3-journal").exists())
+        proc = self.cli({"op": "status", "profile_root": str(self.root)})
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(json.loads(proc.stdout)["awaiting_publication"], 0)
+
     def test_cli_uses_utf8_even_on_a_legacy_windows_codepage(self):
         root = make_profile(self.root / "perfil-a\u00e7\u00e3o-\u65e5\u672c")
         payload = json.dumps({"op": "inspect", "profile_root": str(root), "markets": ["uk"]}, ensure_ascii=False).encode("utf-8")
