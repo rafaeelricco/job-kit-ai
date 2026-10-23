@@ -898,8 +898,9 @@ def status(profile_root: Any) -> dict[str, Any]:
             return empty
         state_counts = {row["state"]: row["count"] for row in connection.execute("SELECT state,COUNT(*) AS count FROM tasks GROUP BY state")}
         result_counts = {row["delivery_state"]: row["count"] for row in connection.execute("SELECT delivery_state,COUNT(*) AS count FROM results GROUP BY delivery_state")} if "results" in tables else {}
-        coverage_count = connection.execute("SELECT COUNT(DISTINCT url) FROM coverage WHERE pending=1 AND active=1").fetchone()[0] if "coverage" in tables else 0
-        coverage_by_market = connection.execute("SELECT market,COUNT(DISTINCT url) AS n FROM coverage WHERE pending=1 AND active=1 GROUP BY market").fetchall() if "coverage" in tables else []
+        # `active` only marks the last start's selection; report every market's backlog.
+        coverage_count = connection.execute("SELECT COUNT(DISTINCT url) FROM coverage WHERE pending=1").fetchone()[0] if "coverage" in tables else 0
+        coverage_by_market = connection.execute("SELECT market,COUNT(DISTINCT url) AS n FROM coverage WHERE pending=1 GROUP BY market").fetchall() if "coverage" in tables else []
         progress = {"item_pending": coverage_count, "source_pending": 0, "company_pending": 0}
         if "tasks" in tables:
             for row in connection.execute("SELECT kind,COUNT(*) AS n FROM tasks WHERE state IN ('pending','failed') GROUP BY kind"):

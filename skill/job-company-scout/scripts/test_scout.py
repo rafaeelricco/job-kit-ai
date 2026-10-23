@@ -286,6 +286,15 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(state["progress"]["source_incomplete_cycles"], 0)
             self.assertEqual(state["pending"], 0)
 
+    def test_status_keeps_unselected_market_backlog_after_subset_start(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 3), ("us", "https://us.example/portfolio", 3)])
+            scout.start(root, ["uk", "us"], 1, False)
+            scout.start(root, ["uk"], 1, False)
+            state = scout.status(root)
+            self.assertEqual(state["pending_by_market"], {"uk": 3, "us": 3})
+            self.assertEqual(state["progress"]["item_pending"], 6)
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]
