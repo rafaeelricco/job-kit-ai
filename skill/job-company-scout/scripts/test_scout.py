@@ -464,6 +464,20 @@ class ScoutTests(unittest.TestCase):
         self.assertEqual(scout.status(self.root)["awaiting_publication"], 0)
         self.assertNotIn(shared["url"], load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"])
 
+    def test_retired_result_runs_again_once_its_source_is_re_enabled(self):
+        other = "https://other.example/portfolio"
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0), ("uk", other, 1)])
+            run = scout.start(root, ["uk"], 1, False)
+            task = run["tasks"][0]
+            scout.record(root, run["run_id"], task["id"], findings(task))
+            for enabled in (False, True):
+                document = load_profile(root)
+                document["discovery"]["markets"]["uk"]["sources"]["source-1"]["enabled"] = enabled
+                write_document(root, document)
+                following = scout.start(root, ["uk"], 50, False)
+            self.assertIn(task["id"], [t["id"] for t in following["tasks"]])
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]

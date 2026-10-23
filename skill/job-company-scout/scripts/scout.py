@@ -857,7 +857,8 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection, docu
             errors.append({"task_id": result_row["task_id"], "error": "saved task metadata is missing"})
             break
         # Narrow the result to markets and origins still enabled. One with none
-        # left is retired, so it neither waits forever nor blocks its link.
+        # left is retired and its task returns to pending, so it neither waits
+        # forever nor blocks its link, and runs again if its source is re-enabled.
         task_markets = [m for m in json.loads(task["markets_json"]) if m in enabled_markets]
         task_origins = [o for o in json.loads(task["origins_json"])
                         if o.get("market") in task_markets and (o.get("market"), o.get("source_url")) in active_sources]
@@ -868,7 +869,7 @@ def _publish_pending_connection(root: Path, connection: sqlite3.Connection, docu
             try:
                 connection.execute("UPDATE results SET delivery_state='superseded' WHERE run_id=? AND task_id=?",
                                    (result_row["run_id"], task["id"]))
-                connection.execute("UPDATE tasks SET state='superseded' WHERE id=?", (task["id"],))
+                connection.execute("UPDATE tasks SET state='pending' WHERE id=?", (task["id"],))
                 connection.commit()
             except BaseException:
                 connection.rollback()

@@ -245,6 +245,28 @@ class DeckTests(unittest.TestCase):
         self.assertEqual(summary["enable_commands"], ["/job-profile packs enable ashby-boards acme.example"])
         self.assertIs(load_profile(self.root)["packs"][1]["enabled"], False)
 
+    def test_enable_commands_cover_reused_disabled_routes_but_not_rejections(self):
+        careers = company(careers="https://acme.example/careers")
+        deck.publish_result(self.root, item_result(companies={"acme.example": careers}))
+        document = load_profile(self.root)
+        pack = next(p for p in document["packs"] if p.get("company_id") == "acme.example")
+        pack["enabled"] = False
+        write_document(self.root, document)
+        careers["last_checked_at"] = "2026-10-23T09:00:00Z"
+        summary = deck.publish_result(self.root, item_result(companies={"acme.example": careers}))
+        self.assertEqual(summary["enable_commands"], ["/job-profile packs enable " + pack["id"]])
+        rejected = copy.deepcopy(careers)
+        rejected["relevance"] = {"status": "rejected", "reason": "Consumer retail.",
+                                 "evidence_urls": ["https://acme.example/"]}
+        summary = deck.publish_result(self.root, item_result(companies={"acme.example": rejected}))
+        self.assertEqual(summary["enable_commands"], [])
+
+    def test_boards_without_a_company_are_rejected(self):
+        result = item_result(companies={})
+        result["boards"] = [{"company_id": "acme.example", "url": "https://jobs.ashbyhq.com/acme"}]
+        with self.assertRaises(ValueError):
+            deck.publish_result(self.root, result)
+
     def test_publication_handles_operator_deck_layouts(self):
         def empty_packs(text):
             start, end = text.index("packs:\n"), text.index("discovery:")

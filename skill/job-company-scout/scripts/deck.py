@@ -403,6 +403,8 @@ def _validate_result(result, document=None):
     # recap); a complete result with no companies retires that link.
     if result["outcome"] == "complete" and result["kind"] == "company" and not companies:
         raise ValueError("complete company result requires a verified company record")
+    if result["outcome"] == "complete" and not companies and result.get("boards"):
+        raise ValueError("boards require a verified company record in the same result")
     if result["kind"] == "source":
         page = result.get("page")
         _require_mapping(page, "result.page")
@@ -1199,28 +1201,36 @@ def _surgical_text(original_text, original_document, updated_document):
     return result_text
 
 
-def _publication_summary(before, after):
+def _enable_commands(before_companies, after_companies, after, exclusions):
+    # Research never enables a disabled pack or row; for each qualified company
+    # this publication touched that routes through one, name the exact command.
+    commands = []
+    for key, company in after_companies.items():
+        if before_companies.get(key) == company or not _qualified(company):
+            continue
+        if _confirmed_rejection(company, exclusions, key):
+            continue
+        for pack in after.get("packs", []):
+            if pack.get("surface") == "careers" and pack.get("company_id") == key:
+                if pack.get("enabled", True) is False:
+                    commands.append("/job-profile packs enable {}".format(pack["id"]))
+                continue
+            for row in pack.get("boards", []) or []:
+                if row.get("company_id") == key and (pack.get("enabled", True) is False or row.get("enabled", True) is False):
+                    commands.append("/job-profile packs enable {} {}".format(pack["id"], key))
+    return list(dict.fromkeys(commands))
+
+
+def _publication_summary(before, after, exclusions=frozenset()):
     before_companies = before.get("discovery", {}).get("companies", {})
     after_companies = after.get("discovery", {}).get("companies", {})
     before_packs = {pack["id"]: pack for pack in before.get("packs", [])}
-    changed = [pack for pack in after.get("packs", []) if pack != before_packs.get(pack["id"])]
-    # Research never enables a disabled pack; the operator gets the exact command.
-    enable_commands = []
-    for pack in changed:
-        if pack.get("enabled", True):
-            continue
-        if pack.get("route", {}).get("kind") == "careers":
-            enable_commands.append("/job-profile packs enable {}".format(pack["id"]))
-            continue
-        old_rows = (before_packs.get(pack["id"]) or {}).get("boards", []) or []
-        for row in pack.get("boards", []) or []:
-            if row not in old_rows and row.get("company_id"):
-                enable_commands.append("/job-profile packs enable {} {}".format(pack["id"], row["company_id"]))
     return {
         "companies_added": sum(1 for key in after_companies if key not in before_companies),
         "companies_updated": sum(1 for key in after_companies if key in before_companies and after_companies[key] != before_companies[key]),
-        "pack_ids": [pack["id"] for pack in changed if pack.get("enabled", True)],
-        "enable_commands": enable_commands,
+        "pack_ids": [pack["id"] for pack in after.get("packs", [])
+                     if pack.get("enabled", True) and pack != before_packs.get(pack["id"])],
+        "enable_commands": _enable_commands(before_companies, after_companies, after, exclusions),
     }
 
 
@@ -1244,7 +1254,7 @@ def publish_result(profile_root, result):
     validate_deck(updated_document)
     staged_text = _surgical_text(original_text, original_document, updated_document)
     if staged_text == original_text:
-        return _publication_summary(original_document, updated_document)
+        return _publication_summary(original_document, updated_document, exclusions)
 
     temp_path = path.with_name(path.name + ".{}.tmp".format(uuid.uuid4().hex))
     try:
@@ -1265,4 +1275,4 @@ def publish_result(profile_root, result):
                 temp_path.unlink()
         except OSError:
             pass
-    return _publication_summary(original_document, updated_document)
+    return _publication_summary(original_document, updated_document, exclusions)
