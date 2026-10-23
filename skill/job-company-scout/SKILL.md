@@ -11,20 +11,8 @@ company and careers-board records in `data/search_packs.yaml`.
 
 Profile root: load the `job-profile-root` skill now; obey it end-to-end. A
 `job-profile-root` stop means no profile, so stop here; never scaffold one.
+Resolve `data/*` against Profile root.
 
-On explicit `/job-company-scout` invocation or a direct request to discover
-companies or boards, read `job-profile/references/flows/flow-show.md` for the
-read set and card and constraints derivation. Read
-`job-profile/references/schemas/schema-search-packs.md` and
-`./references/flows/flow-discover.md`, then follow the discovery flow. Never
-route through `job-profile/SKILL.md` or enter its mutation flow. Resolve
-`data/*` against Profile root.
-
-This explicit request authorizes web research, discovery history, and changes
-to discovery-owned inputs. This skill writes `data/search_packs.yaml`,
-its per-publication `data/search_packs.yaml.{run token}.tmp` stage, and
-operational state under `scout/runtime/company-scout/`. The batch flow and
-helper contracts are defined in `./references/flows/flow-discover.md`.
-Listing markets and `status` are read-only. It does not run
-`/job-scout` or `/job-apply`, contact
-companies, send messages, or schedule future work.
+Skill-local files: `./references/*` and `./scripts/*` only.
+Read `./references/flows/flow-discover.md` now.
+Load each additional reference only when that flow names it.

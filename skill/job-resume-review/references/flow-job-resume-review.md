@@ -1,16 +1,16 @@
 # Flow — resume review
 
-Return an evaluation in chat. Write-set: none. Extracted text and score JSON
-stay in one run-scoped temp directory outside Profile root, removed after
-the report. The CV, source, profile, and dossiers stay read-only.
+Return an evaluation in chat. Write-set: none. Extracted text and score JSON stay in one run-scoped temp
+directory outside Profile root, removed after the report. The CV, source,
+profile, and dossiers stay read-only.
 
 Run every script with the launcher per
 `job-match/references/flows/flow-match.md` **score**.
 
 Read `./references/rubric.md` and `./references/report.md`.
-Read `./references/research.md` when explaining source rationale or resolving
-a contextual exception; it names `./references/career-positioning-sources.md`
-for the positioning and visibility sources.
+When explaining source rationale or resolving a contextual exception, read
+`./references/research.md`, plus `./references/career-positioning-sources.md`
+for the positioning and search-visibility sources.
 
 ## Inputs
 

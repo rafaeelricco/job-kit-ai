@@ -20,9 +20,9 @@ The caller pastes `Surface`, `CONTRACT`, and `DRAFT`. If one is missing, stop
 and name the hole. Return only the rewritten `DRAFT`: no note, no pattern list,
 no commentary, never a Fact path or a caller flow file.
 
-`CONTRACT` is absolute; this file comes second. Do not merge or split CONTRACT
-slots. Rewrite only the surface's `In` column; a skill token, heading, tech-tag
-line, or sentence the CONTRACT marks verbatim stays as written.
+`CONTRACT` is absolute; this file comes second. Rewrite only the surface's `In`
+column; a skill token, heading, tech-tag line, or sentence the CONTRACT marks
+verbatim stays as written.
 
 | Surface    | Register | In                                 | Out                                                           |
 | ---------- | -------- | ---------------------------------- | ------------------------------------------------------------- |
@@ -63,9 +63,8 @@ short-long seesaw, or planted slips read as machine-made too.
 
 ## Tells to remove
 
-These make text read as machine-written. Remove them from the output. Three or
-more in one paragraph mean the paragraph was generated: rewrite it from its
-facts instead of swapping words.
+These make text read as machine-written. Three or more in one paragraph mean
+the paragraph was generated: rewrite it from its facts instead of swapping words.
 
 `scripts/detect.py` matches every quoted phrase below in English text; a single
 word also matches its longer forms (leverage, leveraging), and X, Y, Z, and …

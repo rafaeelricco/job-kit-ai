@@ -20,7 +20,7 @@ runs inline even when spawning works — except validate, which spawns whenever 
 can so the review stays independent of the pass that wrote the row.
 Hand each worker one slice file in the run directory — exactly its batch, plus
 the same `state.candidate` for match, validate, and advise — and the paths of the worker and contract files it obeys. Never paste JSON
-into a brief. Main runs every script.
+into a brief. Main runs every script, with the launcher **score** resolves.
 
 ## bind
 
@@ -52,8 +52,7 @@ leftover tokens, or two selectors → stop.
 3. `all`, or `--exclude` with no selector → `select: "all"`: every parseable dossier except `dropped` and dead-by-log, minus `--exclude` statuses.
 4. Empty → `select: "new"`: frontmatter `status:` = `new`, not dead-by-log, minus `--exclude` statuses.
 
-Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` (same launcher as
-**score**) with `{"root", "select", "exclude"}`; it applies those filters. Its `filter` rows are the Posting facts
+Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` with `{"root", "select", "exclude"}`; it applies those filters. Its `filter` rows are the Posting facts
 filter₁ reads, and its `gaps` go to `state.gaps`. A rule 2 dossier that lands in `gaps`
 is unparseable: stop and name it.
 
@@ -62,7 +61,7 @@ Pasted posting: run **extract** before **filter₁**. Store sources keep the gra
 
 ## filter₁
 
-Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting (no Posting facts table): the JobProfile's `company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility`, and `pay_usd_year` from `job-store/scripts/pay.py` (same launcher as **score**) run on its `salary`. First hit → `state.blocked`. Do not score.
+Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting (no Posting facts table): the JobProfile's `company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility`, and `pay_usd_year` from `job-store/scripts/pay.py` run on its `salary`. First hit → `state.blocked`. Do not score.
 
 ## extract
 
@@ -74,8 +73,7 @@ Main. Contract HF8 on JobProfile + `state.candidate`. Hit → move to `state.blo
 
 ## match
 
-`--typesafe` → run `./scripts/typesafe_match.py` (same launcher as **score**)
-instead of the worker, with `{"candidate": state.candidate, "jobs": state.jobs}`
+`--typesafe` → run `./scripts/typesafe_match.py` instead of the worker, with `{"candidate": state.candidate, "jobs": state.jobs}`
 on stdin. It sends that CandidateProfile and each JobProfile to
 `api.typesafe.ai`. Non-zero exit → print its
 `match_error`, or its stderr when stdout is not JSON, and end. Every row
@@ -90,8 +88,7 @@ Write `state.matches[]`. Malformed → `state.gaps`.
 
 ## score
 
-Main. Resolve `./scripts/score.py` from the loaded job-match skill root. Resolve
-the first working Python 3 launcher: `python3`; on Windows, `py -3`; otherwise
+Main. Resolve the first working Python 3 launcher: `python3`; on Windows, `py -3`; otherwise
 `python` only when its reported major version is 3. Missing launcher or unreadable
 scorer → name the dependency and end.
 
@@ -109,7 +106,6 @@ Load `./references/workers/worker-validate.md`. Rows with `match_score >= 75`, r
 selected once.
 Each worker's slice carries the MatchResult currently in `state.matches`. `APPROVED` leaves the row; `CORRECTION_REQUIRED` replaces it, and a replaced row goes back through **score** before order.
 Malformed or failed validate output → `state.gaps` and drop the row.
-Non-reviewed rows stay as match wrote them.
 
 ## order
 
@@ -124,12 +120,14 @@ the rest are reported without guidance.
 
 ## advise
 
-Run `./scripts/scaffold_guidance.py` (same launcher as **score**) with
+Run `./scripts/scaffold_guidance.py` with
 `{"candidate": state.candidate, "jobs": <selected JobProfiles>}` on stdin; it
 emits one ResumeGuidance skeleton per job. Load `./references/contracts/contract-resume-guidance.md` and
 `./references/workers/worker-resume-guidance.md`. Pass CandidateProfile, selected JobProfiles, the
 skeletons, and the Skill hold law—never dossier prose or MatchResult claims.
-Validate the batch with `./scripts/validate_guidance.py`. Add valid rows to
+Validate the batch with `./scripts/validate_guidance.py` with
+`{"candidate": state.candidate, "jobs": <selected JobProfiles>, "guidance": <worker rows>}`
+on stdin. Add valid rows to
 `state.guidance`; add invalid rows to `state.gaps` without dropping their match.
 
 ## report

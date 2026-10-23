@@ -1,9 +1,5 @@
 # Greenhouse — stable field map
 
-Starting guess only. The live form's fields win; a selector absent this run is
-dropped from the plan. Custom questions are per-posting and never cached across
-companies.
-
 | selector                             | label           | source                                                             |
 | ------------------------------------ | --------------- | ------------------------------------------------------------------ |
 | `#first_name`                        | First name      | `data/basics.yaml`                                                 |

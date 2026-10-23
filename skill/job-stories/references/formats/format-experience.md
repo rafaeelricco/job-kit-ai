@@ -1,4 +1,4 @@
-# Job pitch — profile work experience
+# Profile work experience
 
 One block per company in `data/experiences.yml`, newest first, unless the operator
 names one. This is a profile field, not speech: bullets, quantitative where the deck

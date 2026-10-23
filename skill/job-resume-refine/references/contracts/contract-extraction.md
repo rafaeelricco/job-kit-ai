@@ -20,7 +20,7 @@ On Windows use `py -3` when available. The evaluator uses only the Python
 standard library and the installed Poppler `pdftotext` executable. It runs
 `pdftotext` twice against the same PDF: once in default mode and once with
 `-layout`. The modes are required checks of one engine, not independent
-implementations. It must not use OCR, a PDF parser package, or an installer.
+implementations.
 
 The expected manifest is read from stdin. It is created from the source and
 Facts before compilation; it is never inferred from extracted text. It must
@@ -47,10 +47,8 @@ The complete input object is:
 non-empty string `id` and a non-empty `parts` array containing only non-empty
 strings; block IDs are unique. `terms` is an array of non-empty strings. Terms
 are deduplicated for coverage counts while preserving their first-seen order;
-`terms: []` is valid and reports term coverage as `n/a`, never as an ATS score.
-Unknown keys, malformed JSON, invalid UTF-8, empty IDs, empty parts, or empty
-terms are input errors. The evaluator must retain the validated complete
-manifest in the top-level result under `expected`.
+`terms: []` is valid. Unknown keys, malformed JSON, invalid UTF-8, empty IDs,
+empty parts, or empty terms are input errors.
 
 `terms` contains the exact supported posting terms selected for this compiled
 artifact. Supported terms omitted by fit remain requirement-coverage gaps in
@@ -74,18 +72,14 @@ join arbitrary separated words. A source-grounded discretionary line-break
 hyphen may be ignored when a word is split at a line break; a real source
 hyphen remains required. Known Unicode ligatures U+FB00 through U+FB06
 (`ﬀ`, `ﬁ`, `ﬂ`, `ﬃ`, `ﬄ`, `ﬅ`, `ﬆ`) may be expanded for body comparison with a
-ligature warning. Missing content, damaged words, or wrong order still fails.
-Record normalization-dependent body matches in diagnostics. Exact terms allow
-NFC and ordinary whitespace wrapping, but never ligature expansion,
-dehyphenation, or joining/splitting words to establish a hit.
+ligature warning. Record normalization-dependent body matches in diagnostics.
 
 Terms use literal case-folded matching with exact technical punctuation and
-word boundaries. `C++` and `C#` cannot satisfy `C`; `R&D` cannot satisfy `R`;
-ligature expansion, dehyphenation, or whitespace repair cannot satisfy a
-missing term. A term is matched only as the requested literal term, with its
-case ignored. Broken-spacing diagnostics may locate a relaxed match, but it
-never counts as recovered content or an exact-term hit. Include the block or
-term, page, and excerpt when the location is available.
+word boundaries. `C++` and `C#` cannot satisfy `C`; `R&D` cannot satisfy `R`.
+Exact terms allow NFC and ordinary whitespace wrapping, but never ligature
+expansion, dehyphenation, or joining/splitting words to establish a hit.
+Broken-spacing diagnostics may locate a relaxed match, but it never counts as
+recovered content or an exact-term hit.
 
 Control characters other than tab, LF, CR, and form feed in extracted PDF text
 make that completed mode `FAIL`; they are never silently removed. The same
@@ -98,10 +92,11 @@ check into `FAIL`; missing content does.
 ## Verdicts and exit status
 
 Each mode checks all ordered blocks and all terms. A mode is `PASS` only when
-all its blocks and terms match. The aggregate is `PASS` only when both modes
-pass. A completed check with a mismatch is `FAIL`. Input, file, encoding,
-Poppler, tool, or timeout failures are `ERROR`. Exit status is `0` for `PASS`,
-`1` for `FAIL`, and `2` for `ERROR`.
+all its blocks and terms match. The aggregate is `ERROR` when either mode
+cannot complete due to input, file, encoding, Poppler, tool, or timeout
+failure; otherwise `FAIL` when a completed mode fails, and `PASS` only when
+both modes pass. Exit status is `0` for `PASS`, `1` for `FAIL`, and `2` for
+`ERROR`.
 
 ## Output JSON
 
@@ -144,18 +139,3 @@ block counts, term counts, and issue list. An issue has `severity`, `code`, and
 applicable. Aggregate issues identify their `mode`; a mode-local issue does
 not need a duplicate aggregate copy. Include page and excerpt diagnostics when
 the location is available. Keep warnings in `issues` even with `PASS`.
-
-The top-level verdict is `ERROR` when either required mode cannot complete due
-to input, tool, file, encoding, or timeout failure. Otherwise it is `FAIL`
-when a completed mode fails, and `PASS` only when both modes pass all blocks and
-terms.
-
-## Source and design rationale
-
-The evaluator follows Poppler's `pdftotext` behavior and keeps layout mode as a
-second extraction view. These references explain the extraction tradeoffs and
-why source comparison remains a separate check:
-
-- [Poppler `pdftotext` manual](https://manpages.debian.org/testing/poppler-utils/pdftotext.1.en.html)
-- [pdfminer.six text conversion notes](https://pdfminersix.readthedocs.io/en/latest/topic/converting_pdf_to_text.html)
-- [pypdf text extraction guide](https://pypdf.readthedocs.io/en/stable/user/extract-text.html)

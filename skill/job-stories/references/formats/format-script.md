@@ -1,4 +1,4 @@
-# Job pitch — vetting video script
+# Vetting video script
 
 One story per render. The English check runs 1–3 minutes and asks for the single
 most significant technical challenge: situation, task, steps taken, outcome, lessons

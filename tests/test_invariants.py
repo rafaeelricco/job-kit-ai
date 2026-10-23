@@ -675,7 +675,6 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("(3) every row of each `slug_lists` entry", search)
         self.assertIn("no slug is skipped or deferred to a later run", search)
         self.assertNotIn("the window", search)
-        self.assertIn("there is no separate board-registry file", search)
         self.assertIn("disabled explicit tenants are excluded from every seed source", search)
         self.assertIn('"slugs": <explicit seeds, (1), and (2)>', search)
         self.assertNotIn("mod seed count", search)

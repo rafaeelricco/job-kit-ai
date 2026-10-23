@@ -42,16 +42,15 @@ rg -n '<donor-term>|<donor-term>' "<target>"
 ```
 
 Any hit → STOP and fix templates or rewrite; do not hand off a dirty tree.
-After substitution, no `{{…}}` tokens may remain. Target must not contain skill pack trees.
 
 ## After fill
 
 `flow-fill.md` overwrites Fact-law files under `data/`, writes `data/stories/*.md`
 stubs, and may place `cv/en-us-resume.pdf`.
-It must not write skill trees or any path outside the emitted layout (`data/`, `cv/`,
+It must not write any path outside the emitted layout (`data/`, `cv/`,
 root README). Re-run this leak gate after fill.
 
 `job-scout` persist creates `scout/` under Profile root at first run. It is not
 emitted here and never a Gap; this flow neither creates nor reads it.
 
-Gaps allowlist and never-Gaps: `./references/flows/flow-fill.md`. Handoff: `./references/flows/flow-activate.md` step 9.
+Gaps allowlist: `./references/flows/flow-fill.md`. Handoff: `./references/flows/flow-activate.md` step 9.

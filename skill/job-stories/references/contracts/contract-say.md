@@ -1,7 +1,6 @@
-# Job pitch — what may be said
+# What may be said
 
-Both verbs read the same files and obey the same say law. Load this before either
-format.
+Both verbs read the same files and obey the same say law.
 
 ## Read set (all under Profile root)
 
@@ -49,7 +48,7 @@ records where that line falls.
 - `ready` → render.
 - `needs-numbers` → render, and name the missing outcome number in `### Gaps`. The
   render says so out loud rather than filling the hole.
-- `draft` → refuse. An `evidence` part is empty; point at `add` and STOP.
+- `draft` → refuse. An `evidence` part is empty; point at `add` and stop.
 
 ## Coverage
 

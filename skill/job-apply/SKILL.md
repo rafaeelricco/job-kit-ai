@@ -19,8 +19,7 @@ say so; an absent `data/cvs.yaml` falls back per `flow-apply.md` §3.
 
 ## Writes
 
-A run writes these and nothing else. Before a confirmed submission,
-`scout/jobs/` takes only the two log lines. The `pending[]` step runs at the
+A run writes these and nothing else. The `pending[]` step runs at the
 end of every run, whether or not it recorded a submission.
 
 | When                                         | Writes                                                              | Where                                                  | Dossier-less `<url>` |
@@ -32,7 +31,7 @@ end of every run, whether or not it recorded a submission.
 
 Each of the two log lines is appended under the `job-store/references/contracts/contract-persistence.md`
 lock, exactly one line below the ownership marker, touching nothing else — not
-`status:`, not the body. Never create a dossier to hold a log line.
+`status:`, not the body.
 A chained `job-resume-refine` writes `scout/applications/{slug}/` under its own
 law. `scout/applications/{slug}/plan.json` is read-only input
 (`flow-apply.md` §3 rule 0); only `job-prep` writes it.
@@ -49,7 +48,6 @@ Load each additional reference only when that flow names it.
 - State a fact no Fact file or the live ad prints, in a form value, a letter,
   or an answer; a missing part is named as not on record, never estimated
 - Read a story body, or ship a `never_say` claim or a process number
-- Write anything `## Writes` does not list
 - Write `qa[]`, an answer, a scope guess, a password, a one-time code, or an
   authentication link; only a question, source, and date belong in `pending[]`
 - Type, invent, persist, or reuse a password; create a password account; sign

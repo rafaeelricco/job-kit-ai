@@ -5,7 +5,7 @@ One story per confirm cycle. Print `Profile root: /abs/path` before the first di
 ## Evidence gate
 
 1. Ask which moment, and where the evidence lives: a repo path, a PR, the CV, or
-   the operator's own account. No source → STOP; never draft from chat memory.
+   the operator's own account. No source → stop; never draft from chat memory.
 2. Read what the operator named. A repo → git log, blame, PR bodies. Nothing else.
 3. Every claim that reaches `evidence.*` traces to something read in step 2 or to
    an explicit operator statement recorded in `sources`.

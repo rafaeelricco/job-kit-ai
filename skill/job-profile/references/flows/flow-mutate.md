@@ -1,5 +1,11 @@
 # Mutate
 
+Write-set: `data/job_search.yaml` (search keys, plus the fact keys the
+legacy `candidate.yaml` move writes), `data/answers.yaml` (`qa[]`, `pending[]`),
+`data/profile_card.yaml`, `data/search_packs.yaml`, `data/cvs.yaml`, and their
+`*.yaml.tmp` staging siblings during atomic rename; `data/candidate.yaml` is
+deleted by that move only.
+
 One mutation per confirm cycle. Several related edits in one user message are one
 batch — still one diff, one yes.
 
@@ -78,7 +84,8 @@ operator to run `/job-profile continue fill basics.country`, then repeat the
 migration. A confirmed, resolved residence country makes the old region data
 redundant:
 show its deletion through the existing unified-diff and explicit-yes protocol.
-Never translate a region into a country or an authorization fact. Citizenship
+Never copy a region into another field, including a country or an
+authorization fact. Citizenship
 is optional and is not a migration prerequisite. This migration never writes
 `data/basics.yaml`; missing residence or citizenship facts go through continue
 fill.
@@ -90,10 +97,6 @@ Legacy location keys are moved, not deleted, in one confirm cycle:
 | `location_scope: worldwide`           | `location.search_in: worldwide` (old `locations` dropped) |
 | `locations` (scope `listed` or empty) | `location.search_in` list, minus `Anywhere`               |
 | `exclude_locations`                   | `location.exclude_hire_from`                              |
-
-`location.also_eligible_from` and `direct_regions` are deprecated geography
-fields. Their only migration action is removal under **Residence-dependent
-geography migration** above; they are never copied into another field.
 
 Legacy `data/candidate.yaml` present → move its valued keys in one confirm cycle,
 with the location moves above when those keys are present too:
@@ -163,10 +166,6 @@ rewrite that history or those entries through this flow, except `enable` /
   `http(s)` URL. Accept optional `route_required`, `route`, and `location` only
   when supplied by the user. A pack is a surface; an employer board is a slug,
   never a pack, except a `surface: careers` pack, which must carry `location: keep-only`.
-
-The schema owns the full route invariant, including `kind: careers`, its
-`surface: careers` and `location: keep-only` requirements, and discovery-created
-company fields. Validate the whole staged document against it before rename.
 
 ## `cvs.yaml` — writable keys
 

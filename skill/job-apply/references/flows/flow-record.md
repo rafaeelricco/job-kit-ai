@@ -36,8 +36,7 @@ title, channel, and submission date (`YYYY-MM-DD`). Do not use the recording dat
 unstated submission date. Channel `—` must be resolved from the operator; never infer it.
 
 A dossier matched on company and title only, whose URL does not re-match, is not
-updated. Re-scan under the URL lock and create a new URL identity when no match
-exists.
+updated.
 
 ## Same-session record
 
@@ -83,14 +82,13 @@ recorded.
 
 When the earlier ad line and preview are not in context, never reconstruct them from
 the posting or memory. Re-identify URL, company, title, channel, and the actual
-submission date before any write. Re-scan by URL, then follow the same schema update-or-
-create path.
+submission date before any write.
 
 Append the application heading using the submission date and exactly one line:
 
 `> record not available (confirmed in a later session)`
 
-No section headings. Existing status follows the lifecycle table.
+No section headings.
 
 ## Persistence encoding
 

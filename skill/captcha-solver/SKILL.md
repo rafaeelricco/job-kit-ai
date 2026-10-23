@@ -2,8 +2,8 @@
 name: captcha-solver
 description: >
   Solve a CAPTCHA already on the attached browser-use page (reCAPTCHA,
-  Turnstile, hCaptcha, image/text challenge). Use when: captcha, recaptcha,
-  turnstile, hcaptcha, "i'm not a robot", "verify you are human", challenge.
+  Turnstile, hCaptcha, image/text challenge). Use when a page shows a captcha
+  or human-verification challenge ("i'm not a robot", "verify you are human").
 ---
 
 # CAPTCHA solver
@@ -33,13 +33,10 @@ tab and the user wants it solved → this skill.
 
 ## Checkbox (reCAPTCHA / Turnstile / hCaptcha)
 
-1. Locate the widget iframe bounds with `js(...)` (vendor `src` substrings:
-   `recaptcha`, `hcaptcha`, `challenges.cloudflare`). If AX already exposes
-   the checkbox, use browser-use’s AX → box → `click_at_xy` path instead.
-2. Click left-center of the iframe: `click_at_xy(bounds["x"] + 12, bounds["y"] + bounds["height"] / 2)`.
-3. `wait(3)`.
-4. Verify with `page_info()`, a short `js("document.body.innerText.slice(0, 500)")`,
-   and/or `capture_screenshot(str(Path(gettempdir()) / "captcha.png"), max_dim=1800)`.
+Find the widget iframe by vendor `src`, click its left-center, `wait(3)`, then
+verify with `page_info()`, a short page-text read, and/or a screenshot, as
+below. If AX already exposes the checkbox, use browser-use’s AX → box →
+`click_at_xy` path instead.
 
 ```python
 from pathlib import Path
@@ -69,8 +66,7 @@ No drag helper on browser-use. Drive a stepped press→move→release with raw
 event's button; `buttons` is the held-button bitmask and defaults to 0, so
 every move between press and release needs `buttons=1` or a widget that reads
 `MouseEvent.buttons` aborts the drag. If the widget ignores it, stop and open
-browser-use’s `drag-and-drop` interaction skill — do not invent a second drag
-API here.
+browser-use’s `drag-and-drop` interaction skill.
 
 ```python
 from pathlib import Path
@@ -96,7 +92,7 @@ print(capture_screenshot(str(Path(gettempdir()) / "captcha-drag.png"), max_dim=1
 2. OCR with agent vision on that PNG (no harness `readText`).
 3. Fill the answer field with `fill_input(selector, text)` (or focus + `type_text`).
 4. Submit it — the form's own control, or Enter. Filling the field does not submit.
-5. Verify as in Checkbox step 4.
+5. Verify as in Checkbox.
 
 Measure clicks from the image only after converting device px → CSS px; the
 conversion rule lives in browser-use’s screenshots interaction skill.
@@ -118,5 +114,5 @@ widget bounds.
 ## Out of scope
 
 - Starting Chrome, `--doctor`, `mac-approve`, `BU_NAME`, cloud spawn/auth.
-- Restating browser-use page workflow (AX tree, `new_tab`, recordings).
+- General page workflow (AX tree, `new_tab`, recordings): browser-use owns it.
 - Claiming a `captcha` global or Aside REPL APIs.

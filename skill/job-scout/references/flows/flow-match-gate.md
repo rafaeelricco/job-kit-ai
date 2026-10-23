@@ -1,6 +1,6 @@
-# Scout — persist set
+# Job scout — persist set
 
-Input: `status=live` rows that passed `./flow-gate.md`, with Rank `score`.
+Input: `status=live` rows that passed `./references/flows/flow-gate.md`, with Rank `score`.
 
 Every input row proceeds to Match below, including low or unknown Rank `score`.
 Rank `score` is diagnostic only; it never filters a row.
