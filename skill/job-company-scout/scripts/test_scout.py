@@ -245,6 +245,29 @@ class ScoutTests(unittest.TestCase):
         scout.publish_pending(self.root, ["us"])
         self.assertNotIn(task["url"], load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"])
 
+    def test_shared_source_keeps_link_pending_for_a_disabled_market(self):
+        def set_us(enabled):
+            document = load_profile(self.root)
+            document["discovery"]["markets"]["us"] = {"enabled": enabled, "scope": "Companies headquartered in us",
+                                                      "sources": {"same": {"url": SOURCE, "strategy": "portfolio"}}}
+            write_document(self.root, document)
+        set_us(True)
+        run = scout.start(self.root, ["uk", "us"], 1, False)
+        saved = run["tasks"][0]
+        scout.record(self.root, run["run_id"], saved["id"], findings(saved))
+        set_us(False)
+        scout.publish_pending(self.root, ["uk"])
+        run = self.start(1)
+        live = run["tasks"][0]
+        self.record_and_publish(run, live)
+        pending = load_profile(self.root)["discovery"]["observations"][SOURCE]["pending_urls"]
+        self.assertIn(saved["url"], pending)
+        self.assertIn(live["url"], pending)
+        set_us(True)
+        us = [t["url"] for t in scout.start(self.root, ["us"], 200, False)["tasks"]]
+        self.assertIn(saved["url"], us)
+        self.assertIn(live["url"], us)
+
     def test_status_cli_does_not_need_yaml_dependency(self):
         proc = subprocess.run([sys.executable, "-I", str(SCRIPT)],
             input=json.dumps({"op": "status", "profile_root": str(self.root)}), text=True,
