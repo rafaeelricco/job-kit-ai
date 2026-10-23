@@ -78,6 +78,9 @@ jobs:
       - name: Report Python version
         run: python3 -VV
 
+      - name: Install Company Scout test dependency
+        run: python -m pip install -r skill/job-company-scout/scripts/requirements.txt
+
       - name: Run full test suite
         run: bash scripts/test.sh
 
@@ -113,6 +116,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install Company Scout test dependency
+        run: python -m pip install -r skill/job-company-scout/scripts/requirements.txt
+
+      - name: Test Company Scout workflow
+        run: python -m unittest discover -s skill/job-company-scout/scripts -p 'test_*.py'
 
       - name: Test release packaging and native installers
         run: python -m unittest discover -s tests -p test_release.py

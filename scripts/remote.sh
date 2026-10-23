@@ -131,6 +131,9 @@ scripts/common.sh
 scripts/browser-use/install.sh
 skill/captcha-solver/SKILL.md
 skill/job-company-scout/SKILL.md
+skill/job-company-scout/scripts/scout.py
+skill/job-company-scout/scripts/deck.py
+skill/job-company-scout/scripts/requirements.txt
 skill/job-apply/SKILL.md
 skill/job-prep/SKILL.md
 skill/job-resume-refine/SKILL.md
