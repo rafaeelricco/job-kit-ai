@@ -1,8 +1,7 @@
 # Match state
 
-Orchestrator holds this object in-session, or as JSON files in the run-scoped temp
-directory outside Profile root. Nodes write only their keys.
-Pipe those files to the scripts; never retype their JSON.
+Orchestrator holds this object (storage: flow-match write-set). Nodes write only their keys.
+Pipe its JSON files to the scripts; never retype their JSON.
 
 ```json
 {

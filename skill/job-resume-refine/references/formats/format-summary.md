@@ -19,10 +19,6 @@ preferred posting term appears only when a Fact supports it. Do not turn the
 Summary into a stack list, stuff exact terms, or add hidden coverage; stack
 names normally belong in Skills or a role-specific Technologies line.
 
-Humanization is limited to sentences 1 and 3. Preserve every exact posting
-term or acronym selected for coverage, every claim, and the three-sentence
-shape. The raw role and bullet source is never rewritten by this format.
-
 ## The block, rendered
 
 Keep the LaTeX shape the base already carries. The three slots are the table
@@ -40,10 +36,6 @@ above; wording comes from this profile's Facts and the current posting.
   }
 \end{itemize}
 ```
-
-Do not alter the surrounding preamble, layout commands, headings, role fields,
-education, or raw bullet bytes to make Summary prose fit. The refinement
-contract defines the fit order.
 
 ## Not a summary
 

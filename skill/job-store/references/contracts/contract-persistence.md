@@ -1,7 +1,7 @@
 # Job store — persistence lock
 
 Shared filesystem transaction for job-scout, job-prep, job-apply, and job-inbox.
-Dossier shape, ownership, and writer-specific mutations remain in
+Dossier shape, ownership, and writer-specific mutations live in
 `job-store/references/schemas/schema-dossier.md`.
 
 1. Resolve `scout/jobs` through its deepest existing ancestor. STOP unless its

@@ -1,9 +1,7 @@
 # Refine report
 
 Write `{dir}/match-report.md` and print it. `job-apply` reads `verdict:` and
-the `miss:` line; the remaining fields are for the operator. The extraction
-CLI's full JSON schema belongs only to
-`../contracts/contract-extraction.md`.
+the `miss:` line; the remaining fields are for the operator.
 
     # Refine · {company} · {title} · {YYYY-MM-DD}
 
@@ -26,8 +24,7 @@ CLI's full JSON schema belongs only to
 `terms total = 0` is printed as `n/a`, never as an ATS score. Keep the
 existing `verdict:` and `miss:` fields even when a stop or evaluator error
 prevents a complete report. A base factual or `never_say` issue is a `FAIL`
-and names the preserved source text. Unsupported job requirements and
-eligibility conflicts are informational and do not invalidate a correct PDF.
+and names the preserved source text.
 
 ## Changes
 
@@ -69,8 +66,3 @@ must be named here:
 
     source comparison: PASS | FAIL · {immutable block or reason}
     visual review: PASS | FAIL · {page or reason}
-
-If this run fails with no prior package, keep the failed `match-report.md` and
-any available evaluator diagnostics JSON, but remove the failed `.tex` and `.pdf`. If a
-prior package exists, print diagnostics and restore it, including the absence
-of an extraction report in a legacy package.

@@ -1,8 +1,7 @@
 <!--
 Spec, never printed. Print after Activate, or when Activate ask was No.
-Fill every {{…}} per flow-activate.md step 9. Never leave an unresolved
-placeholder. Never invent a CWD-relative kit `scripts/...` from a profile dir.
-Omit empty optional placeholders (GAPS_LINE / CV_LINE); never print them blank.
+Fill every {{…}} per flow-activate.md step 9; never leave one unresolved.
+Omit an empty optional placeholder's line (GAPS_LINE / CV_LINE).
 -->
 
 - {{ACTIVATE_NOTE}}

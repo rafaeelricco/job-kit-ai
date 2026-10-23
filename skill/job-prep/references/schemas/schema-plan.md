@@ -60,8 +60,7 @@ by `job-prep digest`.
 - The CV upload control is excluded from `fields[]`; top-level `cv` and
   `cv_sha256` identify the file represented in the package's `### CV` section.
 - `needs_you[]` entries are `{ "what": "...", "why": "...", "where": "..." }`,
-  what the resolution order could not fill; they print under
-  `### Needs answers` in the prep report and digest.
+  what the resolution order could not fill.
 - `walls[]` records a captcha or account wall seen on the apply path as a
   string; job-apply §5 clears it at apply time.
 - `submit_selector` is recorded, never clicked, and `null` when not found.

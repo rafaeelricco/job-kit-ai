@@ -1,5 +1,9 @@
 # Intake
 
+Create a **new** data-only profile checkout, or register an existing one.
+Outside `<target>`, write only Profile-root pointer files, and only via
+**Activate** after operator **Yes**.
+
 Refer to intake stages by name. Stages run in order;
 every stage before **Approve** is read-only.
 Batch only independent enums (Route modes; on the create path, Activate ask +
@@ -27,8 +31,8 @@ registered here.
    the Activate ask, so the operator knows Yes replaces a stale pointer.
 
 The discovered path is a recommendation, never a selection. No pointer file is
-written before SKILL step 4. Do not sweep the filesystem — pointer + default
-probes only.
+written before **Activate handoff**. Do not sweep the filesystem — pointer +
+default probes only.
 
 ## Route
 
@@ -38,7 +42,8 @@ Two outcomes; offer both.
   path under a `templates/` directory). Look
   where the operator points and where the session already is. Choosing this
   **ends intake** — no Folder, Source, Identity, or Approve; no emit; no fill.
-  Then run **Activate ask** (below) with that path as `<target>`, then SKILL step 4.
+  Then run **Activate ask** (below) with that path as `<target>`, then
+  **Activate handoff**.
 - **Create new** → continue to Folder.
 
 ## Folder (create only)
@@ -54,13 +59,12 @@ Absolute `<target>` for the profile tree.
 
 After `<target>` is accepted (create path): ask **Activate** and **Source
 mode** in the same turn (below). Both answers are stored; Activate's answer is
-consumed at SKILL step 4 after emit/fill.
+consumed at **Activate handoff** after emit/fill.
 
 ## Activate ask (create + register-existing)
 
 Once absolute `<target>` is known, ask whether to make it the machine Profile
-root (so scout/apply can resolve it). Enum; **Yes (Recommended)** first. Silence
-is not yes. Create path: ask together with Source mode in one turn (below).
+root (so scout/apply can resolve it). Enum; **Yes (Recommended)** first.
 Register-existing: this is the only remaining question — ask it alone.
 Pointer / dual-home / pure-convention mechanics: `./references/flows/flow-activate.md` only.
 Describe Activate as making `<target>` the Profile root skills resolve: by path
@@ -73,8 +77,8 @@ Example prompt:
 > Set `<target>` as this machine’s active Profile root so scout/apply resolve
 > your facts? **Yes (Recommended)** / **No**. Silence is not Yes.
 
-- **Yes (Recommended)** → SKILL step 4 runs `./references/flows/flow-activate.md` end-to-end.
-- **No** → step 4 skips Activate **only** when `<target>` is **not** a path that
+- **Yes (Recommended)** → **Activate handoff** runs `./references/flows/flow-activate.md` end-to-end.
+- **No** → **Activate handoff** skips Activate **only** when `<target>` is **not** a path that
   skills probe by convention without a pointer. If `<target>` equals
   `JOB_KIT_CONFIG` (or canonical-equals `HOST_DEFAULT`), **No is not allowed**:
   presence of the probe file would make the profile active immediately.
@@ -133,7 +137,7 @@ Register-existing skips this stage.
 ## Approve (create only) — the plan gate
 
 Enter the harness plan workflow when one exists; otherwise present the same
-plan in chat per `plan-format`. Plan what will be written, not what was asked:
+plan in chat. Plan what will be written, not what was asked:
 
 - `<target>`, activation choice, source mode
 - the emit tree, one line per file
@@ -145,4 +149,17 @@ plan in chat per `plan-format`. Plan what will be written, not what was asked:
 
 STOP and wait for an explicit yes. Silence, a question, or edits are not a
 yes. Edits reopen only the affected questionnaire fields, then re-present the
-plan. On yes → emit-tree, then fill. **No write before this yes.**
+plan. **No write before this yes.** On yes → obey
+`./references/flows/flow-emit-tree.md` end-to-end (write → tokens → leak
+gate), then `./references/flows/flow-fill.md`, then **Activate handoff**.
+
+## Activate handoff
+
+Activate Profile root for absolute `<target>`, branching on the Activate ask.
+Exactly one bullet runs, and it ends the skill.
+
+- **Yes** → obey `./references/flows/flow-activate.md` end-to-end.
+- **No**, and `<target>` is a convention path the **Activate ask** refuses No
+  for → re-run the Activate ask instead.
+- **No**, otherwise → obey `./references/flows/flow-activate.md` for the
+  Activate-skipped handoff (next-steps only).

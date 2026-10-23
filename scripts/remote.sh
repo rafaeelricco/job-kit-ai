@@ -145,6 +145,7 @@ skill/job-resume-review/references/flow-job-resume-review.md
 skill/job-resume-review/scripts/review_score.py
 skill/job-resume-review/scripts/scan_cv.py
 skill/job-list/SKILL.md
+skill/job-list/references/flows/flow-job-list.md
 skill/job-match/SKILL.md
 skill/job-match/scripts/score.py
 skill/job-match/scripts/models.py
@@ -163,6 +164,7 @@ skill/job-store/scripts/validate_dossier.py
 skill/job-store/scripts/normalize_source.py
 skill/job-humanize/scripts/detect.py
 skill/job-stories/SKILL.md
+skill/job-stories/references/flows/flow-stories.md
 skill/job-inbox/SKILL.md
 skill/job-humanize/SKILL.md
 skill/job-profile-root/SKILL.md

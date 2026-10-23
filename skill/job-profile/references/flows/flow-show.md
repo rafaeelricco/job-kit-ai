@@ -30,7 +30,7 @@ the returned country and regions as
 `constraints.residence`; do not show country codes. Missing or unresolved
 residence stays unknown, and a missing country is a Gap; direct the operator
 to `/job-profile continue fill basics.country`.
-This flow remains read-only. If deprecated region configuration is present,
+If deprecated region configuration is present,
 report that `/job-profile` must run the confirmed migration in `flow-mutate.md`;
 do not enter the mutation flow here.
 
@@ -67,8 +67,6 @@ include <country>}
 
 Keep the full canonical names in `residence.regions`; use concise labels only in
 the target-role sentence.
-
-This is the shared display contract job-scout uses.
 
 `### Packs` third when `data/search_packs.yaml` is readable: `id · entry host ·
 enabled|disabled · route=json|board|careers|companies|DOM|missing|invalid|disabled · location=surface|keep-only|invalid · tokens · explicit boards`.
@@ -112,7 +110,4 @@ Print **only** these — this skill's own Gaps allowlist:
 - `job_search` `positions` when empty
 - `job_search` `location.search_in` when empty
 
-Never Gaps: `availability.open_to_relocation`,
-`direct_contractor`, `local_employment`, empty `projects.yml` / `languages.yaml` /
-experience `url.*`, `basics.permits`, CV.
 Nothing outstanding → `Gaps: none`.

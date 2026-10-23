@@ -16,11 +16,11 @@ For `route.kind: careers`, use **Declared careers listings** below; for
 `route.kind: companies`, use **Company list routes** below. JSON GET
 rules apply only to `json` and `board` routes. Validate selected deck pack fields
 against `job-profile/references/schemas/schema-search-packs.md`; an ad-hoc URL
-pack is not a deck pack and is exempt. Research memory is not a search input. Scout never writes the deck.
+pack is not a deck pack and is exempt. Research memory is not a search input.
 
-When a pack has a JSON or board route, consume it before any DOM search, except a
-`kind: board` pack first runs `site:{entry host} {formulation}` on a
-search engine for slug discovery, then GETs the route. That harvest
+A JSON or board route replaces DOM search. A `kind: board` pack first
+runs `site:{entry host} {formulation}` on a search engine for slug
+discovery, then GETs the route. That harvest
 is not a second surface and not a DOM fallback: `entry` already
 declared the host. A bot-wall, captcha, throttle, or empty interrupt on that
 harvest records `defect: surface_interrupted` for the harvest and
@@ -30,7 +30,7 @@ per expanded formulation; a `kind: board` pack runs once per board
 slug. Location remains a keep filter instead of repeating the same
 routed URL for every `search_in` entry.
 
-- `kind: json` and `kind: board` are supported. A `kind: json` route opens `entry` to establish its browser origin,
+- A `kind: json` route opens `entry` to establish its browser origin,
   substitute the percent-encoded formulation and 1-based page into `url`, then
   GET that URL from page context.
 - Resolve `items` and `pages` as dot paths in each JSON response. Resolve
@@ -73,8 +73,7 @@ routed URL for every `search_in` entry.
   (`/embed/…`, including `/embed/job_app` and `/embed/job_board`) whose slug is the `for` query value; no `for` →
   skip that URL. A `jobs.eu.lever.co` or `api.eu.lever.co` host is a
   separate Lever instance: skip it, do not GET `api.lever.co`.
-  One GET per slug, `{slug}` percent-encoded; no slug is skipped or deferred
-  to a later run. No valid enabled explicit seed and empty (1)+(2)+(3) → `defect: no_boards`, scan
+  No slug is skipped or deferred to a later run. No valid enabled explicit seed and empty (1)+(2)+(3) → `defect: no_boards`, scan
   nothing. `site:` cards on a `kind: board` pack are slug sources,
   not candidates; candidates come only from a successful route GET.
   Company = the explicit board's `name` (matched by the candidate's `slug`), else the `site:` card company, else the store company, else
@@ -109,14 +108,12 @@ as `channel`. Populate only printed fields; absent fields remain `—`.
 
 Follow listing pagination until exhausted or a page adds no new posting URL.
 Do not require a search box or formulation echo.
-Apply the common keep rules below, then existing extract, geography, match,
-and persistence rules. A successfully inspected empty listing is a
-zero-result run; a failed or interrupted listing is not.
+Apply the common keep rules below.
 
 ## Company list routes
 
-A `kind: companies` route runs `./scripts/collect_companies.py` from the
-job-scout skill root, launcher as job-match's score node, with stdin
+A `kind: companies` route runs `./scripts/collect_companies.py`, launcher
+as job-match's score node, with stdin
 `{"csv", "state", "pack", "regions", "tiers", "positions", "limit"}`: `csv`,
 `regions`, and `tiers` from the route, `state` as Profile root
 `scout/runtime/{pack id}.json` (create the directory), `pack` as the pack id,
@@ -144,8 +141,7 @@ index (`job-boards.greenhouse.io`, `boards.greenhouse.io`, `jobs.lever.co`,
 instead; an `entry` with a path opens directly. On a `site:` run the search
 engine is the surface: set its date control to the `date_posted` window when it
 has one, and expect stale rows regardless — the index is not the board, and
-extract marks them `dead` (`./flow-extract.md`). Explicit boards live in the
-deck; there is no separate board-registry file.
+extract marks them `dead` (`./references/flows/flow-extract.md`).
 
 Surface filter controls matching Constraints `date_posted`, `work_model`,
 `job_types`, and location (location omitted on a `location: keep-only` pack) — no others → set them before scanning. Paginate until
@@ -156,7 +152,7 @@ otherwise record `defect: query_not_submitted`. A DOM candidate's
 `matched_query` is the expanded formulation whose echo proved the run,
 verbatim. Outside a declared careers route, a card reached any other way — a category or index page, a board
 listing, browsing on from `entry` — has no proven run and is not a candidate:
-do not open it, do not emit it. The pack declares its surfaces; a run never
+do not open it. The pack declares its surfaces; a run never
 adds one. A source whose term search misses cards its category pages list is
 a pack-routing change, not a sweep improvised in the run.
 
@@ -167,9 +163,7 @@ On the first such page, re-submit one formulation that kept cards earlier in
 this run; a `site:` search-engine run may carry that query to one other engine
 first, and a run that recovers on another engine counts as submitted. Still
 empty → stop the pack there: every built run after the interrupted one
-is unsubmitted, and the verdict is `defect: surface_interrupted`. A
-`kind: board` harvest interrupt is the exception above: explicit-board and
-stored-slug collection still runs. A query that
+is unsubmitted, and the verdict is `defect: surface_interrupted`. A query that
 never kept cards in the run and is contradicted by no re-test stays a zero.
 
 Load `job-profile/references/contracts/contract-geography.md` for geographic membership and explicit authorization requirements. Drop a card whose company slug (schema-dossier "Filename" rule) is in `exclude_companies`. Keep a card whose work_model intersects kit-true flags (unknown → keep; no kit-true flag → keep) and that matches Constraints `job_types` and `date_posted`. Location keep (first match): remote or hybrid-with-remote with printed permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per the geography contract → drop; `worldwide` → keep; remote or hybrid-with-remote → keep; onsite or location-restricted → keep only if it matches a `search_in` entry (synonym OK); location unknown → keep (gate re-applies after extract). Unknown geographic membership or authorization stays unknown, never a country-based drop from employer location alone. Every kept candidate goes to extract; no pack has a candidate cap. Normalize URL per `job-store/references/schemas/schema-dossier.md`.
@@ -186,6 +180,6 @@ Every pack prints `### Candidates` then `### Defect log`:
 `zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A careers route is one listing run with location applied only as a keep filter; failed or interrupted careers runs do not count as zero results. A DOM run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under a `search_in` list, every run for one entry zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
 `verdict` ∈ `pass` | `auth_gate` | `defect: {name}`. No defect and no auth gate is `pass`. `unsubmitted_runs` above `0` is always `defect: surface_interrupted`; `query_not_submitted` names a pack fault (unknown `location` value, incomplete route, missing echo), never an interrupt.
 
-## 2 Merge
+## Merge
 
 One row per normalized URL. Prefer a named author. Channel sort: `direct_email` → `dm_request` → `founder` → `ats`.

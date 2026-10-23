@@ -63,7 +63,7 @@ name and the employer or project it belongs to. Names only. Never ask for the
 narrative, never draft one, never propose a moment the source of truth does not
 print.
 
-`skip` writes no stub and is never a Gap. Fill writes stubs for confirmed names.
+`skip` writes no stub and is never a Gap.
 
 Do not ask for `claim`, `evidence.*`, `impact_numbers`, `never_say`, or any
 prose. Those need evidence this flow does not read; `/job-stories add` collects

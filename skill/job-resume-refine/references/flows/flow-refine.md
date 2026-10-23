@@ -1,9 +1,15 @@
 # Job resume refine — flow
 
 Load `./references/contracts/contract-refine.md` now. Its six ATS steps are
-the only home for refinement coverage policy. Load
+the only home for refinement coverage policy, and it owns the immutable
+surfaces, Fact provenance, fit order, and failure behavior. Load
 `./references/contracts/contract-extraction.md` when the final PDF evaluator
-is named; do not reproduce its manifest or JSON schema here.
+is named. An operation outside those two contracts is refused.
+
+Write-set: `scout/applications/{slug}/`, plus a run-scoped temporary
+directory for the untouched baseline snapshot, expected manifest, and
+diagnostics. `data/`, `cv/`, and `scout/jobs/` stay read-only, and temporary
+baseline material never goes into the application package or the profile.
 
 ## 1. Posting
 
@@ -31,10 +37,11 @@ domain, seniority, product, stack alias, and supported exact term.
 
 ## 2. Base and baseline
 
-Read `data/cvs.yaml`. `adapt_per_vacancy: false` → stop and say refinement is
-off. The caller owns CV selection: `job-apply` checks its prepared-plan and
-fallback rules before attaching a base, while `job-prep` follows its own
-prepared workflow.
+Read `data/cvs.yaml`. `adapt_per_vacancy: false` → stop without writing and
+say refinement is off; a prepared package and the profile stay untouched.
+CV selection belongs to the caller: `job-apply` keeps its prepared-plan,
+refinement, prior-PASS, and base rules, and `job-prep` its own prepared
+workflow.
 
 Resolve `base` under `cv/`. Its source must be the same stem with a `.tex`
 extension beside the base PDF:
@@ -53,19 +60,13 @@ for these files; refinement never opens a write prompt. Report the base PDF's
 page count and whether it is older than its `.tex`; neither fact replaces the
 compiled baseline.
 
-Before any application-package mutation, follow the baseline procedure in
-`contract-refine.md`: use run-scoped temporary storage for an untouched source
-copy, freeze the complete ordered role/bullet inventory with stable expected
-block IDs and immutable manifest entries, and compile the copy with the same
-resolved `TEXINPUTS` and
-`pdflatex -interaction=nonstopmode -halt-on-error -output-directory=...`
-command shape used for the final source (with the baseline temp directory as
-output). Resolve preamble inputs with `kpsewhich`,
-the baseline temp directory, `cv/`, and a trailing `:`. Record source/PDF
-hashes, page count, and log result. That compiled page count is the ceiling
-even when the checked-in base PDF is stale. A source or copied-preamble
-failure is an explicit stop; do not edit the baseline source or preamble to
-make it pass.
+Before any application-package mutation, build the baseline that
+`contract-refine.md` "Base preservation" requires, in run-scoped temporary
+storage: copy the untouched source, freeze the complete ordered role/bullet
+inventory with stable expected block IDs and immutable manifest entries, and
+compile the copy with §6's `TEXINPUTS` and `pdflatex` command, using the
+baseline temp directory in place of `{dir}`. Record source/PDF hashes, page
+count, and log result.
 
 ## 3. Target and guidance
 
@@ -79,11 +80,9 @@ and validate it without hard filters, scoring, ranking, or an apply/no-apply
 decision.
 
 Resolve every non-held requirement against the complete refine Fact set before
-using it. Valid guidance may prioritize existing Skills, Summary edits, and
-visible coverage. It cannot supply wording, provenance, role association, or
-permission to touch an immutable role or bullet. Missing or invalid guidance
-is discarded as a whole. Continue under the posting-led contract and record
-`guidance: fallback`; guidance failure alone is never STOP or FAIL.
+using it. Guidance is used only as `contract-refine.md` "Guidance" allows.
+Missing or invalid guidance → record `guidance: fallback` and continue;
+guidance failure alone is never STOP or FAIL.
 
 ## 4. Draft and package rollback
 
@@ -95,15 +94,14 @@ stripped. `_Resume` is the tailored-package marker. `{dir}` is
 Create `{dir}` only after the baseline snapshot. Move any existing `*.pdf`,
 `*.tex`, `match-report.md`, and `extraction-report.json` in `{dir}` to a
 `.prev` suffix. These files are this run's rollback, including the possible
-absence of `extraction-report.json` in a legacy package. A PASS removes the
-backups only after both reports are complete and the extraction report's
-`pdf_sha256` equals the final PDF hash. A stop or FAIL restores the old files
-before returning.
+absence of `extraction-report.json` in a legacy package. A stop or FAIL
+restores them before returning (§7).
 
 Copy the base `.tex` to `{dir}/{stem}.tex` and apply `contract-refine.md` to
-the copy. The immutable inventory and block IDs in the expected manifest were
-frozen from source and Facts before this copy was edited; assemble or refresh
-only editable entries from source and Facts, never from PDF extraction.
+the copy. The immutable inventory and block IDs were frozen in §2 and never
+change. After every edit to the copy — draft, humanization, fit, or repair —
+refresh only the editable manifest entries, from source and Facts, never from
+PDF extraction.
 
 Load `./references/formats/format-summary.md` before drafting the Summary.
 
@@ -111,13 +109,11 @@ Load `./references/formats/format-summary.md` before drafting the Summary.
 
 Load `job-humanize` and obey it end-to-end once, with `Surface: summary`.
 Paste `contract-refine.md` verbatim as `CONTRACT`. The `DRAFT` is Summary
-sentences 1 and 3, including any selected exact terms and acronyms. The
-contract locks those terms while humanizing; they must remain in the returned
-text. Sentence 2, role fields, bullets, Skills tokens, headings, and
-Technologies lines stay out of the rewrite. If no Summary was present in the
-base, skip this surface. There is no resume-bullet humanization pass: raw
-bullet bytes are immutable. Refresh only the editable manifest entries after
-this pass; immutable block IDs and expected parts remain fixed.
+sentences 1 and 3, including any selected exact terms and acronyms; those
+terms must remain in the returned text. Sentence 2, role fields, bullets,
+Skills tokens, headings, and Technologies lines stay out of the rewrite. If
+no Summary was present in the base, skip this surface. Raw bullet bytes are
+immutable, so there is no bullet humanization pass.
 
 ## 6. Compile, fit, and verify
 
@@ -127,12 +123,8 @@ Compile with `pdflatex -interaction=nonstopmode -halt-on-error
 -output-directory={dir} {tex}`, then run `pdfinfo` and a
 visual page review. Missing binaries → stop and name them.
 
-Apply the Fit order in `contract-refine.md` against the compiled baseline. A
-targeted Unicode, ligature, text-separation macro, or per-vacancy preamble
-repair follows that contract's demonstrated-failure, source-comparison, and
-visual-recheck rule. After every later edit before final evaluation, including
-fit or repair, refresh the editable manifest entries while leaving the frozen
-immutable entries unchanged.
+Apply `contract-refine.md` "Fit" against the compiled baseline. A targeted
+extraction repair follows that contract's surfaces table.
 
 After the final fit, run the evaluator from
 `./references/contracts/contract-extraction.md`:
@@ -141,26 +133,16 @@ After the final fit, run the evaluator from
 python3 ./scripts/evaluate_pdf.py /abs/{stem}.pdf < /run-temp/expected.json
 ```
 
-Use its first available Python 3 launcher on the platform. It must complete
-both default and layout modes and return `PASS`. Save its stdout unchanged as
+It must return `PASS`. Save its stdout unchanged as
 `{dir}/extraction-report.json`; require its `pdf_sha256` to equal the final
-PDF. The evaluator is required alongside source byte comparison and visual
-review. Its warnings and diagnostics are retained even with `PASS`.
+PDF.
 
-Separately compute informational posting eligibility from the source and
-derivation rules in `job-apply/references/contracts/contract-screening.md`.
-Missing evidence is `unknown`; report only `supported`, `conflicting`,
-`unknown`, or `not stated`. Do not answer a form, stage a form value, or score
-the candidate in this step. An unsupported requirement or eligibility conflict
-is reported and does not invalidate a correct PDF.
+Then report posting eligibility per ATS step 6 of `contract-refine.md`.
 
 ## 7. Report and cleanup
 
-Load `./references/formats/format-report.md`. Write `{dir}/match-report.md`
-with the required verdict, miss line, immutable preservation counts, compiled
-baseline page count, default/layout extraction counts, diagnostics path and
-warnings, and the requirement evidence matrix. Preserve the source, guidance,
-summary, Skills, page, and parse fields defined there.
+Load `./references/formats/format-report.md` and write `{dir}/match-report.md`
+exactly as it defines.
 
 Only after all source, extraction, page, and visual checks pass, both reports
 are complete, and the extraction hash matches the final PDF,

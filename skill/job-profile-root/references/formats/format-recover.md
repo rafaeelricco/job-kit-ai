@@ -1,8 +1,5 @@
 # Profile root — recovery (Aside / dual-home)
 
-Ordered probe steps are authored in the `job-profile-root` skill (sole home).
-This file does not redefine order.
-
 ## Why dual-home
 
 Aside `$HOME` is often `…/.aside/runtime/home`, so this process may lack
@@ -11,15 +8,15 @@ and Aside.
 
 ## Who writes pointers
 
-Host-default path-convention root is `$HOST_HOME/.config/job-kit`. Skills always
-probe that path in step 4 (after any XDG `JOB_KIT_CONFIG` candidate) — no
-pointer required there, including when a coding agent has `XDG_CONFIG_HOME` set
-elsewhere while Aside does not.
+Step 4 always probes the host default `$HOST_HOME/.config/job-kit` (after any
+XDG `JOB_KIT_CONFIG` candidate), so it needs no pointer, even when a coding
+agent has `XDG_CONFIG_HOME` set elsewhere and Aside does not.
 
-Activate writes host `$HOST_HOME/.config/profile-root` and mirrors into Aside
-runtime home when present for every other location (non-default checkout **or**
-`$XDG_CONFIG_HOME/job-kit` when that differs from the host default). Pointers
-are checked before default dirs so an activated non-default profile wins.
+For every other location (non-default checkout **or** `$XDG_CONFIG_HOME/job-kit`
+differing from the host default), Activate writes host
+`$HOST_HOME/.config/profile-root` and mirrors it into Aside runtime home when
+present. Pointers are checked before default dirs so an activated non-default
+profile wins.
 
 ## Recovery (operators, in order)
 

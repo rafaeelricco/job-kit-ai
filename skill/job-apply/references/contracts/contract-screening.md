@@ -20,8 +20,7 @@ memory. Never read story bodies.
 
 ## Resolution order
 
-Classify the field first: a demographic or EEO question, a government ID
-number, a passport detail, or a parent's name takes rule 6 only, never rules 1–5. Availability commitments — on-call, hours overlap, background
+Classify the field first: a field rule 6 names takes rule 6 only, never rules 1–5. Availability commitments — on-call, hours overlap, background
 check, assessment, drug test, in-person interview, travel, equipment, start on
 notice — take rules 1–3, then rule 7; `job_search.yaml` `availability` prints them.
 Every other field takes the first rule that yields a value;
@@ -42,7 +41,7 @@ the package prints the rule as `source`. Nothing waits for the operator.
    adapt, paraphrase, or merge a `qa[]` answer.
 4. The field wants composed prose → author it under `./contract-prose.md` → `authored`.
 5. A required application-terms or privacy checkbox needed to process this
-   application, with no answer above, also takes `Yes` → `default`.
+   application, with no answer above, takes `Yes` → `default`.
    An optional consent (recruiter texts or WhatsApp, data retention or talent
    pool, interview recording or transcription, marketing use) takes its
    `job_search.yaml` `consents` key by rule 1; with none it stays unticked.
@@ -92,8 +91,7 @@ the option meaning other, not listed, or prefer not to say; none → rule 7.
   form asks for citizenship, including a citizenship field in an immigration
   section. Never infer citizenship from residence. Immigration status,
   authorization, visa, and sponsorship questions use **Sponsorship and
-  authorization** below. A demographic or
-  EEO question still takes rule 6 and is answered by declining.
+  authorization** below.
 - Earliest start date: today plus `availability.notice_period`; `Immediately`
   when the notice is zero.
 - Weekly hours: the posting's stated hours; full-time with none printed → 40.

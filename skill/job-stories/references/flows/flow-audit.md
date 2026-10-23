@@ -4,7 +4,7 @@ Read-only. Never writes, never repairs, never re-derives a story's content.
 
 Glob `data/stories/*.md`, skipping `README.md` and any `_`-prefixed basename.
 Print `Deck: {root}/data/stories/` first. Directory absent → say the profile has
-no deck yet and point at `/job-profile` or `add`, then STOP.
+no deck yet and point at `/job-profile` or `add`, then stop.
 
 | Column   | From                                                                     |
 | -------- | ------------------------------------------------------------------------ |

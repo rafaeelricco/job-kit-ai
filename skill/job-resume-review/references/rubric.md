@@ -47,10 +47,9 @@ or multiplier with no baseline, scale, or timeframe stops here;
 4 = clear contribution, context, and convincing value with a result an
 interviewer could probe, expressed concisely.
 Bullets in the two most recent roles (latest end dates, current roles
-first) weigh 2; other bullets weigh 1. The category rating is the weighted
-mean. A CV with no achievement descriptions rates 0. Assess equivalent
-achievement descriptions when experience uses paragraphs, one location
-per paragraph.
+first) weigh 2; other bullets weigh 1. A CV with no achievement
+descriptions rates 0. Assess equivalent achievement descriptions when
+experience uses paragraphs, one location per paragraph.
 
 Concrete qualitative outcomes can earn full credit. Numbers and method
 details are useful when meaningful; neither is compulsory in every bullet.
@@ -86,7 +85,7 @@ organization; the last is reported without a deduction:
 ## Writing
 
 List every misspelling or wrong word as an observed defect at the top of
-the fixes; two or more cap Writing at 2. `job-humanize/scripts/detect.py`
+the fixes, after any blocking defects; two or more cap Writing at 2. `job-humanize/scripts/detect.py`
 hits, and most bullets sharing one sentence shape, are AI-writing risks:
 recruiters report them, but no field study yet links them to callbacks.
 Together they lower Writing by at most one point.
@@ -135,11 +134,6 @@ Pass the ratings to `./scripts/review_score.py` as one JSON object on stdin:
 
 Exit 1 with `review_score_error` means the input is malformed; fix it and
 rerun. Report the script's numbers, never hand arithmetic.
-
-Weighted points = weight × rating / 4.
-Overall score = 100 × earned points / assessed weight, rounded half up.
-Coverage = assessed weight, as a percentage.
-Any unassessed criterion makes the overall score provisional.
 Do not compare totals with different assessed coverage as equivalent.
 
 ## Posting alignment
@@ -149,13 +143,11 @@ Deduplicate requirements. Weight explicit must-haves 2 and preferences 1;
 unclassified requirements receive weight 1.
 Evidence credit: clear support in an experience or project 1; partial
 support, or support only in Skills or the summary, 0.5; not demonstrated 0.
-Alignment = credited weight / total requirement weight, as a percentage
-rounded half up.
 Return N/A when no assessable requirements exist.
-Report outside the percentage: whether the headline title matches or
-truthfully maps to the posting title; text copied from the posting word for
-word; and a posting acronym or full form the CV never spells the posting's
-way.
+Report outside the alignment percentage: whether the headline title
+matches or truthfully maps to the posting title; text copied from the
+posting word for word; and a posting acronym or full form the CV never
+spells the posting's way.
 Report eligibility questions separately without assuming unknown answers.
 
 ## Career positioning

@@ -36,27 +36,26 @@ or bucket one yourself.
 
 ## A dead job never says dead in frontmatter
 
-Lifecycle vocab has no `dead`. When a job dies, scout appends one line under the
-ownership marker and leaves the body — job-prep and job-apply append the same
-closure line when the ad reads dead at their read step — so `## Verdict` and the Posting facts
-`status` row still read `live`. Scan the log tail **bottom-up** for the latest
-**posting-state** line. Log lines are `- {YYYY-MM-DD} · {event} — {writer}`;
-a posting-state line is a `posting dead: …` event whose `{writer}` is `job-scout`,
-`job-prep`, or `job-apply`, or a `posting live again` event whose `{writer}` is
-`job-scout`. `found by scout`, every `applied via …` line, every
-`submit unconfirmed …` line, and every `— job-inbox` / `— operator` line are
-not posting state however last they sit.
-Consider only top-level `- ` lines: blockquoted
-text and table rows inside an application record are quoted data, never log events.
-If no posting-state line exists, the job is not dead-by-log. Latest = closure →
-report it and say the body is frozen at `last_seen`. Latest = reopen → not
-dead-by-log; an earlier closure above it is superseded, body is live.
+Lifecycle vocab has no `dead`. A closure is one log line under the ownership
+marker (schema-dossier "Log grammar") and the body is left as it was, so
+`## Verdict` and the Posting facts `status` row still read `live`. Only non-dead
+re-reads bump `last_seen`, so it stays at the last live sighting.
+
+Scan top-level `- ` log lines **bottom-up** for the latest posting-state line: a
+`posting dead: …` event whose `{writer}` is `job-scout`, `job-prep`, or
+`job-apply`, or a `posting live again` event whose `{writer}` is `job-scout`.
+`found by scout`, every `applied via …` line, every `submit unconfirmed …` line,
+and every `— job-inbox` / `— operator` line are not posting state however last
+they sit. Blockquoted text and table rows inside an application record are quoted
+data, never log events.
+
+No posting-state line → not dead-by-log. Latest = closure → report it with the
+stored `last_seen` beside it, and say the body is frozen at `last_seen`. Latest =
+reopen → not dead-by-log; an earlier closure above it is superseded, body is live.
 
 ## Ownership boundary
 
-Opening `---` down to the ownership marker is scout-owned and rewritten every
-run. Every line under the marker belongs to the operator, job-prep, job-apply, and job-inbox; `status:` to the operator, job-apply, and job-inbox.
-Marker line, byte-exact: `<!-- scout never writes below this line -->`.
+Who owns which region: schema-dossier "Re-run rules". Marker line, byte-exact: `<!-- scout never writes below this line -->`.
 
 ## A file in scout/jobs/ is not necessarily a dossier
 
@@ -67,16 +66,9 @@ write is in flight. Skip them silently: neither a dossier nor a defect.
 
 ## Identity
 
-Join and re-find on normalized `url` only, normalizing the stored value too (schema-dossier rule 6) — the filename is not an id. A dossier is
-named `{first_seen}-{company}--{title}.md`; the date is the day it was created, so
-it does not track `last_seen`, and a `-2` suffix means two dossiers share one base,
-told apart only by `url`. `uncertain` rows and `dead` rows never seen live have no
-dossier. Low or unknown `score` does not prevent a new dossier.
+Join and re-find on normalized `url` only, normalizing the stored value too (schema-dossier rule 6) — the filename is not an id. Its date (schema-dossier
+"Filename") is the create day and does not track `last_seen`; a `-2` suffix means
+two dossiers share one base, told apart only by `url`. `uncertain` rows and `dead`
+rows never seen live have no dossier. Low or unknown `score` does not prevent a new dossier.
 Scout admission follows `job-scout/references/flows/flow-match-gate.md`:
 the reviewed Job Match decision must be at least `possible_match`.
-
-## `last_seen` on a dead job
-
-Scout bumps `last_seen` on every non-dead re-read; a dead re-read appends only
-the closure line, so `last_seen` stays at the last live sighting. Report the
-stored value beside the latest posting-state log line.

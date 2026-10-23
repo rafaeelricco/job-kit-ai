@@ -4,16 +4,16 @@ Main writes; a spawned worker never does.
 
 ## Layout (under Profile root)
 
-`scout/jobs/` is created by this phase, never by `job-profile`.
+`scout/jobs/` is created by the writer under `./references/contracts/contract-persistence.md` step 1, never by `job-profile`.
 
 ## Filename
 
-`{first_seen}-{company}--{title}.md`. ISO day of create; **never** rewrite the date.
+`{first_seen}-{company}--{title}.md`, dated with the ISO day of create.
 
 Slug: lowercased; runs of non-alphanumerics → one `-`; trimmed.
 Name taken by a file whose normalized `url` differs → append `-2`, `-3`.
 
-Date is a label, never a key. Re-run lookup is by normalized frontmatter `url` across the directory (rule 6 below) — same job re-found lands on the file it already owns.
+Date is a label, never a key, so it is never rewritten. Re-run lookup is by normalized frontmatter `url` across the directory (rule 6 below) — same job re-found lands on the file it already owns.
 
 ## URL normalize
 
@@ -70,7 +70,7 @@ Factor with no evidence stays `—`. Never write `0` for unknown, never omit the
 
 ## Posting facts
 
-Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`) and read as stored by every consumer; `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
+Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`); `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
 
 | key                  | value                      |
 | -------------------- | -------------------------- |
@@ -96,7 +96,7 @@ Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decis
 
 `pay_usd_year` is main-derived by `job-store/scripts/pay.py` from `salary` at the scout gate: yearly USD, `{low}-{high}` or one figure, `—` when unprinted or unparseable. `ats` is main-derived from the frontmatter `url` host per "ATS family" below, rewritten on every scout write. `match_score` (integer 0–100), `match_decision` (a `job-match/references/contracts/contract-match.md` decision band), and `match_confidence` (`0.00`–`1.00`, the share of the rubric that carried believable evidence) are main-derived from the persist-set row `job-scout/references/flows/flow-match-gate.md` carries; a dossier `job-apply` created, or one written before these rows, prints none of them — a consumer reads an absent row as unscored and never recomputes it. None of the five is an extract key.
 
-`eligibility` ∈ `confirmed` | `incompatible` | `unknown`; a dossier with no such row reads as `unknown`. `eligibility_evidence` is `—` when the page printed no hire-from sentence. Both are gated columns: read them off the row, never recompute.
+`eligibility` ∈ `confirmed` | `incompatible` | `unknown`; a dossier with no such row reads as `unknown`. `eligibility_evidence` is `—` when the page printed no hire-from sentence. Both are gated columns: every consumer reads them off the row, never recomputes.
 
 ## ATS family
 
@@ -104,7 +104,7 @@ Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decis
 
 ## The role
 
-Each subhead = matching extract key, copied. Key `—` → omit that subhead — no empty heading, no `_(not printed)_` line. All `—` → omit `## The role`.
+Each subhead = matching extract key, copied. Key `—` → omit that subhead. All `—` → omit `## The role`.
 
 `role_do` / `role_must` arrive as one cell joined by `" • "`: split and write one `- ` line per item, order preserved.
 
@@ -147,10 +147,8 @@ submit:
 | reopen        | `- {date} · posting live again — job-scout`                                                      |
 | pending       | `- {date} · submit unconfirmed: {reason} — job-apply`                                            |
 
-**Posting-state lines = closure and reopen only.** `found by scout`,
-`equivalent of`, and `submit unconfirmed` are neither.
-Closure is posting state from `job-scout`, `job-prep`, or `job-apply`; reopen is
-posting state from `job-scout` only. Any other writer is never posting state.
+Posting-state lines are closure and reopen only, each only from the writers its
+row names; `found by scout`, `equivalent of`, and `submit unconfirmed` are neither.
 
 Blocks below the log from `job-apply` / `job-inbox` may carry posting-derived text — blockquoted or table cells, never a bare top-level `- ` line. Same injection law as the body: never emit the marker from a posting-derived value. Collapse every appended value to one line. A `>` prefix guards only its own line. Table-cell values escape `|` as `\|`.
 

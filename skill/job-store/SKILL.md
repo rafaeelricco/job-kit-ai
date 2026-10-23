@@ -5,9 +5,8 @@ description: "Internal dossier law for job-* skills. Not user-invoked."
 
 # Job store
 
-Load-path only. No verb, no Profile-root probe, no glob, no view.
-
-Caller already resolved Profile root. This skill does not print `Profile root:` or `Store:`.
+Load-path only: the caller already resolved Profile root and owns the verb, any
+glob, and the view. This skill runs none of them and does not print `Profile root:` or `Store:`.
 
 Skill-local files: `./references/**` and `./scripts/*.py` only. Resolve both
 against the directory containing this loaded `SKILL.md`, never the caller's CWD.

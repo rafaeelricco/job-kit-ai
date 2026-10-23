@@ -19,7 +19,7 @@ Missing capability: `No Gmail transport available.` and end.
 Unstable `uid` across runs → replay skip re-appends logged events.
 Profile email selects the account; not a `to:` filter — ATS mail lands on aliases.
 
-Chained from `job-apply` flow-apply.md's queue-terminal step → print `Chained from job-apply · {dossier filename}` first, one line per dossier that run recorded. Those files are the set; see Candidates.
+Chained from `job-apply` after its last posting → print `Chained from job-apply · {dossier filename}` first, one line per dossier that run recorded.
 
 ## Candidates
 
@@ -72,9 +72,8 @@ Then every candidate → one disposition, first match:
 3. `acknowledged` — bound `ack`.
 4. `silent` — exhausted search, no bound row.
 
-`gap` outranks `replied`. Known replies still print under `## Replies`.
+A `gap` candidate's known replies still print under `## Replies`.
 `noise`, `unmatched`, outbound, rows bound elsewhere → leave candidate `silent`.
-Four counts sum to candidate count.
 
 ## Record
 

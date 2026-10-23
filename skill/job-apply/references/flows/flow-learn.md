@@ -8,8 +8,7 @@ resolution order in `contract-screening.md` could not answer from rules 1-3 —
 what rule 7 left blank or stopped on. A label a Fact file, a derived answer, or
 an existing `qa[]` row already answers is covered; do not write it.
 
-Never write a label `contract-screening.md` rule 6 declines (demographic, EEO,
-government ID, passport, parent's name). Never write an answer, a password, a one-time code, or an
+Never write a label `contract-screening.md` rule 6 declines. Never write an answer, a password, a one-time code, or an
 authentication link. The operator fills answers; this leg only asks.
 
 Row shape is the one `job-profile/references/flows/flow-mutate.md` defines
