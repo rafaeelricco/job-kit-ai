@@ -644,6 +644,9 @@ def _validate_result(task: sqlite3.Row, result: Any) -> dict[str, Any]:
                   if key in {"outcome", "checked_at", "error", "companies", "boards", "page"}}
     if task["kind"] == "source":
         page = result.get("page")
+        if page is None and outcome != "complete":
+            # A failed read has no page; it never counts toward crawl completion.
+            page = {"links": [], "next_pages": [], "complete": False}
         if not isinstance(page, dict) or not isinstance(page.get("links", []), list) or not isinstance(page.get("next_pages", []), list) or not isinstance(page.get("complete"), bool):
             raise ValueError("source results require page.links, page.next_pages, and page.complete")
         normalized["page"] = {"links": [_canonical_url(v) for v in page.get("links", [])],

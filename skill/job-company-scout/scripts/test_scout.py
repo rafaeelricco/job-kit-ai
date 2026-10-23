@@ -295,6 +295,16 @@ class ScoutTests(unittest.TestCase):
             self.assertEqual(state["pending_by_market"], {"uk": 3, "us": 3})
             self.assertEqual(state["progress"]["item_pending"], 6)
 
+    def test_failed_source_read_is_recorded_without_a_page(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0)])
+            run = scout.start(root, ["uk"], 1, False)
+            task = run["tasks"][0]
+            scout.record(root, run["run_id"], task["id"],
+                         {"outcome": "failed", "checked_at": STAMP, "error": "403 Forbidden"})
+            self.assertEqual(scout.publish_pending(root, ["uk"])["published"], 1)
+            self.assertEqual(scout.status(root)["failed"], 1)
+
     def test_existing_deck_without_discovery_uses_template_without_display_writes(self):
         document = load_profile(self.root)
         del document["discovery"]
