@@ -326,8 +326,11 @@ function Invoke-FetchKit {
           ((Test-Path -LiteralPath $gitEntry) -and -not (Test-Path -LiteralPath $gitEntry -PathType Container))) {
         throw "refusing to migrate a cache with a .git file or link: $Dest; use a separate JOB_KIT_HOME"
       }
-      $legacy = (Test-Path -LiteralPath $gitEntry) -or -not (Get-InstalledKitVersion $physical) -or
-        [bool](Get-KitCheckoutMissing $physical)
+      # Ownership files were checked above. Judge the old copy by what every
+      # release bundle has shipped (VERSION, no .git), not by this revision's
+      # required files: a release that adds one must not turn the next upgrade
+      # of an older bundle into a legacy migration.
+      $legacy = (Test-Path -LiteralPath $gitEntry) -or -not (Get-InstalledKitVersion $physical)
     }
 
     $parent = Split-Path $physical -Parent
