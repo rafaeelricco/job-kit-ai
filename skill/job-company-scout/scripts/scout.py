@@ -398,6 +398,22 @@ def _source_work(connection: sqlite3.Connection, entries: list[dict[str, Any]], 
     return work
 
 
+def _checked_key(value: Any) -> float:
+    # YAML loads unquoted ISO values as datetimes and quoted ones as strings.
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return 0.0
+    else:
+        return 0.0
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
 def _company_work(connection: sqlite3.Connection, document: Any, markets: list[str], seed_new: bool) -> list[dict[str, Any]]:
     discovery = document.get("discovery", {})
     companies = discovery.get("companies", {}) if isinstance(discovery, dict) else {}
@@ -433,7 +449,7 @@ def _company_work(connection: sqlite3.Connection, document: Any, markets: list[s
         row = connection.execute("SELECT state,created_order FROM tasks WHERE id=?", (task["_task_id"],)).fetchone()
         task["_existing_state"] = row["state"] if row else None
         task["_created_order"] = row["created_order"] if row else 10**9
-        task["_last_checked_at"] = company.get("last_checked_at") or ""
+        task["_last_checked_at"] = _checked_key(company.get("last_checked_at"))
         candidates.append(task)
     candidates.sort(key=lambda c: (c["_last_checked_at"], c["company_id"], c["url"]))
     if created:
@@ -549,11 +565,11 @@ def start(profile_root: Any, markets: Any, batch_size: int = DEFAULT_BATCH_SIZE,
                                    key=lambda t: (t.get("_created_order", 0), t["url"]))
             source_new = [t for t in source_work if t.get("_existing_state") is None]
             company_resumes = sorted((t for t in company_work if t.get("_existing_state") == "pending"),
-                                     key=lambda t: (t.get("_created_order", 0), t.get("_last_checked_at", ""), t["url"]))
+                                     key=lambda t: (t.get("_created_order", 0), t.get("_last_checked_at", 0.0), t["url"]))
             company_failed = sorted((t for t in company_work if t.get("_existing_state") == "failed"),
                                     key=lambda t: (t.get("_created_order", 0), t["url"]))
             company_new = sorted((t for t in company_work if t.get("_existing_state") is None),
-                                 key=lambda t: (t.get("_last_checked_at", ""), t.get("company_id", "")))
+                                 key=lambda t: (t.get("_last_checked_at", 0.0), t.get("company_id", "")))
             attempts = {row["task_id"]: row["last_attempt"] for row in connection.execute(
                 "SELECT task_id,MAX(created_order) AS last_attempt FROM results GROUP BY task_id")}
             retries = sorted(failed + source_failed + company_failed,

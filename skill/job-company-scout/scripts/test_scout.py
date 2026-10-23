@@ -326,6 +326,17 @@ class ScoutTests(unittest.TestCase):
             following = scout.start(root, ["uk"], 1, False)
             self.assertNotEqual(following["tasks"][0]["id"], task["id"])
 
+    def test_company_refresh_orders_quoted_and_unquoted_timestamps(self):
+        older, newer = company("old.example"), company("new.example")
+        older["last_checked_at"], newer["last_checked_at"] = OLD, "NEWER-STAMP"
+        with tempfile.TemporaryDirectory() as folder:
+            root = make_profile(folder, [("uk", SOURCE, 0)], {"new.example": newer, "old.example": older})
+            path = root / "data/search_packs.yaml"
+            path.write_text(path.read_text(encoding="utf-8").replace("NEWER-STAMP", STAMP), encoding="utf-8")
+            run = scout.start(root, ["uk"], 50, False)
+            companies = [t["url"] for t in run["tasks"] if t["kind"] == "company"]
+            self.assertEqual(companies, ["https://old.example/", "https://new.example/"])
+
     def test_cli_uses_utf8_even_on_a_legacy_windows_codepage(self):
         root = make_profile(self.root / "perfil-a\u00e7\u00e3o-\u65e5\u672c")
         payload = json.dumps({"op": "inspect", "profile_root": str(root), "markets": ["uk"]}, ensure_ascii=False).encode("utf-8")
