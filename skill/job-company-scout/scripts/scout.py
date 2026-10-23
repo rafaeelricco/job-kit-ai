@@ -691,54 +691,58 @@ def record(profile_root: Any, run_id: str, task_id: str, result: Any) -> dict[st
             raise ValueError("task_id is not part of the supplied run_id")
         normalized = _validate_result(row, result)
         payload_json = _json(normalized)
-        document = _load_document(root)
-        markets = json.loads(row["markets_json"])
-        origins = json.loads(row["origins_json"])
-        enriched = dict(normalized)
-        enriched.update({"kind": row["kind"], "url": row["url"], "markets": markets, "origins": origins})
-        if row["kind"] == "source":
-            enriched["pagination_complete"] = _prospective_source_complete(connection, row, enriched)
-        try:
-            import deck
-            # Validate against the deck as it will be once earlier saved results
-            # publish, so two results that conflict are caught here, not later.
-            projected = document
-            for pending_row in connection.execute("SELECT * FROM results WHERE delivery_state='awaiting_publication' "
-                                                  "AND task_id<>? ORDER BY created_order", (task_id,)).fetchall():
-                pending_task = _task_metadata(connection, pending_row)
-                if pending_task is None:
-                    continue
-                pending_result = json.loads(pending_row["payload_json"])
-                pending_result.update({"kind": pending_task["kind"], "url": pending_task["url"],
-                                       "markets": json.loads(pending_task["markets_json"]),
-                                       "origins": json.loads(pending_task["origins_json"])})
-                if pending_task["kind"] == "source":
-                    pending_result["pagination_complete"] = _prospective_source_complete(connection, pending_task, pending_result)
-                try:
-                    projected = deck.merge_result(projected, pending_result)
-                except ValueError:
-                    continue  # publication reports that result's own error
-            deck.merge_result(projected, enriched)
-        except (ImportError, AttributeError) as exc:
-            raise ValueError("Company Scout deck validation adapter is unavailable") from exc
-        source_discovery = document.get("discovery", {})
-        prior = connection.execute("SELECT payload_json,delivery_state FROM results WHERE run_id=? AND task_id=?",
-                                   (run_id, task_id)).fetchone()
-        if prior:
-            if prior["payload_json"] == payload_json:
-                return {"recorded": False, "idempotent": True, "task_id": task_id}
-            raise ValueError("conflicting result already recorded for this run task")
-        if row["active_run_id"] != run_id:
-            raise ValueError("task belongs to an older run and is no longer active")
-        if row["state"] == "published":
-            raise ValueError("task has already been published")
-        # A result awaiting publication cannot be replaced by a second delivery.
-        pending = connection.execute("SELECT payload_json FROM results WHERE task_id=? AND delivery_state='awaiting_publication' LIMIT 1",
-                                     (task_id,)).fetchone()
-        if pending and pending["payload_json"] != payload_json:
-            raise ValueError("a conflicting result is already awaiting publication")
+        # Hold the write lock while validating against saved results, so a
+        # concurrent record cannot save a result this one conflicts with.
         connection.execute("BEGIN IMMEDIATE")
         try:
+            row = connection.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+            document = _load_document(root)
+            markets = json.loads(row["markets_json"])
+            origins = json.loads(row["origins_json"])
+            enriched = dict(normalized)
+            enriched.update({"kind": row["kind"], "url": row["url"], "markets": markets, "origins": origins})
+            if row["kind"] == "source":
+                enriched["pagination_complete"] = _prospective_source_complete(connection, row, enriched)
+            try:
+                import deck
+                # Validate against the deck as it will be once earlier saved results
+                # publish, so two results that conflict are caught here, not later.
+                projected = document
+                for pending_row in connection.execute("SELECT * FROM results WHERE delivery_state='awaiting_publication' "
+                                                      "AND task_id<>? ORDER BY created_order", (task_id,)).fetchall():
+                    pending_task = _task_metadata(connection, pending_row)
+                    if pending_task is None:
+                        continue
+                    pending_result = json.loads(pending_row["payload_json"])
+                    pending_result.update({"kind": pending_task["kind"], "url": pending_task["url"],
+                                           "markets": json.loads(pending_task["markets_json"]),
+                                           "origins": json.loads(pending_task["origins_json"])})
+                    if pending_task["kind"] == "source":
+                        pending_result["pagination_complete"] = _prospective_source_complete(connection, pending_task, pending_result)
+                    try:
+                        projected = deck.merge_result(projected, pending_result)
+                    except ValueError:
+                        continue  # publication reports that result's own error
+                deck.merge_result(projected, enriched)
+            except (ImportError, AttributeError) as exc:
+                raise ValueError("Company Scout deck validation adapter is unavailable") from exc
+            source_discovery = document.get("discovery", {})
+            prior = connection.execute("SELECT payload_json,delivery_state FROM results WHERE run_id=? AND task_id=?",
+                                       (run_id, task_id)).fetchone()
+            if prior:
+                if prior["payload_json"] == payload_json:
+                    connection.rollback()
+                    return {"recorded": False, "idempotent": True, "task_id": task_id}
+                raise ValueError("conflicting result already recorded for this run task")
+            if row["active_run_id"] != run_id:
+                raise ValueError("task belongs to an older run and is no longer active")
+            if row["state"] == "published":
+                raise ValueError("task has already been published")
+            # A result awaiting publication cannot be replaced by a second delivery.
+            pending = connection.execute("SELECT payload_json FROM results WHERE task_id=? AND delivery_state='awaiting_publication' LIMIT 1",
+                                         (task_id,)).fetchone()
+            if pending and pending["payload_json"] != payload_json:
+                raise ValueError("a conflicting result is already awaiting publication")
             order = _next_order(connection)
             connection.execute("INSERT INTO results(run_id,task_id,payload_json,delivery_state,created_order) VALUES(?,?,?,'awaiting_publication',?)",
                                (run_id, task_id, payload_json, order))
