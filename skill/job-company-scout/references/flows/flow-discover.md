@@ -25,16 +25,155 @@ the deck and discovery extension. Do not enter the profile mutation flow.
    initialize it on `/job-scout` or `/job-profile`.
 3. A request with no market arguments is list-only: print enabled market ids
    and their scopes from the deck (or the template block when absent), then wait.
-   Do not browse or write.
+   Do not browse, prepare an environment, or write. Read only the market block,
+   not the observation history. `status` calls the helper's read-only status
+   operation with the existing Python launcher; it needs no YAML dependency.
 4. `all` selects every enabled market. Otherwise select the named market ids,
    deduplicated and processed in file order. Reject `all` combined with ids,
    unknown ids, and disabled ids before browsing or staging a write.
-5. For each selected market, inspect its configured news and portfolio sources
-   and all available pagination with the web or browser tools. Process markets
-   and sources serially in file order. Do not use LinkedIn session harvesting.
-   For `strategy: news`, inspect article links and preserve their publication
-   dates. For `strategy: portfolio`, inspect company links; observation dates
-   are not founding dates. Retain unprocessed links when coverage is interrupted.
+5. Prepare the isolated Python environment below, then use `./scripts/scout.py`
+   to reconcile saved results and select one bounded batch. Existing pending
+   research takes priority over starting a source refresh. `--batch-size N`
+   overrides the helper's default; reject non-positive or non-integer values.
+   `--refresh` prioritizes source pages within the same batch bound.
+   Research workers receive disjoint tasks and the relevant profile context;
+   the coordinator records each returned result before publication.
+   Source pages and pagination are queued work with persisted progress.
+   News research preserves publication dates; portfolio observation dates
+   are not founding dates. Interrupted work remains pending. Do not use
+   LinkedIn session harvesting.
+
+## Local helpers and bounded research
+
+Code lives in this skill; runtime data lives under the resolved Profile root.
+`./scripts/scout.py` owns the SQLite queue and checkpoints;
+`./scripts/deck.py` owns reading and publishing the search deck. Use the helper
+output rather than loading the complete `seen_urls`, `pending_urls`, or company
+history into the conversation.
+
+### Environment
+
+Resolve Python as `python3`, then `py -3` on Windows, then `python`, checking
+that the chosen interpreter is Python 3.9 or newer. Resolve the script and
+requirements paths against this skill's directory, not CWD. For a research
+invocation only, create a virtual environment at
+`scout/runtime/company-scout/venv` under Profile root when absent. Its Python
+is `Scripts/python.exe` on Windows and `bin/python` elsewhere. Use that Python
+to install `./scripts/requirements.txt` and run the helper. Check the installed
+`ruamel.yaml` version against the pinned requirement before reusing the
+environment. An environment or dependency failure stops before browsing or
+deck publication; name the error and preserve existing checkpoints.
+
+For example, with absolute paths substituted:
+
+```text
+<python> -m venv <profile>/scout/runtime/company-scout/venv
+<venv-python> -m pip install -r <skill>/scripts/requirements.txt
+<venv-python> <skill>/scripts/scout.py
+```
+
+`status` uses the original launcher and does not initialize or install anything.
+
+### Coordinator operations
+
+Every helper call takes one JSON object on stdin and returns one JSON object
+on stdout. Use absolute Profile-root and script paths. Exit 1 returns
+`scout_error`; stop the operation, report saved progress, and retain unfinished
+work. The `markets` list accepts selected ids or `all` alone; selection follows
+deck order. Replace `<absolute-profile-root>` in every example with the resolved
+absolute Profile root on the current machine, such as `/Users/candidate/profile`
+on macOS or `C:/profiles/candidate` on Windows. Do not pass the placeholder itself.
+
+1. **Inspect** reads configured sources and pending counts without writes:
+
+   ```json
+   { "op": "inspect", "profile_root": "<absolute-profile-root>", "markets": ["uk"] }
+   ```
+
+2. **Start** replays saved unpublished results, imports current pending links,
+   and returns one batch. Omit `batch_size` for the helper's default; pass
+   `refresh: true` only for an explicit refresh request:
+
+   ```json
+   { "op": "start", "profile_root": "<absolute-profile-root>", "markets": ["uk"], "batch_size": 50, "refresh": false }
+   ```
+
+   Output has `run_id`, authoritative flat `tasks`, disjoint `assignments`,
+   bounded `context`, and a `publication` report. Each task has `id`, `kind`
+   (`item`, `source`, or `company`), `url`, selected `markets`, and `origins`.
+   Assignments contain `worker_id` and `task_ids`; give each researcher only
+   those tasks, the shared profile card/constraints, relevant context, and the
+   Research and evidence / Official careers and ATS routing rules below.
+   Use available parallel researchers for non-empty assignments only;
+   otherwise research those same tasks inline. Researchers return findings
+   and never write the profile or queue.
+   Company context is a history preview with separate `company_history_counts`;
+   it does not replace the stored evidence. Return newly verified findings,
+   not a claim that the preview represents the company's complete history.
+
+3. **Research and record one result immediately.** The record call includes
+   `op: record`, `profile_root`, `run_id`, `task_id`, and `result`. The helper
+   supplies trusted task URLs, markets, and origins; do not take them from
+   worker-supplied metadata. A result contains:
+
+   | Field        | Meaning                                                                                                                                                                              |
+   | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `outcome`    | `complete` for successfully verified research; `retry` for unresolved evidence; `failed` for an access/processing failure.                                                           |
+   | `checked_at` | Actual attempt time as an ISO-8601 timestamp.                                                                                                                                        |
+   | `companies`  | Mapping of verified official hosts to company records in the shared search-packs schema.                                                                                             |
+   | `boards`     | Optional verified ATS destinations as `company_id` and board-root `url`; never individual postings.                                                                                  |
+   | `error`      | Concise cause for an incomplete/failed attempt.                                                                                                                                      |
+   | `page`       | For source-page tasks: `links` (discovered absolute item URLs), `next_pages` (reusable absolute pagination URLs), and `complete` (whether this page revealed the end of pagination). |
+
+   A complete item/company result requires a verified identity, supporting
+   evidence, and resolved relevance/selected-market decisions. Failure to
+   establish them remains pending. When an item page verifiably names no
+   company (an opinion piece, a fund recap), record `complete` with empty
+   `companies` so the link is retired instead of retried forever. Use a source result's `next_pages` to save
+   every reusable continuation. If a surface has no durable pagination URL,
+   retain incomplete coverage so a later run can restart and deduplicate;
+   never invent a cursor or report completion. The coordinator computes
+   source-wide pagination completion from the saved frontier, rather than
+   trusting a worker's page flag alone.
+
+4. **Publish** after recording each returned result:
+
+   ```json
+   { "op": "publish_pending", "profile_root": "<absolute-profile-root>", "markets": ["uk"] }
+   ```
+
+   Output includes `published` and `errors`. Stop the research round on a
+   publication error; report any earlier publications separately. A checkpoint
+   is durable before publication. If the run stops after replacing the YAML
+   but before acknowledging the checkpoint, the next start replays it
+   idempotently without repeating web research.
+
+5. **Status** reads saved counts without creating an environment or database:
+
+   ```json
+   { "op": "status", "profile_root": "<absolute-profile-root>" }
+   ```
+
+   Counters include pending, awaiting publication, published, failed, attempted,
+   and pending source/company progress. Before the first research run there
+   is no operational state, so report the zero counters and say research has
+   not run yet. Do not run inspect here: it needs the research environment,
+   which `status` never creates.
+
+Repeating the market invocation resumes unfinished research. Tasks without a
+recorded result remain pending; no lease timeout or manual unlock is required.
+Failed tasks go behind unattempted items and are tried at most once in a run.
+Round-robin source selection prevents a large portfolio from monopolizing a
+batch. Preserve every source/market association when a URL is deduplicated;
+researching one market does not complete another market's qualification.
+Different articles about an already known company can still add evidence.
+
+After the backlog is consumed, start a source-refresh cycle and revisit known
+companies oldest-check-first, including those with no careers page. Existing
+unfinished refresh work resumes rather than restarting source pagination.
+Each listing page, research link, and company review counts against the same
+batch limit. Reaching the limit ends this invocation with partial progress;
+it is not proof of complete source coverage and does not schedule another run.
 
 ## Research and evidence
 
@@ -79,8 +218,9 @@ its company and relevant evidence have been successfully inspected. A failed
 source or item read preserves prior evidence and successful-check timestamps;
 retain unfinished URLs in the queue and report the failure.
 
-Process sources in configuration order; revisit known companies in selected
-markets oldest `last_checked_at` first, including those with no careers page.
+The helper retains source configuration order for fair selection and revisits
+known companies in selected markets oldest `last_checked_at` first, including
+those with no careers page, when the refresh cycle reaches that work.
 Preserve first-seen timestamps and previously captured event-date precision.
 Deduplicate evidence by normalized `source_url`, `event_type`, and
 `event_date`; repeated runs update the existing record instead of adding a
@@ -140,21 +280,30 @@ reused careers pack. Never add a `company_id` to a careers pack's command;
 
 ## Stage and report
 
-Build one surgical YAML edit that preserves comments, ordering, and every
-operator-owned entry. Write it to `data/search_packs.yaml.{run token}.tmp`,
-where `{run token}` is unique to this run — never the bare
+Publish each checkpointed result through `./scripts/deck.py`, preserving
+comments, ordering, operator-owned entries, and market/source configuration.
+Stage each publication at `data/search_packs.yaml.{run token}.tmp`,
+where `{run token}` is unique to this publication — never the bare
 `data/search_packs.yaml.tmp`, which `/job-profile` owns.
 Parse the complete staged document and validate it against
 `job-profile/references/schemas/schema-search-packs.md`. On write, parse, or schema failure, remove the
-staging file, name the path and error, and report that nothing was written.
+staging file and leave that result awaiting publication. Report the error and
+distinguish earlier published items from this unpublished item.
 Before replacement, re-read `data/search_packs.yaml`; if its contents differ
 from the original snapshot, remove the stage and report that the deck changed
 under this run. Replace the original only when unchanged. If replacement
-fails, clean up the stage and report that no write completed.
+fails, clean up the stage and report that this publication did not complete.
+
+Report attempted, completed, failed, awaiting-publication, and remaining work,
+along with new/updated companies and careers inputs. Saved results are replayed
+before selecting new research. Batch exhaustion is partial progress; source
+success timestamps advance only when the saved pagination frontier is complete.
 
 Report updated and newly added companies, market decisions and evidence,
 careers status and board changes, pending URLs, failed reads, and any
-incomplete pagination. The first run is a baseline; newly observed does not
+incomplete pagination. Relay every command in a publication summary's
+`enable_commands` verbatim; each names a disabled pack that received this run's
+board row or careers route. The first run is a baseline; newly observed does not
 mean newly founded, launched, or published. End with the affected ids enabled
 for the next run, in deck order, as an exact `/job-scout <id>…` command.
 If none are enabled, say so without suggesting an unselected run. Do not start it.
