@@ -297,7 +297,9 @@ success timestamps advance only when the saved pagination frontier is complete.
 
 Report updated and newly added companies, market decisions and evidence,
 careers status and board changes, pending URLs, failed reads, and any
-incomplete pagination. The first run is a baseline; newly observed does not
+incomplete pagination. Relay every command in a publication summary's
+`enable_commands` verbatim; each names a disabled pack that received this run's
+board row or careers route. The first run is a baseline; newly observed does not
 mean newly founded, launched, or published. End with the affected ids enabled
 for the next run, in deck order, as an exact `/job-scout <id>…` command.
 If none are enabled, say so without suggesting an unselected run. Do not start it.

@@ -1200,12 +1200,25 @@ def _surgical_text(original_text, original_document, updated_document):
 def _publication_summary(before, after):
     before_companies = before.get("discovery", {}).get("companies", {})
     after_companies = after.get("discovery", {}).get("companies", {})
+    before_packs = {pack["id"]: pack for pack in before.get("packs", [])}
+    changed = [pack for pack in after.get("packs", []) if pack != before_packs.get(pack["id"])]
+    # Research never enables a disabled pack; the operator gets the exact command.
+    enable_commands = []
+    for pack in changed:
+        if pack.get("enabled", True):
+            continue
+        if pack.get("route", {}).get("kind") == "careers":
+            enable_commands.append("/job-profile packs enable {}".format(pack["id"]))
+            continue
+        old_rows = (before_packs.get(pack["id"]) or {}).get("boards", []) or []
+        for row in pack.get("boards", []) or []:
+            if row not in old_rows and row.get("company_id"):
+                enable_commands.append("/job-profile packs enable {} {}".format(pack["id"], row["company_id"]))
     return {
         "companies_added": sum(1 for key in after_companies if key not in before_companies),
         "companies_updated": sum(1 for key in after_companies if key in before_companies and after_companies[key] != before_companies[key]),
-        "pack_ids": [pack["id"] for pack in after.get("packs", [])
-                     if pack.get("enabled", True) and pack != next(
-                         (old for old in before.get("packs", []) if old["id"] == pack["id"]), None)],
+        "pack_ids": [pack["id"] for pack in changed if pack.get("enabled", True)],
+        "enable_commands": enable_commands,
     }
 
 

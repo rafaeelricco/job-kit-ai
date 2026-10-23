@@ -236,6 +236,15 @@ class DeckTests(unittest.TestCase):
         self.assertEqual(result["packs"][1]["boards"][0]["company_id"], "new.example")
         self.assertIs(result["packs"][1]["boards"][0]["enabled"], False)
 
+    def test_board_row_in_disabled_pack_reports_enable_command(self):
+        document = load_profile(self.root)
+        document["packs"][1]["enabled"] = False
+        write_document(self.root, document)
+        summary = deck.publish_result(self.root, item_result())
+        self.assertEqual(summary["pack_ids"], [])
+        self.assertEqual(summary["enable_commands"], ["/job-profile packs enable ashby-boards acme.example"])
+        self.assertIs(load_profile(self.root)["packs"][1]["enabled"], False)
+
     def test_publication_handles_operator_deck_layouts(self):
         def empty_packs(text):
             start, end = text.index("packs:\n"), text.index("discovery:")
