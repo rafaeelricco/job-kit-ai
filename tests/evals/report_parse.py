@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 SCORE = re.compile(r"Score:\s*(\d+)/100\s*·\s*coverage\s*(\d+)%\s*·\s*(final|provisional)(?:\s*·\s*capped from\s*(\d+))?")
 CRITERIA = ("Criterion", "Rating", "Points", "Evidence")
-BULLETS = ("Location", "Weight", "Rating", "Finding")
+BULLETS = ("Location", "Weight", "Rating", "Finding", "Direction")
 MATRIX = ("Requirement", "Weight", "Evidence", "Credit")
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 

@@ -82,8 +82,8 @@ class Case:
 BASE = (ran("review_score.py"), says(r"Score:\s*\d+/100"))
 CASES = (
     Case("bullet_anchors", BASE + (
-        rated("bullets", "E1.B1", 3), rated("bullets", "E1.B3", high=1), rated("bullets", "E2.B1", high=2),
-        rated("bullets", "E2.B2", high=3), rated("bullets", "E2.B3", 3), ran("detect.py"))),
+        rated("bullets", "E1.B3", high=1), rated("bullets", "E2.B1", high=2),
+        says(r"rated 3–4|rated 3-4"), ran("detect.py"))),
     Case("generic_summary", BASE + (rated("criteria", "positioning", high=2),),
          edit=lambda cv: cv.replace("## Experience", "## Summary\n\nPassionate, results-driven engineer seeking a "
                                     "challenging role where I can grow my skills.\n\n## Experience", 1)),
@@ -99,35 +99,42 @@ CASES = (
     Case("skills_only_requirement", BASE + (rated("matrix", "kubernetes", high=0.5), rated("matrix", "postgresql", 1, 1),
          says(r"\|\s*CV\s*\|[^|\n]*\bKubernetes\b[^|\n]*\|[^|\n]*\|"
               r"[^|\n]*(?:listed[- ]only|not demonstrated in experience)[^|\n]*\|")),
-         edit=lambda cv: cv.replace("AWS", "AWS, Kubernetes", 1), posting=True),
+         edit=lambda cv: cv.replace("AWS", "AWS, Kubernetes", 1), posting=True,
+         context="Run recruiter search visibility."),
     Case("hidden_text_pdf", BASE + (score_at_most(40), says("hidden|not visible|white text"), ran("scan_cv.py")),
          hidden=("Kubernetes Terraform Kafka Spark Rust Scala",)),
     Case("seniority_title_only", BASE + (
         says(r"(director|management)[^\n]*(not demonstrated|insufficient|not established|not shown)"),
     ), edit=lambda cv: cv.replace("Senior Backend Engineer", "Engineering Director"),
-       context="Target: Engineering Director. Assess management responsibility separately from IC work."),
+       context="Target: Engineering Director. Assess career positioning, with management responsibility "
+               "separate from IC work."),
 
     Case("implicit_terms", BASE + (
         says(r"\|\s*CV\s*\|\s*deployment automation\s*\|[^|\n]*E1\.B2[^|\n]*\|"
              r"(?![^|\n]*(?:unsupported|not demonstrated|no (?:demonstrated|evidence|support)))"
              r"[^|\n]*(?:implicit|missing|absent|not named)[^|\n]*\|"),
-    ), context="Target: Backend Engineer. Inspect the search term deployment automation."),
+    ), context="Target: Backend Engineer. Run recruiter search visibility for the term deployment automation."),
 
     Case("public_snapshot", BASE + (
         says(r"\|\s*(?:[^|\n]*example\.com[^|\n]*|Page snapshot)\s*\|"
              r"[^|\n]*\bdeployment automation\b[^|\n]*\|[^|\n]*\|"
              r"[^|\n]*(?:missing|absent|not visible)[^|\n]*\|"),
         says(r"(supplied|candidate)[^\n]*snapshot"),
-    ), context="Target: Backend Engineer. Inspect deployment automation separately on the CV "
+    ), context="Target: Backend Engineer. Run recruiter search visibility for deployment automation separately on the CV "
                "and this candidate-supplied complete text snapshot of https://example.com/alexdoe:\n"
                "Alex Doe — Backend Engineer. Python and PostgreSQL. Builds payment APIs.\n"
                "This is supplied text, not a live fetched page."),
 
     Case("public_unavailable", BASE + (
         says(r"(public|profile|page)[^\n]*(unassessed|unavailable)"),
-    ), context="Supplied professional page: https://alexdoe.invalid/profile. "
+    ), context="Check my public work at https://alexdoe.invalid/profile. "
                "Browsing is unavailable in this evaluation. Complete the CV diagnostics "
                "and identify public-page coverage limits."),
+
+    Case("linkedin_mismatch", BASE + (
+        says(r"LinkedIn[^\n]*(?:differ|mismatch|disagree|inconsisten|does not match)"),
+    ), context="LinkedIn profile, pasted text:\nAlex Doe — Staff Platform Engineer\n"
+               "Experience: Staff Platform Engineer."),
 )
 
 

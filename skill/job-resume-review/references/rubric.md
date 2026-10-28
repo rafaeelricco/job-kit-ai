@@ -150,10 +150,24 @@ posting word for word; and a posting acronym or full form the CV never
 spells the posting's way.
 Report eligibility questions separately without assuming unknown answers.
 
+## Recruiter read
+
+Qualitative and outside score arithmetic. Screen the candidate as a
+recruiter for the target role would, using only the CV, the posting, and
+the LinkedIn profile when supplied. Give:
+
+- a shortlist call (advance, unsure, or not advance on this evidence) with
+  the strongest reason for and against;
+- when LinkedIn is supplied, whether its headline, titles, employers, and
+  dates agree with the CV; a difference is a question to resolve, not proof
+  either way;
+- up to three hesitations a recruiter is likely to have, each with its CV
+  location and the question that would resolve it.
+
 ## Career positioning
 
-This diagnostic and Recruiter search visibility are qualitative and outside
-score arithmetic.
+Run this diagnostic and Recruiter search visibility only when the user asks
+for them. Both are qualitative and outside score arithmetic.
 
 Compare the level advertised by the CV with the responsibility it
 demonstrates: scope, autonomy, decision complexity, ownership, outcomes,
