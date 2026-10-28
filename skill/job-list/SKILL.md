@@ -1,6 +1,7 @@
 ---
 name: job-list
 description: "Inspect dossiers already on disk under scout/jobs/. Read-only. Use when the user asks what jobs do I have, which applications are open, or what scout saved."
+disable-model-invocation: true
 ---
 
 # Job list

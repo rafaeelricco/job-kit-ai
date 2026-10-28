@@ -4,6 +4,7 @@ description: >
   Solve a CAPTCHA already on the attached browser-use page (reCAPTCHA,
   Turnstile, hCaptcha, image/text challenge). Use when a page shows a captcha
   or human-verification challenge ("i'm not a robot", "verify you are human").
+disable-model-invocation: true
 ---
 
 # CAPTCHA solver

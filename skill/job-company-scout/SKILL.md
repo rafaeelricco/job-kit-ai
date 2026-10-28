@@ -2,6 +2,7 @@
 name: job-company-scout
 description: "Discover and maintain relevant companies and their official career boards in search_packs.yaml. Use when the operator explicitly runs /job-company-scout or asks to discover companies or boards."
 argument-hint: "[status | all | <market-id> ...] [--batch-size N] [--refresh]"
+disable-model-invocation: true
 ---
 
 # Job company scout

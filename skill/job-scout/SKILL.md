@@ -2,6 +2,7 @@
 name: job-scout
 description: "Find and rank live job openings from operator-selected search packs or ad-hoc site URLs, report results, and persist scout dossiers. List-only. Use when the user runs /job-scout or asks to find, search, or scout openings."
 argument-hint: "[all | <pack-id>…] [<url>…] | refresh [--typesafe]"
+disable-model-invocation: true
 ---
 
 # Job scout

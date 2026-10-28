@@ -2,6 +2,7 @@
 name: job-apply
 description: "Apply to scout-store postings with no operator in the loop: tailor the CV, fill the form from profile Facts, clear captchas and mail codes, submit and record. Use for /job-apply, apply to this posting, or confirming sent/submitted/applied."
 argument-hint: "[send <id>… | review <id>… | [<dossier>… | <url>…] [--prepared-only]]"
+disable-model-invocation: true
 ---
 
 # Job application
