@@ -20,7 +20,7 @@ from pdf_fixture import write_pdf  # noqa: E402
 REPORT_MD = SKILL / "job-resume-review" / "references" / "report.md"
 UNCHANGED = {
     "bullet_anchors", "hidden_text_pdf", "implicit_terms",
-    "public_snapshot", "public_unavailable",
+    "linkedin_mismatch", "public_snapshot", "public_unavailable",
 }
 SAMPLE = """\
 Score: 40/100 · coverage 100% · final · capped from 71
@@ -30,9 +30,9 @@ Score: 40/100 · coverage 100% · final · capped from 71
 | Positioning | 2 | 7.5/15 | generic summary |
 | Achievement bullets | 2.67 | 20/30 | mixed |
 
-| Location | Weight | Rating | Finding |
-| --- | ---: | ---: | --- |
-| **E1.B3** | 2 | 1 | duty only |
+| Location | Weight | Rating | Finding | Direction |
+| --- | ---: | ---: | --- | --- |
+| **E1.B3** | 2 | 1 | duty only | Name one owned delivery with scope |
 
 | Requirement | Weight | Evidence | Credit |
 | --- | ---: | --- | ---: |
@@ -129,6 +129,16 @@ class FixtureTests(unittest.TestCase):
         for text, accepted in (
             ("| Management | Not shown. No direct reports or hiring evidence. |", True),
             ("Management is established solely by the Engineering Director title.", False),
+        ):
+            with self.subTest(text=text):
+                run = resume_review.Run(report_parse.parse(text), [])
+                self.assertEqual(case.checks[-1](run) is None, accepted)
+
+    def test_linkedin_check_flags_a_title_mismatch(self):
+        case = next(c for c in resume_review.CASES if c.name == "linkedin_mismatch")
+        for text, accepted in (
+            ("LinkedIn title Staff Platform Engineer differs from the CV's Senior Backend Engineer.", True),
+            ("LinkedIn agrees with the CV.", False),
         ):
             with self.subTest(text=text):
                 run = resume_review.Run(report_parse.parse(text), [])

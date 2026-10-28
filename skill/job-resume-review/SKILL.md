@@ -1,7 +1,7 @@
 ---
 name: job-resume-review
-description: "Score a resume or CV and judge which career level and roles it supports, using the CV and public professional evidence. Add job alignment when a posting is supplied. Use for CV reviews, quality scores, or level and role fit."
-argument-hint: "[<CV file or pasted content>] [with <posting or dossier>]"
+description: "Score a resume or CV and give a recruiter read from the CV, and LinkedIn when supplied. Add job alignment when a posting is supplied; career level, search visibility, and public work on request. Use for CV reviews, quality scores, or level and role fit."
+argument-hint: "[<cv>] [--with <posting|dossier>] [--linkedin <url|paste>]"
 ---
 
 # Job resume review
