@@ -1,9 +1,13 @@
 """Offline checks for the opt-in job-resume-review evals: report contract, parser, fixtures."""
 import io
 import json
+import os
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -147,6 +151,8 @@ class FixtureTests(unittest.TestCase):
     def test_every_edit_matches_the_base_fixture(self):
         base = (resume_review.FIXTURES / "base.md").read_text(encoding="utf-8")
         for case in resume_review.CASES:
+            if getattr(case, "profile", False):
+                continue  # Complete smoke profiles are checked separately below.
             with self.subTest(case=case.name):
                 self.assertEqual(case.edit(base) != base, case.name not in UNCHANGED)
 
@@ -163,3 +169,402 @@ class FixtureTests(unittest.TestCase):
         self.assertIn("São Paulo – 2022", text)
         self.assertIn("Kubernetes", text)
         self.assertEqual([i["code"] for i in blank], ["no_text_layer"])
+
+
+class EvidenceBenchmarkTests(unittest.TestCase):
+    def benchmark(self):
+        import evidence_benchmark
+        return evidence_benchmark
+
+    def gold(self):
+        return {
+            "supported": {"R1": ["E1.B1"], "R2": ["E2.B3"]},
+            "actions": {"R1": {"support": "direct", "actions": ["clarify_wording"]},
+                        "R2": {"support": "listed_only", "actions": ["request_example"]}},
+            "strongest": ["E1.B1"], "pdf": ["extraction_failure", "source_mismatch"],
+        }
+
+    def test_snapshot_is_frozen_and_cannot_overwrite(self):
+        bench = self.benchmark()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source"
+            source.mkdir()
+            (source / "SKILL.md").write_text("before", encoding="utf-8")
+            metadata = bench.snapshot_skills(source, root / "snapshot")
+            (source / "SKILL.md").write_text("after", encoding="utf-8")
+            self.assertEqual((root / "snapshot" / "SKILL.md").read_text(), "before")
+            self.assertTrue(metadata["hash"])
+            with self.assertRaises(FileExistsError):
+                bench.snapshot_skills(source, root / "snapshot")
+
+    def test_production_answers_have_explicit_source_context(self):
+        bench = self.benchmark()
+        self.assertEqual(bench.BENCHMARK_VERSION, 2)
+        source = (EVALS / "fixtures/resume_review/profiles/selected_job_evidence/data/experiences.yml").read_text(encoding="utf-8")
+        self.assertIn("Operated production Go services on AWS EKS (Kubernetes)", source)
+        self.assertIn("PostgreSQL partitioning for production route queries", source)
+
+    def test_comparison_rejects_mixed_benchmark_versions(self):
+        bench = self.benchmark()
+        shared = {"model": "fixed", "benchmark_hash": "same", "cli_version": "same"}
+        before = dict(shared, phase="before", benchmark_version=2)
+        after = dict(shared, phase="after", benchmark_version=1)
+        control = dict(shared, phase="control", benchmark_version=2)
+        with self.assertRaisesRegex(ValueError, "benchmark version mismatch"):
+            bench._validate_phase_bundle(before, after, control)
+
+    def test_comparison_rejects_matching_stale_benchmark_hashes_before_judging(self):
+        bench = self.benchmark()
+        shared = {"model": "fixed", "benchmark_hash": bench.benchmark_digest(),
+                  "cli_version": "same", "actual_model": "fixed"}
+        phases = [dict(shared, phase=phase) for phase in ("before", "after", "control")]
+        self.assertEqual(bench._validate_phase_bundle(*phases)["benchmark_hash"], shared["benchmark_hash"])
+        with mock.patch.object(bench, "benchmark_digest", return_value="changed"):
+            with self.assertRaisesRegex(ValueError, "current assessor inputs"):
+                bench._validate_phase_bundle(*phases)
+
+    @unittest.skipIf(os.name == "nt", "executable script fixture is POSIX-specific")
+    def test_assessor_passes_large_prompt_via_stdin(self):
+        bench = self.benchmark()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cli = root / "claude"
+            cli.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys\n"
+                "print(json.dumps({'args': sys.argv[1:], 'prompt': sys.stdin.read()}))\n",
+                encoding="utf-8",
+            )
+            cli.chmod(0o755)
+            report = "report content " * 90000
+            items = [{"phase": "after", "run_id": "run-1", "report": report}]
+            with mock.patch.object(bench.shutil, "which", return_value=str(cli)):
+                result = bench._assess_case("selected_job_evidence", items, "model", "model", root)
+            self.assertEqual(result["returncode"], 0, result["error"])
+            received = json.loads((root / "assessments" / "selected_job_evidence" / "stdout.json").read_text())
+            self.assertIn(report, received["prompt"])
+            self.assertGreater(len(received["prompt"].encode("utf-8")), 1048576)
+            self.assertEqual(received["args"][:3], ["-p", "--output-format", "json"])
+            self.assertNotIn(report, received["args"])
+
+    def test_runtime_summary_excludes_unmeasured_placeholders(self):
+        bench = self.benchmark()
+        items = [
+            {"status": "runner_error", "runtime_seconds": 0.0, "tool_count": 0},
+            {"status": "missing_record", "runtime_seconds": 0.0, "tool_count": 0},
+            {"status": "complete", "runtime_seconds": 1.24, "tool_count": 3},
+            {"status": "cli_error", "runtime_seconds": 2.0, "tool_count": 1},
+        ]
+        result = bench._runtime_tool_summary(items)
+        self.assertEqual(result["scheduled_runs"], 4)
+        self.assertEqual(result["runtime_seconds"], {"median": 1.62, "min": 1.24, "max": 2.0})
+        self.assertEqual(result["tool_count"], {"median": 2.0, "min": 1, "max": 3})
+        empty = bench._runtime_tool_summary(items[:2])
+        self.assertEqual(empty["scheduled_runs"], 2)
+        self.assertEqual(empty["runtime_seconds"], {"median": None, "min": None, "max": None})
+        self.assertEqual(empty["tool_count"], {"median": None, "min": None, "max": None})
+
+    def test_duplicate_links_do_not_inflate_precision_or_coverage(self):
+        result = self.benchmark().score_claims(self.gold(), {
+            "links": [["R1", "E1.B1"], ["R1", "E1.B1"], ["R2", "invented"]],
+            "actions": {"R1": {"support": "direct", "action": "clarify_wording"},
+                        "R2": {"support": "direct", "action": "request_example"}},
+            "strongest": "E1.B1", "pdf": ["extraction_failure"],
+            "ownership_violation": False, "private_credit_violation": False,
+        })
+        self.assertEqual(result["link_precision"], [1, 2])
+        self.assertEqual(result["requirement_coverage"], [1, 2])
+        self.assertEqual(result["gap_actions"], [1, 2])
+        self.assertEqual(result["strongest_proof"], [1, 1])
+        self.assertEqual(result["pdf_diagnosis"], [1, 2])
+
+    def test_no_links_are_not_perfect_precision(self):
+        result = self.benchmark().score_claims(self.gold(), {
+            "links": [], "actions": {}, "strongest": None, "pdf": [],
+            "ownership_violation": False, "private_credit_violation": False,
+        })
+        self.assertEqual(result["link_precision"], [0, 0])
+        self.assertEqual(result["requirement_coverage"], [0, 2])
+
+    def test_zero_denominator_has_no_rate_or_delta(self):
+        self.assertIsNone(self.benchmark()._ratio([0, 0]))
+
+    def test_safety_allows_no_violations_while_behavior_allows_one_miss(self):
+        bench = self.benchmark()
+        self.assertEqual(bench._required_successes("ownership_safe", 3), 3)
+        self.assertEqual(bench._required_successes("private_credit_safe", 3), 3)
+        self.assertEqual(bench._required_successes("link:R1", 3), 2)
+
+    def test_phase_identity_prevents_overwriting_judgments(self):
+        bench = self.benchmark()
+        run_id = "selected_job_evidence-r1"
+        claims = {("before", run_id): {"links": [], "actions": {}, "strongest": None, "pdf": []},
+                  ("after", run_id): {"links": [["R1", "E1.B1"]], "actions": {}, "strongest": None, "pdf": []}}
+        results = {}
+        for phase in ("before", "after"):
+            items = [{"phase": phase, "run_id": run_id, "status": "complete"}]
+            results[phase] = bench._aggregate_case_scores("selected_job_evidence", items, claims)
+        self.assertEqual(results["before"]["metrics"]["requirement_coverage"][0], 0)
+        self.assertEqual(results["after"]["metrics"]["requirement_coverage"][0], 1)
+
+    def test_failed_runs_keep_quality_denominators_and_cannot_earn_credit(self):
+        bench = self.benchmark()
+        key = ("after", "selected_job_evidence-r1")
+        items = [{"phase": key[0], "run_id": key[1], "status": "cli_error"}]
+        claims = {key: {"links": [["R1", "E1.B1"]], "actions": {}, "strongest": None, "pdf": []}}
+        result = bench._aggregate_case_scores("selected_job_evidence", items, claims)
+        self.assertEqual(result["metrics"]["requirement_coverage"],
+                         [0, len(bench.GOLD["selected_job_evidence"]["supported"])])
+        self.assertEqual(result["failed_runs"], 1)
+        self.assertEqual(result["scheduled_runs"], 1)
+
+    def test_safety_counts_assessed_failed_reports_and_excludes_unassessed_runs(self):
+        bench = self.benchmark()
+        items = [{"phase": "after", "run_id": f"r{i}", "status": status}
+                 for i, status in enumerate(("complete", "cli_error", "missing_report"))]
+        claims = {("after", "r0"): {"ownership_violation": True, "private_credit_violation": False},
+                  ("after", "r1"): {"ownership_violation": True, "private_credit_violation": True,
+                                    "links": [["R1", "E1.B1"]]}}
+        result = bench._aggregate_case_scores("ownership_inflation", items, claims)
+        self.assertEqual(result["metrics"]["ownership_violation"], [2, 2])
+        self.assertEqual(result["metrics"]["private_credit_violation"], [1, 2])
+        self.assertEqual(result["metrics"]["requirement_coverage"][0], 0)
+        self.assertEqual(result["assertions"]["ownership_safe"], [0, 3])
+
+    def test_strongest_proof_accepts_one_of_several_equivalent_sources(self):
+        gold = self.gold()
+        gold["strongest"] = ["E1.B1", "E1.B2", "E2.B3"]
+        result = self.benchmark().score_claims(gold, {
+            "links": [], "actions": {}, "strongest": "E1.B2", "pdf": [],
+            "ownership_violation": False, "private_credit_violation": False,
+        })
+        self.assertEqual(result["strongest_proof"], [1, 1])
+
+    def test_pdf_false_positive_is_penalized(self):
+        result = self.benchmark().score_claims(self.gold(), {
+            "links": [], "actions": {}, "strongest": None,
+            "pdf": ["extraction_failure", "source_mismatch", "invented_failure"],
+            "ownership_violation": False, "private_credit_violation": False,
+        })
+        self.assertEqual(result["pdf_diagnosis"], [2, 3])
+
+    def test_all_four_cases_and_gold_are_defined(self):
+        bench = self.benchmark()
+        expected = {"selected_job_evidence", "strongest_proof_gaps", "ownership_inflation", "pdf_with_source"}
+        self.assertEqual(set(bench.GOLD), expected)
+        names = {case.name for case in resume_review.CASES}
+        self.assertTrue(expected <= names)
+
+    def test_new_smokes_build_valid_private_profiles_and_keep_gold_out_of_prompts(self):
+        for case in resume_review.CASES:
+            if case.name not in self.benchmark().GOLD:
+                continue
+            with self.subTest(case=case.name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                prompt = resume_review.prompt_for(case, root)
+                self.assertTrue((root / "profile" / "data" / "job_search.yaml").is_file())
+                self.assertTrue((root / "profile" / "data" / "basics.yaml").is_file())
+                self.assertNotIn("ground_truth", prompt)
+                self.assertNotIn("GOLD", prompt)
+                self.assertFalse((root / "profile" / "tmp").exists())
+
+    def test_runner_uses_snapshot_and_isolated_profile(self):
+        case = next(c for c in resume_review.CASES if c.name == "ownership_inflation")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "work"
+            root.mkdir()
+            snapshot = Path(tmp) / "snapshot"
+            skill = snapshot / "job-resume-review"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("frozen", encoding="utf-8")
+            completed = mock.Mock(returncode=0, stdout='{"type":"result","result":"done"}\n', stderr="")
+            with mock.patch.object(resume_review.subprocess, "run", return_value=completed) as run:
+                resume_review.run_case(case, root, "fixed-model-id", snapshot, True)
+            args, kwargs = run.call_args
+            self.assertIn("--safe-mode", args[0])
+            self.assertIn("--no-session-persistence", args[0])
+            self.assertIn(str(skill / "SKILL.md"), args[0][2])
+            self.assertEqual(kwargs["env"]["PROFILE_ROOT"], str(root / "profile"))
+            self.assertEqual(kwargs["env"]["TMPDIR"], str(root / "tmp"))
+            self.assertEqual(kwargs["env"]["PYTHONDONTWRITEBYTECODE"], "1")
+
+    def test_prompt_hash_normalizes_symlinked_run_and_skill_paths(self):
+        bench = self.benchmark()
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = root / "real"
+            real.mkdir()
+            link = root / "link"
+            try:
+                link.symlink_to(real, target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"symlinks unavailable: {error}")
+            hashes = []
+            for name in ("one", "two"):
+                work = link / name
+                work.mkdir()
+                skills = link / "skills"
+                prompt = resume_review.prompt_for(case, work, skills, isolated=True)
+                hashes.append(bench._normal_prompt_hash(prompt, work, skills))
+            self.assertEqual(hashes[0], hashes[1])
+
+    def test_formatting_and_tools_are_not_quality_inputs(self):
+        text = self.benchmark().JUDGE_INSTRUCTIONS.lower()
+        self.assertIn("format", text)
+        self.assertIn("tool", text)
+        self.assertIn("do not reward", text)
+
+    def test_assessor_cannot_award_an_action_without_a_report_excerpt(self):
+        bench = self.benchmark()
+        claims = {
+            "links": [], "strongest": [], "pdf": [],
+            "actions": {key: {"support": item["support"], "action": item["actions"][0],
+                              "excerpt": "", "reason": "The report omitted this action."}
+                        for key, item in self.gold()["actions"].items()},
+            "ownership_violation": {"value": False, "excerpt": "", "reason": "No claim."},
+            "private_credit_violation": {"value": False, "excerpt": "", "reason": "No claim."},
+        }
+        normalized, error = bench._validate_assessment({"reports": [{"id": "A", "claims": claims}]},
+                                                      {"A": "No actions were given."}, self.gold())
+        self.assertEqual(error, "")
+        self.assertEqual(bench.score_claims(self.gold(), normalized["A"])["gap_actions"], [0, 2])
+
+    def test_phase_refuses_invalid_repeats_and_existing_output(self):
+        bench = self.benchmark()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with self.assertRaises(ValueError):
+                bench.run_phase("before", SKILL, "model", root / "out", 0)
+            with self.assertRaises(FileExistsError):
+                bench.run_phase("before", SKILL, "model", root, 1)
+
+    def test_phase_persists_worker_exceptions_and_normal_completion(self):
+        bench = self.benchmark()
+        def run(case, repeat, work, skills, model):
+            if case == bench.CASE_NAMES[0]:
+                raise RuntimeError("worker failed")
+            return {"case": case, "repeat": repeat, "status": "complete", "actual_model_ids": [model]}
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bench, "_cli_version", return_value="stub"), \
+                mock.patch.object(bench, "_run_one", side_effect=run):
+            output = Path(tmp) / "phase"
+            result = bench.run_phase("before", SKILL, "model", output, 1)
+            metadata = json.loads((output / "metadata.json").read_text())
+            self.assertEqual(result["status"], "completed_with_failures")
+            self.assertEqual(len(result["runs"]), len(bench.CASE_NAMES))
+            self.assertEqual(metadata["failed_run_count"], 1)
+
+    @unittest.skipIf(os.name == "nt", "SIGINT process behavior is POSIX-specific")
+    def test_interrupt_cancels_queued_runs_and_persists_state(self):
+        script = '''\
+import sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import evidence_benchmark as b
+started = Path(sys.argv[4])
+def worker(case, repeat, work, skills, model):
+    with started.open("a") as stream:
+        stream.write(case + "\\n")
+    time.sleep(2)
+    return {"case": case, "repeat": repeat, "status": "complete", "actual_model_ids": [model]}
+b._cli_version = lambda: "stub"
+b._run_one = worker
+b.run_phase("before", Path(sys.argv[2]), "model", Path(sys.argv[3]), 3)
+'''
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output, starts = root / "phase", root / "starts"
+            proc = subprocess.Popen([sys.executable, "-c", script, str(EVALS), str(SKILL),
+                                     str(output), str(starts)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                deadline = time.monotonic() + 20
+                while time.monotonic() < deadline:
+                    if starts.exists() and len(starts.read_text().splitlines()) >= 3:
+                        break
+                    if proc.poll() is not None:
+                        self.fail(f"phase exited before starting workers: {proc.communicate()}")
+                    time.sleep(0.02)
+                else:
+                    self.fail("workers did not start")
+                proc.send_signal(signal.SIGINT)
+                proc.communicate(timeout=10)
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertEqual(len(starts.read_text().splitlines()), 3)
+                metadata = json.loads((output / "metadata.json").read_text())
+                results = json.loads((output / "results.json").read_text())
+                self.assertEqual((metadata["status"], results["status"]), ("interrupted", "interrupted"))
+                self.assertEqual(metadata["cancelled_run_count"], 9)
+                self.assertEqual(metadata["completed_run_count"], len(results["runs"]))
+                self.assertEqual(metadata["unrecorded_run_count"], 12 - len(results["runs"]))
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.communicate()
+
+    def test_comparison_refuses_model_mismatch_before_judging(self):
+        bench = self.benchmark()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for phase, model in (("before", "one"), ("after", "two"), ("control", "one")):
+                directory = root / phase
+                directory.mkdir()
+                (directory / "results.json").write_text(json.dumps({
+                    "phase": phase, "model": model, "benchmark_hash": "same",
+                    "cli_version": "same", "runs": [],
+                }), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "model"):
+                bench.compare(root / "before", root / "after", root / "control", root / "report")
+
+    @unittest.skipUnless(shutil.which("pdftotext"), "needs Poppler pdftotext")
+    def test_actual_text_fixture_changes_extraction_not_visible_text(self):
+        scan_cv = load(SKILL / "job-resume-review" / "scripts" / "scan_cv.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_pdf(Path(tmp) / "actual.pdf", [], positioned=[(56, 760, "PostgreSQL", "Postgre SQL")])
+            extracted = scan_cv.extract_pdf(path)
+            self.assertIn("Postgre SQL", extracted)
+            self.assertIn(b"(PostgreSQL)", path.read_bytes())
+
+
+@unittest.skipUnless(shutil.which("pdftotext"), "needs Poppler pdftotext")
+class SourceGroundedPdfRegressionTests(unittest.TestCase):
+    def evaluator(self):
+        return load(SKILL / "job-resume-refine" / "scripts" / "evaluate_pdf.py")
+
+    def manifest(self, lines):
+        return {"schema_version": 1,
+                "blocks": [{"id": "B" + str(i), "parts": [line]} for i, line in enumerate(lines)],
+                "terms": []}
+
+    def test_english_and_portuguese_recover_equivalent_independent_inventories(self):
+        results = []
+        for lines in (["Experience", "Software Engineer", "Built Python services.", "Education"],
+                      ["Experiência", "Engenheiro de Software", "Criei serviços Python.", "Formação"]):
+            with tempfile.TemporaryDirectory() as tmp:
+                expected = self.manifest(lines)
+                path = write_pdf(Path(tmp) / "cv.pdf", lines)
+                result = self.evaluator().evaluate_pdf(path, expected)
+                self.assertEqual(result["verdict"], "PASS")
+                results.append({mode: value["blocks"] for mode, value in result["modes"].items()})
+        self.assertEqual(results[0], results[1])
+
+    def test_repeated_summary_text_cannot_mask_a_missing_achievement(self):
+        expected = self.manifest(["Built Python services.", "EXPERIENCE", "Built Python services."])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_pdf(Path(tmp) / "missing.pdf", ["Built Python services.", "EXPERIENCE"])
+            result = self.evaluator().evaluate_pdf(path, expected)
+        self.assertEqual(result["verdict"], "FAIL")
+        self.assertTrue(all(mode["blocks"]["recovered"] < mode["blocks"]["total"]
+                            for mode in result["modes"].values()))
+
+    def test_columns_fail_on_observed_interleaving(self):
+        expected = self.manifest(["EXPERIENCE", "Engineer at Lumen", "Built production services.",
+                                  "SKILLS", "Python and Go"])
+        positioned = [(56, 780, "EXPERIENCE", None), (320, 780, "SKILLS", None),
+                      (56, 760, "Engineer at Lumen", None), (320, 760, "Python and Go", None),
+                      (56, 740, "Built production services.", None)]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_pdf(Path(tmp) / "columns.pdf", [], positioned=positioned)
+            result = self.evaluator().evaluate_pdf(path, expected)
+        self.assertEqual(result["modes"]["layout"]["verdict"], "FAIL")
+        self.assertTrue(result["modes"]["layout"]["issues"])

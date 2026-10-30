@@ -110,6 +110,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-match\scripts\models.py',
   'skill\job-match\scripts\scaffold_guidance.py',
   'skill\job-match\scripts\validate_guidance.py',
+  'skill\job-match\scripts\resume_evidence.py',
   'skill\job-match\scripts\typesafe_match.py',
   'skill\job-match\scripts\years.py',
   'skill\job-profile\scripts\geography.py',

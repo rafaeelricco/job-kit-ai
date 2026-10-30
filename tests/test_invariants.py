@@ -758,5 +758,66 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertNotIn("capped at 40", preflight)
 
 
+class EvidenceIsolationTests(unittest.TestCase):
+    def evidence(self, cv_assessed=False):
+        return {
+            "cases": [{"target": "posting:1", "cv_assessed": cv_assessed,
+                       "requirements": [{"id": "R1", "kind": "required", "text": "Kubernetes"}],
+                       "sources": [{"id": "P1", "origin": "profile", "kind": "achievement",
+                                    "location": "data/experiences.yml[0].summary[0]",
+                                    "text": "Operated Kubernetes services. PrivateOnlyFact."}]}],
+            "assessments": [{"target": "posting:1", "requirements": [{"requirement_id": "R1",
+                             "support": "direct", "source_ids": ["P1"],
+                             "cv_visibility": "absent" if cv_assessed else "unassessed", "question": None}]}],
+        }
+
+    def test_evidence_enrichment_leaves_matching_outputs_unchanged(self):
+        import copy
+        evidence = harness.load(harness.MATCH / "resume_evidence.py")
+        candidate = {"roles": ["Senior Backend Engineer"], "skills": ["Python"], "years_experience": 7,
+                     "experience": [{"company": "Example", "position": "Senior Backend Engineer"}]}
+        job = {"url": "posting:1", "title": "Senior Backend Engineer", "required_skills": ["Python", "Kubernetes"],
+               "preferred_skills": [], "years_experience": "5+", "seniority": "senior"}
+        payload = {"candidate": candidate, "jobs": [job], "matches": [{"url": job["url"],
+                   "strengths": ["PrivateOnlyFact"], "score_breakdown": {"seniority": 15, "location": 10}}]}
+        original = copy.deepcopy(payload)
+        before_matches = score.score_all(payload)
+        before_guidance = scaffold_guidance.scaffold(models.CandidateProfile.from_json(candidate),
+                                                     models.JobProfile.from_json(job)).to_json()
+        diagnostic = evidence.validate_payload(self.evidence())
+        self.assertEqual(diagnostic["invalid"], [])
+        self.assertEqual(diagnostic["valid"][0]["requirements"][0]["action"], "inspect_cv")
+        self.assertEqual(score.score_all(payload), before_matches)
+        self.assertEqual(scaffold_guidance.scaffold(models.CandidateProfile.from_json(candidate),
+                                                   models.JobProfile.from_json(job)).to_json(), before_guidance)
+        self.assertEqual(payload, original)
+        self.assertNotIn("privateonlyfact", models.CandidateProfile.from_json(candidate).evidence_tokens)
+        self.assertEqual(before_matches[0]["strengths"], [])
+        self.assertEqual(before_guidance["requirements"][1]["status"], "unknown")
+
+    def test_review_diagnostics_preserve_existing_numeric_anchors(self):
+        evidence = harness.load(harness.MATCH / "resume_evidence.py")
+        review = harness.load(harness.SKILL / "job-resume-review" / "scripts" / "review_score.py")
+        parser = harness.load(harness.REPO / "tests" / "evals" / "report_parse.py")
+        payload = {"criteria": {key: 3 for key in ("positioning", "skills", "organization", "visual", "writing", "parsing")},
+                   "bullets": [{"id": "E1.B1", "rating": 4, "recent": True}],
+                   "requirements": [{"id": "R1", "kind": "must", "credit": 0.5}]}
+        before_score = review.score(payload)
+        diagnostic = evidence.validate_payload(self.evidence(cv_assessed=True))
+        self.assertEqual(diagnostic["invalid"], [])
+        self.assertEqual(diagnostic["valid"][0]["requirements"][0]["action"], "surface_fact")
+        self.assertEqual(review.score(payload), before_score)
+        self.assertEqual(before_score["alignment"], 50)
+        report = "Score: {}/100 · coverage 100% · final\n\n".format(before_score["score"]) + (
+            "| Requirement | Weight | Evidence | Credit |\n"
+            "| --- | --- | --- | --- |\n| Kubernetes | 2 | Skills only | 0.5 |\n")
+        extra = ("\n| Requirement | Support | Source | Visibility | Next action |\n"
+                 "| --- | --- | --- | --- | --- |\n"
+                 "| Kubernetes | direct | Profile P1 | absent | Surface the verified work |\n")
+        before, after = parser.parse(report), parser.parse(report + extra)
+        for field in ("score", "coverage", "provisional", "capped_from", "criteria", "bullets", "matrix"):
+            self.assertEqual(getattr(before, field), getattr(after, field))
+
+
 if __name__ == "__main__":
     unittest.main()

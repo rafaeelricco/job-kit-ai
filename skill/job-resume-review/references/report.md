@@ -5,6 +5,12 @@ the score line and table header cells, which stay as written so tools can
 read them. Keep each section short enough to scan; prefer one-line cells
 over paragraphs.
 
+Use `E{role}.B{bullet}` / `P{project}.B{bullet}` only for experience/project
+bullets, numbered from 1, top to bottom. Use `E{role} header` / `P{project} header`
+for headers and name other regions directly. Resolve evaluator block IDs through
+expected text and the CV inventory before reporting a location; preserve that
+location in recovery notes and findings.
+
 1. Header: reviewed artifact; target context and its source; rubric version.
 2. The `./scripts/review_score.py` result on one line:
    `Score: {score}/100 · coverage {coverage}% · {final|provisional}`,
@@ -17,11 +23,13 @@ over paragraphs.
    nested bullet under a row only when that detail changes the rating
    (summary audit for Positioning; market, layout, or extraction finding
    for organization, visual, or parsing).
+   For every PDF, add a short recovery note after the table: the independent
+   recovery verdict and source provenance, or why recovery was unassessed.
+   Keep source/PDF disagreement outside the rating unless an existing rubric
+   defect is also observed.
 5. Bullets that need work: table
    `| Location | Weight | Rating | Finding | Direction |` with one row per
-   experience/project bullet rated 2 or lower, in CV order. Location is
-   `E{role}.B{bullet}` for experience and `P{project}.B{bullet}` for
-   projects, numbered from 1, top to bottom. Finding is what is weak;
+   experience/project bullet rated 2 or lower, in CV order. Finding is what is weak;
    Direction is one concrete improvement (no replacement wording). When
    every bullet is rated 3–4, write that none need work. Below the table,
    state how many bullets rated 3–4 were omitted; list them only if the
@@ -29,6 +37,8 @@ over paragraphs.
    category regardless of table omission.
 6. If a posting is supplied, the alignment score and the matrix
    `| Requirement | Weight | Evidence | Credit |`.
+   Follow the current alignment matrix with `| Requirement | Support | Source | Visibility | Next action |` from validated ResumeEvidence v1. Highlight the strongest directly supported job-relevant CV achievement even if writing rating is 3–4; quote exact source and location. Prefer required over preferred requirements, then stronger support, then CV order. Say when no direct proof exists. Keep relevance separate from writing quality and private evidence separate from recruiter-visible proof. Give no replacement resume prose or projected score gains.
+   Every evidence source must resolve to a verbatim contiguous excerpt and exact CV bullet location or Profile file/role/field index, inline or in a source legend. Preserve these after the writing pass; an employer or source ID alone is insufficient, and quoted text must not contain inserted ellipses.
 7. Recruiter read: present the content `./references/rubric.md` requires as
    Call (advance / unsure / not advance); For; Against; Hesitations (up to
    three, each with location and resolving question); plus factual-
