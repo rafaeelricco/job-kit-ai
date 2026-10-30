@@ -425,7 +425,9 @@ def main() -> int:
         result = _payload_error(f"malformed JSON input: {error}")
     else:
         result = validate_payload(payload)
-    sys.stdout.buffer.write((json.dumps(result, ensure_ascii=False) + "\n").encode("utf-8"))
+    sys.stdout.buffer.write(
+        (json.dumps(result, ensure_ascii=False) + "\n").encode("utf-8", errors="backslashreplace")
+    )
     return 0 if not result["invalid"] else 1
 
 

@@ -213,6 +213,25 @@ class EvidenceValidationTests(unittest.TestCase):
         value = json.loads(result.stdout.decode("utf-8"))
         self.assertEqual(value["valid"][0]["requirements"][0]["sources"][0]["text"], text)
 
+    def test_cli_preserves_batch_with_unpaired_surrogate(self):
+        payload = self.payload()
+        source_text = "Serviços em São Paulo \ud83d"
+        payload["cases"][0]["sources"][0]["text"] = source_text
+        peer = self.payload()
+        peer["cases"][0]["target"] = peer["assessments"][0]["target"] = "job:2"
+        peer["cases"][0]["sources"][0]["text"] = "日本語 😀"
+        payload["cases"].extend(peer["cases"])
+        payload["assessments"].extend(peer["assessments"])
+
+        proc = subprocess.run([sys.executable, str(Path(__file__).with_name("resume_evidence.py"))],
+                              input=json.dumps(payload).encode("utf-8"), capture_output=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
+        value = json.loads(proc.stdout.decode("utf-8"))
+        self.assertEqual(value["invalid"], [])
+        self.assertEqual([row["target"] for row in value["valid"]], ["job:1", "job:2"])
+        self.assertEqual(value["valid"][0]["requirements"][0]["sources"][0]["text"], source_text)
+        self.assertEqual(value["valid"][1]["requirements"][0]["sources"][0]["text"], "日本語 😀")
+
 
 if __name__ == "__main__":
     unittest.main()
