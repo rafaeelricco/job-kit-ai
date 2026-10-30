@@ -12,10 +12,10 @@ Store source (below) and the store is absent or unreadable → name the path and
 ```
 bind → profile → candidates → filter₁ → extract → filter₂ → match → score
                                                               │
-report ◄─ advise ◄─ select ◄─ order ◄─ validate ◄──────────────┘
+report ◄─ evidence ◄─ advise ◄─ select ◄─ order ◄─ validate ◄─┘
 ```
 
-Fan-out only on extract, match, validate, and advise. Batch ~10 when the harness can spawn a worker; else inline sequential. A node with 3 rows or fewer
+Fan-out only on extract, match, validate, advise, and evidence. Batch ~10 when the harness can spawn a worker; else inline sequential. A node with 3 rows or fewer
 runs inline even when spawning works — except validate, which spawns whenever it
 can so the review stays independent of the pass that wrote the row.
 Hand each worker one slice file in the run directory — exactly its batch, plus
@@ -24,7 +24,7 @@ into a brief. Main runs every script, with the launcher **score** resolves.
 
 ## bind
 
-Load `./references/schemas/schema-state.md` and `./references/contracts/contract-match.md` (the policy; never spawn a criteria agent). Init state: `candidate` null, empty lists.
+Load `./references/schemas/schema-state.md` and `./references/contracts/contract-match.md` (the policy; never spawn a criteria agent). Init state: `candidate` null, empty lists, `evidence_sources` and `resume_evidence` empty arrays.
 
 ## profile
 
@@ -130,10 +130,17 @@ Validate the batch with `./scripts/validate_guidance.py` with
 on stdin. Add valid rows to
 `state.guidance`; add invalid rows to `state.gaps` without dropping their match.
 
+## evidence
+
+Run for the retained jobs eligible for advise, even if their ResumeGuidance failed. Main derives a separate trusted source inventory from canonical `experiences.yml` `summary[]` strings, optional `projects.yml` `description[]` strings, and profile skills. Consider all achievements, not only `priority_roles`. Preserve exact source text/locations. Do not add these sources to CandidateProfile or send them to scoring, validation of match scores, or TypeSafe.
+
+Load `./references/contracts/contract-resume-evidence.md` and `./references/workers/worker-resume-evidence.md`. Make requirement IDs R1.. in the existing selected JobProfile required-then-preferred order, retaining occurrences; target is job URL or `posting:<ordinal>`. Set `cv_assessed` false. Workers receive named slice files with trusted cases and no score claims. Main validates with `./scripts/resume_evidence.py` using cases/assessments payload. Store valid rows in `state.resume_evidence`; flatten invalid errors to `state.gaps` with url/path and reason, without dropping matches or existing guidance.
+
 ## report
 
 Use the prompt scaffold when supplied. Otherwise retain title, company, URL,
 and first strength, then, for rows advise covered, add held requirements, requirements not evidenced by
 the thin match profile, unresolved requirements, and exact priority roles.
-Invalid guidance prints `Resume guidance unavailable`; raw worker/state JSON
-stays hidden. End.
+Add achievement citations and primary next actions. Each link must include an exact source field location (file, role/project identifier, field index) and a verbatim contiguous excerpt from validated sources, inline or in a source legend. Do not ellipsize quoted text or cite only an employer/source ID. Verify these citations before sending the final report.
+
+Thin-profile held/not_evidenced/unknown stays separately labeled and is not overridden by narrative evidence. CV visibility remains unassessed. Report only actual script-computed scores; do not add hypothetical scores or hand-calculated score gains. Missing/invalid richer evidence preserves the old report and states `Achievement evidence unavailable`. Invalid guidance prints `Resume guidance unavailable`. Keep raw worker/state JSON hidden and cleanup within the existing temp lifecycle. End.

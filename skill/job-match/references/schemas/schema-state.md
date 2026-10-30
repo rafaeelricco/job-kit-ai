@@ -10,12 +10,15 @@ Pipe its JSON files to the scripts; never retype their JSON.
   "blocked": [],
   "matches": [],
   "guidance": [],
+  "evidence_sources": [],
+  "resume_evidence": [],
   "gaps": []
 }
 ```
 
 `blocked[]`: `{ "company", "title", "url", "reason" }`.
 `guidance[]`: valid ResumeGuidance rows from `./references/contracts/contract-resume-guidance.md`.
+`evidence_sources[]` and `resume_evidence[]`: separate state inventories/validated rows defined by `./references/contracts/contract-resume-evidence.md`; they do not change CandidateProfile.
 `gaps[]`: `{ "url" | "path", "reason" }`.
 
 ## CandidateProfile
