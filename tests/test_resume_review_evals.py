@@ -224,6 +224,30 @@ class EvidenceBenchmarkTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "current assessor inputs"):
                 bench._validate_phase_bundle(*phases)
 
+    @unittest.skipIf(os.name == "nt", "executable script fixture is POSIX-specific")
+    def test_assessor_passes_large_prompt_via_stdin(self):
+        bench = self.benchmark()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cli = root / "claude"
+            cli.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys\n"
+                "print(json.dumps({'args': sys.argv[1:], 'prompt': sys.stdin.read()}))\n",
+                encoding="utf-8",
+            )
+            cli.chmod(0o755)
+            report = "report content " * 90000
+            items = [{"phase": "after", "run_id": "run-1", "report": report}]
+            with mock.patch.object(bench.shutil, "which", return_value=str(cli)):
+                result = bench._assess_case("selected_job_evidence", items, "model", "model", root)
+            self.assertEqual(result["returncode"], 0, result["error"])
+            received = json.loads((root / "assessments" / "selected_job_evidence" / "stdout.json").read_text())
+            self.assertIn(report, received["prompt"])
+            self.assertGreater(len(received["prompt"].encode("utf-8")), 1048576)
+            self.assertEqual(received["args"][:3], ["-p", "--output-format", "json"])
+            self.assertNotIn(report, received["args"])
+
     def test_duplicate_links_do_not_inflate_precision_or_coverage(self):
         result = self.benchmark().score_claims(self.gold(), {
             "links": [["R1", "E1.B1"], ["R1", "E1.B1"], ["R2", "invented"]],

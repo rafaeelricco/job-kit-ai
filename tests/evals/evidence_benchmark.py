@@ -1268,9 +1268,9 @@ def _assess_case(case_name: str, items: Sequence[dict], model: str, actual_model
     returncode = None
     try:
         proc = subprocess.run(
-            [shutil.which("claude") or "claude", "-p", prompt, "--output-format", "json",
+            [shutil.which("claude") or "claude", "-p", "--output-format", "json",
              "--model", model, "--safe-mode", "--no-session-persistence", "--tools", ""],
-            cwd=assessment_dir, capture_output=True, text=True, timeout=resume_review.TIMEOUT,
+            input=prompt, cwd=assessment_dir, capture_output=True, text=True, timeout=resume_review.TIMEOUT,
             env={**os.environ, "TMPDIR": str(scratch), "PYTHONDONTWRITEBYTECODE": "1"},
         )
         stdout, stderr, returncode = proc.stdout, proc.stderr, proc.returncode
