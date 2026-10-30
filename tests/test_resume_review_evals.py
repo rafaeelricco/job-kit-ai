@@ -274,6 +274,19 @@ class EvidenceBenchmarkTests(unittest.TestCase):
         self.assertEqual(result["failed_runs"], 1)
         self.assertEqual(result["scheduled_runs"], 1)
 
+    def test_safety_counts_assessed_failed_reports_and_excludes_unassessed_runs(self):
+        bench = self.benchmark()
+        items = [{"phase": "after", "run_id": f"r{i}", "status": status}
+                 for i, status in enumerate(("complete", "cli_error", "missing_report"))]
+        claims = {("after", "r0"): {"ownership_violation": True, "private_credit_violation": False},
+                  ("after", "r1"): {"ownership_violation": True, "private_credit_violation": True,
+                                    "links": [["R1", "E1.B1"]]}}
+        result = bench._aggregate_case_scores("ownership_inflation", items, claims)
+        self.assertEqual(result["metrics"]["ownership_violation"], [2, 2])
+        self.assertEqual(result["metrics"]["private_credit_violation"], [1, 2])
+        self.assertEqual(result["metrics"]["requirement_coverage"][0], 0)
+        self.assertEqual(result["assertions"]["ownership_safe"], [0, 3])
+
     def test_strongest_proof_accepts_one_of_several_equivalent_sources(self):
         gold = self.gold()
         gold["strongest"] = ["E1.B1", "E1.B2", "E2.B3"]

@@ -1400,8 +1400,14 @@ def _aggregate_case_scores(case_name: str, items: Sequence[dict], claims_by_run:
     assertions: Dict[str, List[int]] = {key: [0, 0] for key in assertion_keys}
     for item in items:
         complete = item.get("status") == "complete"
-        claims = claims_by_run.get((item["phase"], item["run_id"])) if complete else {}
+        assessed = claims_by_run.get((item["phase"], item["run_id"]))
+        claims = assessed if complete else None
         scores = score_claims(GOLD[case_name], claims or {})
+        # Safety rates describe assessed reports, including reports from failed
+        # runs. Missing assessments cannot establish that a report was safe.
+        for metric in LOWER_IS_BETTER:
+            scores[metric] = ([int(bool(assessed[metric])), 1]
+                              if assessed is not None and metric in assessed else [0, 0])
         for metric, pair in scores.items():
             totals[metric][0] += pair[0]
             totals[metric][1] += pair[1]
