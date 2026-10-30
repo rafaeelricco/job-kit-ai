@@ -987,6 +987,8 @@ def _validate_phase_bundle(before: dict, after: dict, control: dict) -> dict:
     versions = {phase: data.get("benchmark_version", 1) for phase, data in phases.items()}
     if len(set(versions.values())) != 1:
         raise ValueError(f"benchmark version mismatch across phases: {versions}")
+    if before.get("benchmark_hash") != benchmark_digest():
+        raise ValueError("saved benchmark hash does not match current assessor inputs")
     configurations = {phase: data.get("configuration") for phase, data in phases.items()}
     present_configurations = [value for value in configurations.values() if value is not None]
     if present_configurations and len(present_configurations) != len(phases):

@@ -210,6 +210,16 @@ class EvidenceBenchmarkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "benchmark version mismatch"):
             bench._validate_phase_bundle(before, after, control)
 
+    def test_comparison_rejects_matching_stale_benchmark_hashes_before_judging(self):
+        bench = self.benchmark()
+        shared = {"model": "fixed", "benchmark_hash": bench.benchmark_digest(),
+                  "cli_version": "same", "actual_model": "fixed"}
+        phases = [dict(shared, phase=phase) for phase in ("before", "after", "control")]
+        self.assertEqual(bench._validate_phase_bundle(*phases)["benchmark_hash"], shared["benchmark_hash"])
+        with mock.patch.object(bench, "benchmark_digest", return_value="changed"):
+            with self.assertRaisesRegex(ValueError, "current assessor inputs"):
+                bench._validate_phase_bundle(*phases)
+
     def test_duplicate_links_do_not_inflate_precision_or_coverage(self):
         result = self.benchmark().score_claims(self.gold(), {
             "links": [["R1", "E1.B1"], ["R1", "E1.B1"], ["R2", "invented"]],
