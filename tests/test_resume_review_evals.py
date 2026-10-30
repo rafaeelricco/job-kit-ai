@@ -1,9 +1,13 @@
 """Offline checks for the opt-in job-resume-review evals: report contract, parser, fixtures."""
 import io
 import json
+import os
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
@@ -394,6 +398,68 @@ class EvidenceBenchmarkTests(unittest.TestCase):
                 bench.run_phase("before", SKILL, "model", root / "out", 0)
             with self.assertRaises(FileExistsError):
                 bench.run_phase("before", SKILL, "model", root, 1)
+
+    def test_phase_persists_worker_exceptions_and_normal_completion(self):
+        bench = self.benchmark()
+        def run(case, repeat, work, skills, model):
+            if case == bench.CASE_NAMES[0]:
+                raise RuntimeError("worker failed")
+            return {"case": case, "repeat": repeat, "status": "complete", "actual_model_ids": [model]}
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bench, "_cli_version", return_value="stub"), \
+                mock.patch.object(bench, "_run_one", side_effect=run):
+            output = Path(tmp) / "phase"
+            result = bench.run_phase("before", SKILL, "model", output, 1)
+            metadata = json.loads((output / "metadata.json").read_text())
+            self.assertEqual(result["status"], "completed_with_failures")
+            self.assertEqual(len(result["runs"]), len(bench.CASE_NAMES))
+            self.assertEqual(metadata["failed_run_count"], 1)
+
+    @unittest.skipIf(os.name == "nt", "SIGINT process behavior is POSIX-specific")
+    def test_interrupt_cancels_queued_runs_and_persists_state(self):
+        script = '''\
+import sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import evidence_benchmark as b
+started = Path(sys.argv[4])
+def worker(case, repeat, work, skills, model):
+    with started.open("a") as stream:
+        stream.write(case + "\\n")
+    time.sleep(2)
+    return {"case": case, "repeat": repeat, "status": "complete", "actual_model_ids": [model]}
+b._cli_version = lambda: "stub"
+b._run_one = worker
+b.run_phase("before", Path(sys.argv[2]), "model", Path(sys.argv[3]), 3)
+'''
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output, starts = root / "phase", root / "starts"
+            proc = subprocess.Popen([sys.executable, "-c", script, str(EVALS), str(SKILL),
+                                     str(output), str(starts)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                deadline = time.monotonic() + 20
+                while time.monotonic() < deadline:
+                    if starts.exists() and len(starts.read_text().splitlines()) >= 3:
+                        break
+                    if proc.poll() is not None:
+                        self.fail(f"phase exited before starting workers: {proc.communicate()}")
+                    time.sleep(0.02)
+                else:
+                    self.fail("workers did not start")
+                proc.send_signal(signal.SIGINT)
+                proc.communicate(timeout=10)
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertEqual(len(starts.read_text().splitlines()), 3)
+                metadata = json.loads((output / "metadata.json").read_text())
+                results = json.loads((output / "results.json").read_text())
+                self.assertEqual((metadata["status"], results["status"]), ("interrupted", "interrupted"))
+                self.assertEqual(metadata["cancelled_run_count"], 9)
+                self.assertEqual(metadata["completed_run_count"], len(results["runs"]))
+                self.assertEqual(metadata["unrecorded_run_count"], 12 - len(results["runs"]))
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.communicate()
 
     def test_comparison_refuses_model_mismatch_before_judging(self):
         bench = self.benchmark()

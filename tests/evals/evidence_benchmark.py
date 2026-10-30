@@ -880,11 +880,12 @@ def run_phase(phase: str, skills_root: Path, model: str, output: Path, repeats: 
         work = output / "work" / item["case"] / f"repeat-{item['repeat']:02d}"
         scheduled.append((item, work))
     completed: List[dict] = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENCY) as pool:
-        futures = {
-            pool.submit(_run_one, item["case"], item["repeat"], work, frozen_skills_root, model): (item, work)
-            for item, work in scheduled
-        }
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENCY)
+    futures = {}
+    try:
+        for item, work in scheduled:
+            futures[pool.submit(_run_one, item["case"], item["repeat"], work,
+                                frozen_skills_root, model)] = (item, work)
         for future in concurrent.futures.as_completed(futures):
             item, work = futures[future]
             try:
@@ -897,6 +898,23 @@ def run_phase(phase: str, skills_root: Path, model: str, output: Path, repeats: 
             _atomic_json(output / "results.json", results)
             print(f"[{phase}] {len(completed)}/{len(expected)} {entry['case']} r{entry['repeat']}: {entry['status']}",
                   flush=True)
+    except KeyboardInterrupt:
+        # Running workers may finish, but must not start any queued work or
+        # overwrite the persisted interrupted state.
+        pool.shutdown(wait=False, cancel_futures=True)
+        metadata.update({"status": "interrupted", "finished_at": datetime.now(timezone.utc).isoformat(),
+                         "completed_run_count": len(completed),
+                         "cancelled_run_count": sum(future.cancelled() for future in futures),
+                         "unrecorded_run_count": len(expected) - len(completed)})
+        results.update({"status": "interrupted", "runs": completed})
+        _atomic_json(output / "results.json", results)
+        _atomic_json(output / "metadata.json", metadata)
+        raise
+    except BaseException:
+        pool.shutdown(wait=True, cancel_futures=True)
+        raise
+    else:
+        pool.shutdown(wait=True)
     skills_hash_after, _ = _tree_hash(frozen_skills_root)
     all_actual = sorted({model_id for run in completed for model_id in run.get("actual_model_ids", [])})
     metadata.update({
