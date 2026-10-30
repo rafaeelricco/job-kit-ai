@@ -1351,8 +1351,9 @@ def _median(values: Sequence[float]) -> Optional[float]:
 
 
 def _runtime_tool_summary(items: Sequence[Mapping[str, object]]) -> dict:
-    runtimes = [float(item.get("runtime_seconds", 0.0)) for item in items]
-    tools = [int(item.get("tool_count", 0)) for item in items]
+    measured = [item for item in items if item.get("status") not in {"runner_error", "missing_record"}]
+    runtimes = [float(item.get("runtime_seconds", 0.0)) for item in measured]
+    tools = [int(item.get("tool_count", 0)) for item in measured]
     return {
         "scheduled_runs": len(items),
         "runtime_seconds": {"median": _median(runtimes), "min": min(runtimes) if runtimes else None,

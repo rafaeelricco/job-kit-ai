@@ -248,6 +248,23 @@ class EvidenceBenchmarkTests(unittest.TestCase):
             self.assertEqual(received["args"][:3], ["-p", "--output-format", "json"])
             self.assertNotIn(report, received["args"])
 
+    def test_runtime_summary_excludes_unmeasured_placeholders(self):
+        bench = self.benchmark()
+        items = [
+            {"status": "runner_error", "runtime_seconds": 0.0, "tool_count": 0},
+            {"status": "missing_record", "runtime_seconds": 0.0, "tool_count": 0},
+            {"status": "complete", "runtime_seconds": 1.24, "tool_count": 3},
+            {"status": "cli_error", "runtime_seconds": 2.0, "tool_count": 1},
+        ]
+        result = bench._runtime_tool_summary(items)
+        self.assertEqual(result["scheduled_runs"], 4)
+        self.assertEqual(result["runtime_seconds"], {"median": 1.62, "min": 1.24, "max": 2.0})
+        self.assertEqual(result["tool_count"], {"median": 2.0, "min": 1, "max": 3})
+        empty = bench._runtime_tool_summary(items[:2])
+        self.assertEqual(empty["scheduled_runs"], 2)
+        self.assertEqual(empty["runtime_seconds"], {"median": None, "min": None, "max": None})
+        self.assertEqual(empty["tool_count"], {"median": None, "min": None, "max": None})
+
     def test_duplicate_links_do_not_inflate_precision_or_coverage(self):
         result = self.benchmark().score_claims(self.gold(), {
             "links": [["R1", "E1.B1"], ["R1", "E1.B1"], ["R2", "invented"]],
