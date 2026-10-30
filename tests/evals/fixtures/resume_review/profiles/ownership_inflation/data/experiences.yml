@@ -1,0 +1,18 @@
+- company: Lumen Pay
+  position: Senior Backend Engineer
+  location: São Paulo, Brazil
+  date: Mar. 2022 -- Present
+  industries: [Fintech]
+  summary:
+    - Cut p95 checkout latency from 480 ms to 140 ms for about 2M daily requests by adding a Redis read-through cache to the payment API.
+    - Supported release planning and launch coordination for billing changes across 12 services with engineering and support.
+    - Responsible for maintaining the payment API.
+- company: Orbit Logistics
+  position: Backend Engineer
+  location: São Paulo, Brazil
+  date: Jan. 2019 -- Feb. 2022
+  industries: [Logistics]
+  summary:
+    - Merged 300+ pull requests across 12 services.
+    - Improved API performance by 40%.
+    - Designed PostgreSQL partitioning that kept route queries under 200 ms as the trips table grew past one billion rows.

@@ -3,19 +3,31 @@
 Visible lines render black; hidden lines render white, so they extract but do not show.
 """
 from pathlib import Path
-from typing import Sequence
+from typing import Optional, Sequence, Tuple
 
 
 def _escape(line: str) -> bytes:
     return line.encode("cp1252").replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
 
 
-def write_pdf(path: Path, lines: Sequence[str], hidden: Sequence[str] = ()) -> Path:
+def write_pdf(path: Path, lines: Sequence[str], hidden: Sequence[str] = (),
+              positioned: Sequence[Tuple[int, int, str, Optional[str]]] = ()) -> Path:
     ops = [b"BT /F1 10 Tf 14 TL 56 800 Td"]
     for colour, group in ((b"0 0 0 rg", lines), (b"1 1 1 rg", hidden)):
         ops.append(colour)
         ops += [b"(" + _escape(line) + b") '" for line in group]
-    stream = b"\n".join(ops + [b"ET"])
+    ops.append(b"ET")
+    if positioned:
+        ops.append(b"0 0 0 rg")
+        for x, y, visible_text, actual_text in positioned:
+            ops.append(b"BT /F1 10 Tf %d %d Td" % (x, y))
+            if actual_text is None:
+                ops.append(b"(" + _escape(visible_text) + b") Tj")
+            else:
+                ops.append(b"/Span << /ActualText (" + _escape(actual_text) + b") >> BDC")
+                ops.append(b"(" + _escape(visible_text) + b") Tj EMC")
+            ops.append(b"ET")
+    stream = b"\n".join(ops)
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

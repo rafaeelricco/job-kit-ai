@@ -1,0 +1,13 @@
+primary:
+  - Python
+  - Go
+skills:
+  - category: Backend
+    items:
+      - PostgreSQL
+      - AWS
+      - Kubernetes
+      - Terraform
+  - category: Delivery
+    items:
+      - GitHub Actions

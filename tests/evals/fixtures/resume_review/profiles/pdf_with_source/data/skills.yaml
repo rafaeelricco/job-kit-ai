@@ -1,0 +1,12 @@
+primary:
+  - Python
+  - Go
+skills:
+  - category: Backend
+    items:
+      - PostgreSQL
+      - AWS
+      - Redis
+  - category: Delivery
+    items:
+      - GitHub Actions

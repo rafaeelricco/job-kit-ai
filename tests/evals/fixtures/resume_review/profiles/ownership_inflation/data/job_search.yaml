@@ -1,0 +1,51 @@
+work_model:
+  remote: true
+  hybrid: false
+  onsite: false
+job_types:
+  full_time: true
+  contract: false
+  part_time: false
+  temporary: false
+  internship: false
+  other: false
+  volunteer: false
+date_posted: all_time
+positions:
+  - Senior Backend Engineer
+location:
+  search_in:
+    - Brazil
+  exclude_hire_from: []
+exclude_companies: []
+prune_score_max: 5
+employment_routes:
+  employer_of_record: ""
+  direct_contractor: ""
+  local_employment: ""
+  contractor_entity: ""
+salary_expectations:
+  min: { currency: "", monthly: "", annual: "" }
+  target: { currency: "", monthly: "", annual: "" }
+  bonus: ""
+  equity: ""
+salary_history:
+  last: { amount: "", currency: "", period: "", basis: "" }
+availability:
+  notice_period: ""
+  open_to_relocation: ""
+  on_call: ""
+  hours_overlap: ""
+  working_hours: ""
+  background_check: ""
+  technical_assessment: ""
+  drug_test: ""
+  in_person_interview: ""
+  travel: ""
+  own_equipment: ""
+  equipment_os: []
+consents:
+  recruiter_messages: ""
+  data_retention: ""
+  interview_recording: ""
+  marketing_use: ""

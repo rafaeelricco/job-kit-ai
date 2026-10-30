@@ -1,0 +1,18 @@
+- company: Lumen Pay
+  position: Senior Backend Engineer
+  location: São Paulo, Brazil
+  date: Mar. 2022 -- Present
+  industries: [Fintech]
+  summary:
+    - Built Python and Go payment services processing about 2M requests each day; reduced checkout p95 latency from 480 ms to 140 ms with a Redis read-through cache.
+    - Operated production Go services on AWS EKS (Kubernetes) and replaced a two-hour manual release checklist with a GitHub Actions deployment pipeline.
+    - Responsible for maintaining the payment API.
+- company: Orbit Logistics
+  position: Backend Engineer
+  location: São Paulo, Brazil
+  date: Jan. 2019 -- Feb. 2022
+  industries: [Logistics]
+  summary:
+    - Built Go route-planning services and merged 300+ pull requests across 12 services.
+    - Improved API performance by 40%.
+    - Designed PostgreSQL partitioning for production route queries, keeping them under 200 ms as the trips table grew past one billion rows.

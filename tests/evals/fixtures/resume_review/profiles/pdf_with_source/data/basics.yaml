@@ -1,0 +1,19 @@
+name: Alex Doe
+legal_name: ""
+birth_date: ""
+email: alex.doe@example.com
+phone: ""
+phone_whatsapp: false
+location: São Paulo, Brazil
+country: Brazil
+address:
+  line1: ""
+  line2: ""
+  district: ""
+  postal_code: ""
+citizenships: []
+permits: []
+timezone: America/Sao_Paulo
+url:
+  label: GitHub
+  href: https://github.com/alexdoe
