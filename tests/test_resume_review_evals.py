@@ -344,6 +344,27 @@ class EvidenceBenchmarkTests(unittest.TestCase):
             self.assertEqual(kwargs["env"]["TMPDIR"], str(root / "tmp"))
             self.assertEqual(kwargs["env"]["PYTHONDONTWRITEBYTECODE"], "1")
 
+    def test_prompt_hash_normalizes_symlinked_run_and_skill_paths(self):
+        bench = self.benchmark()
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = root / "real"
+            real.mkdir()
+            link = root / "link"
+            try:
+                link.symlink_to(real, target_is_directory=True)
+            except OSError as error:
+                self.skipTest(f"symlinks unavailable: {error}")
+            hashes = []
+            for name in ("one", "two"):
+                work = link / name
+                work.mkdir()
+                skills = link / "skills"
+                prompt = resume_review.prompt_for(case, work, skills, isolated=True)
+                hashes.append(bench._normal_prompt_hash(prompt, work, skills))
+            self.assertEqual(hashes[0], hashes[1])
+
     def test_formatting_and_tools_are_not_quality_inputs(self):
         text = self.benchmark().JUDGE_INSTRUCTIONS.lower()
         self.assertIn("format", text)

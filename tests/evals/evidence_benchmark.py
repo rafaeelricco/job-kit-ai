@@ -688,8 +688,12 @@ def _digest_manifest(manifest: Mapping[str, str]) -> str:
 
 
 def _normal_prompt_hash(prompt: str, work: Path, skills_root: Path) -> str:
-    normalized = prompt.replace(str(work.resolve()), "<WORK_ROOT>")
-    normalized = normalized.replace(str(skills_root.resolve()), "<SKILLS_ROOT>")
+    normalized = prompt
+    replacements = {(str(path), label) for path, label in
+                    ((work, "<WORK_ROOT>"), (work.resolve(), "<WORK_ROOT>"),
+                     (skills_root, "<SKILLS_ROOT>"), (skills_root.resolve(), "<SKILLS_ROOT>"))}
+    for path, label in sorted(replacements, key=lambda item: len(item[0]), reverse=True):
+        normalized = normalized.replace(path, label)
     return _sha_bytes(normalized.encode("utf-8"))
 
 
