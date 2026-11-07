@@ -34,6 +34,12 @@ or a summary about what the candidate wants rather than offers. Note,
 without deducting, a summary over about 90 words or one in first person.
 An objective statement suits students and career changers.
 
+When a broad summary occupies the top third, assess whether it uses the
+stronger target-relevant proof available elsewhere in the CV or corroborated
+sources, including verified scale or a qualitative outcome. Relate its target
+to resolved responsibilities the candidate demonstrates. Preserve historical
+job titles; a functional explanation may clarify a title but must not replace it.
+
 ## Achievement bullets
 
 Rate every experience/project bullet on the same 0–4 scale:
@@ -51,10 +57,36 @@ first) weigh 2; other bullets weigh 1. A CV with no achievement
 descriptions rates 0. Assess equivalent achievement descriptions when
 experience uses paragraphs, one location per paragraph.
 
-Concrete qualitative outcomes can earn full credit. Numbers and method
-details are useful when meaningful; neither is compulsory in every bullet.
+A demonstrated user capability or operational change is a concrete
+qualitative outcome and can earn full credit. Apply this meaning of outcome
+to ratings, Recruiter read, and action selection: an absent optional metric
+does not erase an explicit qualitative result. Assess the specific contribution
+and what it enables before calling a bullet duty-only or asking for scale.
+Numbers and method details earn space when they clarify that evidence.
 Note, without changing the rating, a bullet that bundles several
 accomplishments or a round figure with no stated basis.
+
+A technical reader should be able to connect the stated outcome to what the
+candidate designed, implemented, integrated, evaluated, or operated. Explicit,
+supported contribution matters even when a bullet rates 3 or 4.
+Assess delivery, including publication, separately from usage in internal
+testing, a customer pilot, or production, and from measured impact.
+An accurate release milestone can still need an observed-use qualifier.
+When the CV states release only and supplied facts limit usage to testing or
+a pilot, propose both the supported release/timing and that usage limit to
+resolve adoption ambiguity. Retain the wording when both are already clear.
+Throughout the report, distinguish a stage stated in the supplied CV from
+one inferred by the reviewer. An explicit CV stage is review evidence:
+retain it as a CV claim unless supplied facts contradict it. Missing private
+corroboration alone does not make that stated stage a defect or an unknown.
+When no source states the stage, usage, traffic, load or performance
+measurements and delivery milestones do not establish it. Keep the supported
+measurement or capability without adding a stage. This applies to stage
+adjectives in praise as well as direct claims. Ask about an unstated stage
+only when it materially affects the assessment.
+Coexisting milestones can all be accurate. Treat unstated usage as a
+clarification opportunity, and call a claim contradictory only when source
+evidence refutes what it actually says.
 
 ## Skills and relevance
 
@@ -63,12 +95,24 @@ role or project names is listed-only: parsers infer a skill's duration and
 recency from the roles that mention it. Facts absent from the CV remain
 visibility gaps; absence is not proof the candidate lacks them.
 
+Ground missing-skill findings in the supplied posting or an explicit target
+requirement. Use questions for additional potentially relevant
+capabilities. Claims about market-wide screening need a supplied supporting
+source.
+
 ## Organization and market norms
 
 Judge length, section order, and presentation in the stated career and
 market context. Avoid universal page-count, sentence-count, or font-size
-penalties. Each of the first three items below lowers Logical
-organization; the last is reported without a deduction:
+penalties.
+Evaluate exact displayed dates against the review date. Distinguish a style
+inconsistency from an impossible range, future milestone, or difference among
+sources. Respect documented role consolidation and explicit user choices.
+Ask about unresolved discrepancies before recommending corrected dates or
+splitting an entry.
+
+Each of the first three items below lowers Logical organization; the last is
+reported without a deduction:
 
 - an unexplained gap of more than six months between roles, with the
   question to resolve;
@@ -157,7 +201,8 @@ recruiter for the target role would, using only the CV, the posting, and
 the LinkedIn profile when supplied. Give:
 
 - a shortlist call (advance, unsure, or not advance on this evidence) with
-  the strongest reason for and against;
+  the strongest supported reason for and against. State "no material concern
+  identified" when no meaningful contrary reason is supported;
 - when LinkedIn is supplied, whether its headline, titles, employers, and
   dates agree with the CV; a difference is a question to resolve, not proof
   either way;

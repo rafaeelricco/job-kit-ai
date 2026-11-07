@@ -69,12 +69,6 @@ For English text, write the summary and bullets to a temp file and run
 date and number ranges use dashes legitimately. Its hits are Writing
 evidence under the rubric.
 
-## Score
-
-Apply the rubric, then run `./scripts/review_score.py` with the input its
-Score section defines and report its numbers. Missing inspection tools
-reduce coverage; observed document failures reduce the relevant rating.
-
 ## Facts
 
 With a profile, corroborate CV claims against `data/experiences.yml`,
@@ -84,11 +78,24 @@ check internal consistency only. Check a stated years figure with
 `job-match/scripts/years.py` on the role dates; `years: null` means the
 figure cannot be checked. Distinguish CV claims, corroborated facts,
 contradictions, and facts requiring confirmation. Absence of corroboration
-alone is not fabrication.
+alone is not fabrication. A fact explicitly recorded in the supplied profile
+can support a proposal without being reconfirmed merely because it is private.
+Distinguish absent-from-CV evidence from ambiguous or conflicting evidence.
 
 When supplied, assess posting requirements separately from CV quality.
 
-With a posting, load `job-match/references/contracts/contract-resume-evidence.md` and build trusted requirements from existing R IDs/dedup and sources from existing visible CV E/P inventories plus corroborating private Facts. Namespace CV/Profile source IDs, respect story frontmatter/`never_say` restrictions, and use exact excerpts. Main produces/validates assessments via `job-match/scripts/resume_evidence.py`. Set `cv_assessed` true only for a completely inspected CV. Private Facts only inform fixes; they never increase alignment credit or establish recruiter-visible proof. Failed diagnostic validation preserves ordinary review and reports the limitation. With no posting, do not invent a requirement catalog.
+With a posting, deduplicate its requirements and assign stable R IDs.
+Load `job-match/references/contracts/contract-resume-evidence.md` and use
+that catalog with the inspected CV inventory and corroborating private Facts. Namespace CV/Profile source IDs, respect story frontmatter/`never_say` restrictions, and use exact excerpts. Main produces/validates assessments via `job-match/scripts/resume_evidence.py`. Set `cv_assessed` true only for a completely inspected CV. Private Facts only inform fixes; they never increase alignment credit or establish recruiter-visible proof. Failed diagnostic validation preserves ordinary review and reports the limitation. With no posting, do not invent a requirement catalog.
+
+## Score
+
+After the fact checks, apply the rubric and determine recent-role weighting
+from the resolved chronology. Run `./scripts/review_score.py` with the input
+its Score section defines and report its numbers. Missing inspection tools
+reduce coverage; observed document failures reduce the relevant rating.
+Base ratings on the inspected CV. Keep private-only achievements and proposed
+wording separate from current CV evidence.
 
 ## Recruiter read
 
@@ -108,3 +115,15 @@ Run these only when the user asks for them, after the recruiter read:
   candidate's identity, and read the page itself rather than search
   snippets. Assess supplied page snapshots only within their stated
   coverage. Keep findings separate from CV evidence and outside the score.
+
+## Return
+
+Before returning, reconcile the recap, ratings, Recruiter read, and Do next
+with checked facts and action eligibility from the report contract. Apply
+the rubric stage check to every deployment-stage adjective in the draft,
+including reviewer-authored praise. Compare each Proposed passage with
+the unresolved Questions: remove or narrow any
+claim that still needs an answer, including contribution or relationship
+claims. A claim left unverified in one section cannot be asserted in another.
+Finally, check the completed Do next section against the report contract,
+including its required ending when no actions qualify.
