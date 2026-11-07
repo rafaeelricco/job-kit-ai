@@ -1,0 +1,9 @@
+- company: Lumen Systems
+  position: Senior Software Engineer
+  location: São Paulo, Brazil
+  date: May 2025 -- Sep 2026
+  summary:
+    - "Launched a support assistant serving 20 companies and handling 900 customer conversations per month."
+    - "Turned customer documents into searchable records with a schema-validated Python ingestion pipeline and tenant-specific PostgreSQL indexes."
+    - "Built React account-management workflows and Python endpoints with tenant-scoped access checks so customers could manage their own users."
+    - "Built the LangGraph agent runtime for the support assistant, combining retrieval over customer documents with a deterministic handoff to staff."

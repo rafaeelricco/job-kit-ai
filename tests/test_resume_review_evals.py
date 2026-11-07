@@ -76,6 +76,237 @@ class ParseTests(unittest.TestCase):
             self.assertEqual(getattr(before, field), getattr(after, field))
 
 
+class ReviewOpportunityChecks(unittest.TestCase):
+    def run_check(self, name, text):
+        case = next(case for case in resume_review.CASES if case.name == name)
+        return case.checks[-1](resume_review.Run(report_parse.parse(text), []))
+
+    def assert_outcome(self, name, valid, invalid):
+        self.assertIsNone(self.run_check(name, valid))
+        for text in invalid:
+            with self.subTest(case=name, text=text):
+                self.assertIsNotNone(self.run_check(name, text))
+
+    def test_summary_ownership_requires_grounded_rewrites(self):
+        valid = (
+            "Summary\nCurrent: Senior Software Engineer building web and AI products with TypeScript and Python.\n"
+            "Proposed: Senior Software Engineer building support products for 20 companies, "
+            "including a LangGraph agent runtime handling 900 monthly conversations.\n"
+            "Rationale: Concrete delivery makes the broad summary specific.\n"
+            "Source: private data/experiences.yml, Lumen Systems summary[3]; absent from the CV.\n"
+            "E1.B1\nCurrent: Launched a support assistant serving 20 companies and handling "
+            "900 customer conversations per month.\n"
+            "Proposed: Built the LangGraph runtime for the support assistant serving 20 companies "
+            "and handling 900 monthly conversations, with retrieval and deterministic staff handoff.\n"
+            "Rationale: Surface supported ownership without crediting private facts to the current CV.\n"
+        )
+        insertion = valid.replace("Current: Launched a support assistant serving 20 companies and handling "
+                                  "900 customer conversations per month.", "Current: Missing.")
+        insertion = insertion.replace("900 monthly conversations", "monthly conversations")
+        self.assertIsNone(self.run_check("summary_ownership", insertion))
+        self.assertIsNone(self.run_check("summary_ownership", insertion.replace(
+            "Current: Missing.", "Current: The Skills line lists LangGraph, but no bullet names it.")))
+        self.assertIsNone(self.run_check("summary_ownership", insertion.replace(
+            "Current: Missing.", "Current: E1 has three bullets. LangGraph appears only in Skills.")))
+        for stage_limit in (
+            "The source does not establish production usage.",
+            "Delivery stage (E1.B1): is the assistant in production, a pilot, or internal use?",
+            "Confirm whether the source documents external rollout.",
+            "State the assistant's delivery stage (production, pilot or internal) once you confirm it.",
+        ):
+            with self.subTest(stage_limit=stage_limit):
+                self.assertIsNone(self.run_check("summary_ownership", valid + stage_limit))
+        self.assert_outcome("summary_ownership", valid, [
+            "", "LangGraph runtime 20 900 E1.B1 private experiences.yml rationale",
+            valid.replace("Proposed:", "Current:"),
+            valid.replace("private data/experiences.yml", "the profile"),
+            valid.replace("Proposed: Senior Software Engineer", "Proposed: Senior AI Engineer"),
+            valid + " E1.B1 demonstrates production usage.",
+            valid + " | Achievement bullets | 3 | E1.B1 demonstrates live deployment. |",
+            valid + " Rationale: The production assistant demonstrates customer adoption.",
+            valid + " For: a Senior title with concrete production usage in E1.B1.\n"
+                    "Delivery stage: is the assistant in production, a pilot, or internal use?",
+            insertion.replace("Current: Missing.", "Current: Skills lists LangGraph."),
+        ])
+
+    def test_publication_preserves_delivery_and_limits_adoption(self):
+        valid = (
+            "E1.B1\nCurrent: Published the app in about three months.\n"
+            "Proposed: Published the app on the App Store and Google Play in about three months, "
+            "with use limited to internal testing.\n"
+            "Rationale: Distinguish publication from adoption.\n"
+            "Source: data/experiences.yml, Lumen Systems summary[2].\n"
+        )
+        self.assertIsNone(self.run_check("publication_internal_testing",
+                                        valid.replace("internal testing", "tested internally")))
+        # These representative excerpts came from a safe live review output.
+        source_limits = (
+            "Was it in production, a pilot or internal testing? "
+            'Source: "No external staff rollout occurred."\n'
+            "Rationale: a reader can otherwise assume production use."
+        )
+        self.assertIsNone(self.run_check("publication_internal_testing", valid + source_limits))
+        self.assert_outcome("publication_internal_testing", valid, [
+            "", "App Store Google Play three months internal testing experiences.yml",
+            valid.replace("internal testing", "external customer use"),
+            valid.replace("three months", "several months"),
+            valid.replace("internal testing.", "internal testing with zero duplicate submissions."),
+            valid + " The CV overstates publication because use was internal.",
+            valid + " E1.B1 conflicts with internal testing.",
+            valid.replace("internal testing", "internal testing with the client team"),
+            valid + " | Recruiter evidence | The app demonstrates production use. |",
+            valid + " Rationale: Both stores prove external adoption.",
+            valid + " The app was deployed externally and used by field staff.",
+        ])
+
+    def test_consolidation_distinguishes_history_from_public_timeline(self):
+        valid = (
+            "The intentional consolidated engagement remains May 2025 to Sep 2026. "
+            "The historical vendor record is Jun 2025 to Sep 2025. "
+            "As of 2026-11-07, these are historical dates. Keep the user-approved timeline."
+        )
+        self.assert_outcome("intentional_consolidation", valid, [
+            "", "May 2025 Sep 2026",
+            valid + " You should split the consolidated entry.",
+            valid + " The experience is future-dated.",
+        ])
+
+    def test_unverified_scope_requires_question_and_exact_date_conflict(self):
+        valid = (
+            "LangGraph is listed-only in Skills. Which LangGraph components did you implement?\n"
+            "E1 header: Sep 2026 to May 2025 is reversed: the end is before the start. "
+            "Confirm the actual dates before editing."
+        )
+        self.assertIsNone(self.run_check("unverified_scope_invalid_dates", valid +
+                                        "\nProposed: Keep the account management you built. "
+                                        "Remove LangGraph unless a role used it.\n"))
+        self.assert_outcome("unverified_scope_invalid_dates", valid, [
+            "", "LangGraph Skills Sep 2026 May 2025",
+            valid.replace("Which LangGraph components did you implement?", "LangGraph is a useful tool."),
+            valid.replace("May 2025", "May 2026"),
+            valid + "\nProposed: Built the LangGraph runtime for the customer portal.\n",
+        ])
+
+    def test_stage_check_scopes_questions_and_negation_to_each_claim(self):
+        for text in (
+            "The source does not establish production usage.",
+            "The counts don't establish production deployment; don't call it production.",
+            "I haven't called this production.",
+            "What was your role and what is its deployment stage (pilot or production)?",
+            "Production usage is not established.",
+            "No external staff rollout occurred.",
+            "Was this production use or internal testing?",
+            "Question: Did the source document external adoption?",
+            "Confirm whether the app was used externally.",
+        ):
+            with self.subTest(allowed=text):
+                self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+        for text in (
+            "Production usage is unconfirmed; the production assistant serves 20 companies.",
+            "The source does not establish production use, but external rollout occurred.",
+            "Can you confirm production use? E1.B1 shows production deployment.",
+            "Which production services did you own?",
+            "Not a prototype, but a production assistant.",
+            "Traffic metrics alone suggest production use.",
+            "Production use is not only established but quantified.",
+        ):
+            with self.subTest(unsupported=text):
+                self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
+
+    def test_effective_cv_accepts_retention_and_rejects_forced_rewrites(self):
+        valid = "Do next\nKeep the effective summary and bullets. No material wording change is needed."
+        for retained in (
+            valid,
+            "Do next\n1. Retain current summary and bullets.",
+            "Do next\nNo substantive edits are needed to this CV.",
+            "The existing summary and experience bullets are effective as written.",
+            "Recruiter read\nWhat changed for staff using the ingestion pipeline?\n\n"
+            "Do next\nPreserve existing CV wording. The CV states a production support assistant.",
+        ):
+            with self.subTest(retained=retained):
+                self.assertIsNone(self.run_check("already_effective_cv", retained))
+        self.assert_outcome("already_effective_cv", valid, [
+            "", "Software Engineer 20 companies 900 conversations",
+            "Keep contact information current.",
+            "The honest internal-testing wording is worth keeping.\nProposed: none yet.",
+            valid + "\nProposed: Staff Engineer who increased revenue by 50%.\n",
+            valid + "\nProposed: Keep the existing summary but add Docker.\n",
+            valid + " But retain existing copy and add tenure.",
+            valid + "\nProposed: no wording yet. Ask whether there is testing experience.\n",
+            valid + "\nProposed: optionally split the existing two-sentence bullet.\n",
+            valid + "\n1. Add outcome evidence if the numbers exist.\nProposed: none.\n",
+            valid + "\n1. Retain current summary.\nQuestion: can you add pipeline metrics?\n",
+            valid + " Brazilian postings require Docker.",
+            valid + " Brazilian postings commonly screen on cloud keywords.",
+            valid + " The CV does not establish production usage.",
+            # Representative excerpts from the previous false-pass live report:
+            'The "production" and delivery stage of the assistant is not established by the CV.\n'
+            "The CV says 'production support assistant', but that stage isn't established.\n"
+            "Do next\n"
+            "1. Edit the base CV, E1.B1 or Summary (confirm the stage first).\n"
+            "2. Add outcome evidence with /job-stories add, if one exists.\n"
+            "Keep the Summary, E1.B2 and the layout as they are.",
+            # Representative earlier output with three manufactured edit tasks:
+            "Do next\n1. E1.B2 (edit the base CV, if the numbers exist).\nProposed: none yet.\n"
+            "2. E1.B3 (edit the base CV).\nProposed: Split it into two bullets.\n"
+            "3. Summary (edit the base CV).\nProposed: Add tenure, for example 4+ years.\n"
+            "The internal-testing wording is worth keeping.",
+        ])
+
+    def test_followup_wording_variants_keep_claim_scope(self):
+        self.assertIsNone(self.run_check(
+            "already_effective_cv", "Do next\nNo action passes; retain the CV as is."))
+        for text in (
+            "Launched doesn't say who owned the build or whether it ran in production for customers.",
+            "The proposed wording stops a reader from inferring production use.",
+            '"Published" alone suggests a live rollout.',
+            'A recruiter reading "published" may assume production use.',
+        ):
+            self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+            self.assertTrue(resume_review.unsupported_stage_assertion(
+                text + " The production assistant serves 20 companies.", external_use=True))
+        self.assertFalse(resume_review.unsupported_stage_assertion(
+            'It says "published", not "in production" or "launched".', external_use=True))
+        retained = "Do next\nNo action passes the materiality gate; retain the current text."
+        self.assertIsNone(self.run_check("already_effective_cv", retained))
+        self.assertIsNotNone(self.run_check(
+            "already_effective_cv", retained +
+            "\nIf you want a later improvement, answer the hesitations. "
+            "Add a user outcome only if it is true."))
+
+    def test_control_praise_does_not_upgrade_performance_to_production(self):
+        for case in ("strongest_proof_gaps", "ownership_inflation"):
+            self.assert_outcome(
+                case,
+                "- **For:** E1.B1 shows measured API performance work.\n"
+                "- **Against:** Production Kubernetes is not shown.\n",
+                ["- **For:** E1.B1 shows measured production performance work.\n"
+                 "- **Hesitations:** Was Kubernetes used in production?"])
+        text = "- **For:** E1.B1 shows performance work; production stage is unverified."
+        self.assertIsNone(self.run_check("strongest_proof_gaps", text))
+
+    def test_proposal_extraction_excludes_current_and_sources(self):
+        text = (
+            "1. E1.B1\n**Current:** Current scope.\n"
+            "**Proposed:** New wording.\n> Supporting continuation.\n"
+            "**Rationale:** Why this helps.\n**Sources:** Private fact.\n"
+            "2. Summary\n- Suggested wording: Another proposal.\n- Evidence: Another fact.\n"
+        )
+        self.assertEqual(resume_review.proposed_passages(text),
+                         ["New wording. Supporting continuation.", "Another proposal."])
+
+    def test_new_profiles_prepare_without_gold_in_the_prompt(self):
+        for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:
+                case = next(case for case in resume_review.CASES if case.name == name)
+                prompt = resume_review.prompt_for(case, Path(tmp), isolated=True)
+                profile = Path(tmp) / "profile"
+                self.assertTrue((profile / "data" / "experiences.yml").is_file())
+                self.assertTrue((profile / "data" / "job_search.yaml").is_file())
+                self.assertNotIn("ground_truth", prompt)
+                self.assertNotIn("required review behavior", prompt.lower())
+
+
 class RunnerTests(unittest.TestCase):
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
