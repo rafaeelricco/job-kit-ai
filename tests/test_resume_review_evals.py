@@ -428,6 +428,28 @@ class ReviewOpportunityChecks(unittest.TestCase):
                 with self.subTest(case=case, claim=line):
                     self.assertIsNotNone(self.run_check(case, f"- **For:** {line}"))
 
+    def test_stage_hedges_do_not_excuse_later_comma_joined_claims(self):
+        for text in (
+            "It is unclear whether the team owned it, and the assistant reached production.",
+            "It is unclear if ownership was shared, the assistant runs in production.",
+            "Confirm whether the candidate led the team, and the assistant runs in production.",
+            "The CV does not say whether the candidate led the team, and the assistant runs in production.",
+            "It is unclear whether the team owned it, and E1.B1 runs in production.",
+        ):
+            with self.subTest(unsupported=text):
+                self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
+        for text in (
+            "It is unclear whether the assistant reached production or stayed in pilot.",
+            "Confirm whether the candidate led the team, and whether the assistant runs in production.",
+            "It is unclear whether the team owned it, and it is unclear whether the assistant reached production.",
+            "It is unclear whether the app, once published, reached production.",
+            "It is unclear whether the app, the site or the API reached production.",
+            "It is unclear whether the app, the site and the API reached production.",
+            "It is unclear whether iOS and Android reached production.",
+        ):
+            with self.subTest(allowed=text):
+                self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

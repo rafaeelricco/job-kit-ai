@@ -117,6 +117,10 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
         question = re.sub(r"^.*?:\s*", "", clause, count=1).lstrip('"')
         for match in stage.finditer(clause):
             before, after = clause[:match.start()], clause[match.end():]
+            # A comma that opens a new subject-led clause ends any hedge before it.
+            before = re.split(
+                r",\s*(?:and\s+)?(?=(?:the|this|that|its|it|he|she|they|we|E\d+\.B\d+)\b"
+                r"(?:\s+(?!and\b|or\b)\w+){1,6}\s*$)", before, flags=re.I)[-1]
             denied = re.search(
                 r"\b(?:no|never|not(?:\s+(?:yet|currently|necessarily|in|a|an|by))*)\s*$|"
                 r"\b(?:rather than|instead of|before any|silent (?:on|about))\s*$|"
