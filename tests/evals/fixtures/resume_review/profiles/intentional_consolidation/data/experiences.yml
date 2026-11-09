@@ -1,0 +1,10 @@
+- company: Lumen Systems
+  position: Software Engineer
+  location: São Paulo, Brazil
+  date: May 2025 -- Sep 2026
+  # User-approved consolidated client engagement, May 2025 -- Sep 2026.
+  # Historical vendor employment: Jun 2025 -- Sep 2025.
+  # Historical direct employment: Sep 2025 -- Sep 2026.
+  summary:
+    - "Built member sign-in, document upload and repayment views with React and Python and tenant-scoped access checks."
+    - "Added CSV validation that showed administrators row errors before imports wrote new accounts."

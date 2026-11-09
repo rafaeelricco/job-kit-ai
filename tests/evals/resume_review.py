@@ -72,6 +72,292 @@ def score_at_most(limit: int) -> Check:
         f"score {run.report.score}, want <= {limit}")
 
 
+def proposed_passages(text: str) -> List[str]:
+    """Read labelled proposed wording separately from current text and sources."""
+    passages: List[str] = []
+    active: Optional[List[str]] = None
+    for line in text.splitlines():
+        plain = re.sub(r"^\s*(?:[-*>]\s+|#{1,6}\s+)?", "", line).replace("**", "").strip()
+        proposal = re.match(
+            r"^(?:proposed|suggested|recommended|rewrite)\b[^:]*:\s*(.*)$", plain, re.I)
+        if proposal:
+            active = [proposal.group(1)]
+            passages.append("")
+        elif re.match(r"^(?:current|original|rationale|why|sources?|evidence|location|question)\b",
+                      plain, re.I) or re.match(
+                r"^(?:[\w-]+\s+){0,2}(?:questions?|confirm(?:ation)?)\s*:|^(?:open\s+)?questions?\s*$",
+                plain, re.I) or re.match(r"^\d+\.\s", plain):
+            active = None
+        elif active is not None and plain and not plain.startswith(("~~~", chr(96) * 3)):
+            active.append(plain)
+        if active is not None:
+            passages[-1] = " ".join(active).strip()
+    return [passage for passage in passages if passage]
+
+
+
+def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> bool:
+    """Find affirmed stages when this case establishes no production/external use.
+
+    Check every report section. Questions, source limits and warnings about reader
+    assumptions are allowed locally; they cannot excuse another affirmed clause.
+    Cases whose source establishes production (the effective CV) do not use this check.
+    """
+    stage = re.compile(
+        r"\bproduction\b|\blive[- ](?:deployment|rollout|traffic|use|usage|operation|"
+        r"assistant|system|app|product|service)s?\b" + (r"|"
+        r"\b(?:external|field|real[- ]customer|customer)[- ](?:use|usage|adoption|rollout|deployment)\b|"
+        r"\bexternal\s+(?:customers?|users?|staff)\b|\bclient\s+(?:team|staff)\b|"
+        r"\b(?:used|adopted|deployed|operated)\s+externally\b|"
+        r"\b(?:used|adopted|deployed|rolled out)\s+(?:by|to|for)\s+(?:the\s+)?(?:field|real)\b"
+        if external_use else ""), re.I)
+    clauses = re.split(r"(?<=[.!?])\s+|[\n;|]|\b(?:but|however|whereas)\b", text, flags=re.I)
+    for clause in clauses:
+        clause = clause.replace("**", "").replace("`", "").replace(chr(34), "").strip(" >-")
+        question = re.sub(r"^(?:(?:E\d+(?:\.B\d+)?|summary|skills)\s*[—–-]\s*|.*?:\s*)", "", clause,
+                          count=1, flags=re.I).lstrip('"')
+        for match in stage.finditer(clause):
+            before, after = clause[:match.start()], clause[match.end():]
+            # A comma and a new subject end a whether/if hedge once that hedge has its own verb.
+            hedge = [m.end() for m in re.finditer(r"\b(?:whether|if)\b", before, re.I)]
+            if hedge:
+                for comma in reversed(list(re.finditer(
+                        r",\s*(?:and\s+)?(?=(?:the|this|that|its|it|he|she|they|we|E\d+\.B\d+)\b)",
+                        before[hedge[-1]:], re.I))):
+                    if re.search(
+                            r"\b(?:is|are|was|were|has|have|had|do|does|did|can|could|will|would|"
+                            r"built|ran|runs?|made|\w+ed)\b", before[hedge[-1]:hedge[-1] + comma.start()], re.I):
+                        before = before[hedge[-1] + comma.end():]
+                        break
+            denied = re.search(
+                r"\b(?:no|never|not(?:\s+(?:yet|currently|necessarily|in|a|an|by))*)\s*$|"
+                r"\b(?:rather than|instead of|before any|silent (?:on|about))\s*$|"
+                r"\b(?:unclear|uncertain|unknown|not clear)\s+(?:whether|if)\b[^.?!;]{0,70}$|"
+                r"\b(?:unverified|unconfirmed|unknown|unsupported)\s*$|"
+                r"\b(?:no|without|lacks?)\s+(?:\w+\s+){0,2}(?:evidence|proof|confirmation)"
+                r"(?:\s+\w+){0,3}\s*$|"
+                r"\b(?:do(?:es)? not|did not|have not|has not|cannot|can't|don't|doesn't|didn't|"
+                r"haven't|hasn't|must not|should not)\s+"
+                r"(?:establish|prove|demonstrate|show|confirm|support|infer|claim|label|call|called|assume|state|imply)"
+                r"(?:\s+\w+){0,4}\s*$|"
+                r"\b(?:avoid(?:s|ed|ing)?|(?:keep|stop|prevent)\w*\b[^.?!;]{0,40}\bfrom)\s+"
+                r"(?:claiming|assuming|implying|asserting|inferring)\s*$", before, re.I)
+            reported = re.search(
+                r"\b(?:(?:do(?:es)? not|did not|doesn't|don't|didn't)\s+(?:say|mean)|"
+                r"never\s+(?:says?|states?|shows?|means?|establish(?:es)?|confirms?|mentions?)|"
+                r"no\s+(?:source|document|bullet|fact|record)s?\s+"
+                r"(?:says?|states?|shows?|establish(?:es)?|confirms?|mentions?))"
+                r"(?:(?:\s+(?!(?:who|which|how|what)\b)\w+){0,3}"
+                r"\s+(?!(?:who|which|how|what|the|an?|its|their|this|that|of)\b)\w+)?\s*$", before, re.I)
+            contrasted = re.search(
+                r"\b(?:separat\w+|distinguish\w*)\b[^.?!;]{0,40}"
+                r"\b(?:release|publication|publishing|delivery|launch\w*|shipping)\b[^.?!;]{0,20}\bfrom\s*$|"
+                r"\b(?:release|publication|publishing|delivery|launch\w*|shipping)\b[^.?!;]{0,20}"
+                r"\bseparate(?:ly)?\s+from\s*$", before, re.I)
+            unestablished = re.match(
+                r"\s*(?:(?:use|usage|adoption|rollout|deployment|stage|status)\s+)?"
+                r"(?:(?:is|was|are|were|remains?)\s+)?"
+                r"(?:not\s+(?:established|demonstrated|documented|confirmed|proven|stated|mentioned|specified)|"
+                r"unconfirmed|unverified|unknown|unsupported)\b", after, re.I)
+            asked = ("?" in clause and (re.match(
+                r"^(?:is|was|were|does|did|has|have|had|can|could|would)\b", question, re.I) or
+                re.search(r"\b(?:what|which)\b[^?]{0,100}\b(?:stage|status)\b", before, re.I)))
+            pending = re.search(
+                r"\b(?:ask|confirm|verify|clarify|check|determine)\b[^?]{0,70}\b(?:whether|if)\b",
+                before, re.I)
+            stage_to_confirm = (re.search(r"\b(?:stage|status)\b", before, re.I) and
+                                re.search(r"\b(?:once|after|until|pending)\b.{0,35}\bconfirm", after, re.I))
+            reader_assumption = re.search(
+                r"\b(?:reader|recruiter)s?\b[^.?!;]{0,65}\b(?:may|might|could|can otherwise)\s+assume\s*$",
+                before, re.I)
+            unstated = re.search(
+                r"\b(?:does not|doesn't|do not|don't)\s+(?:say|state|show|establish)\b"
+                r"[^.?!;]{0,90}\b(?:if|whether)\b", before, re.I)
+            warning = re.search(
+                r"\b(?:stop|prevent|avoid)\w*\b[^.?!;]{0,40}\b(?:reader|recruiter)\b"
+                r"[^.?!;]{0,20}\b(?:assuming|inferring)\s*$", before, re.I)
+            release_interpretation = re.search(
+                r"\b(?:published|publication|release)\b\s+alone\s+"
+                r"(?:suggests|implies)\s+(?:an?\s+)?$", before, re.I)
+            if not any((denied, reported, contrasted, unestablished, asked, pending, stage_to_confirm,
+                        reader_assumption, unstated, warning, release_interpretation)):
+                return True
+    return False
+
+
+def recruiter_praise_stage(run: Run) -> Optional[str]:
+    # These two control CVs state performance/release facts but no production stage.
+    # Posting requirements and unanswered Kubernetes questions are not candidate praise.
+    praise = re.findall(r"(?mi)^\s*(?:[-*]\s+)?For:\s*([^\n]+)",
+                        run.report.text.replace("**", ""))
+    posting = re.compile(r"(?:\b(?:the\s+)?posting(?:'s)?\s+"
+                         r"(?:(?:asks?\s+for|calls?\s+for|requires?|needs?|wants?|lists?|seeks?)\s+)?|"
+                         r"\brequirement:\s*)"
+                         r"Kubernetes in production\b(?:\s+requirement\b)?", re.I)
+    return ("recruiter praise infers a deployment stage from performance or delivery"
+            if any(unsupported_stage_assertion(posting.sub("", line)) for line in praise) else None)
+
+
+def summary_ownership_feedback(run: Run) -> Optional[str]:
+    text = run.report.text
+    proposals = proposed_passages(text)
+    proposed = " ".join(proposals)
+    current_summary = "Senior Software Engineer building web and AI products with TypeScript and Python."
+    current_bullet = ("Launched a support assistant serving 20 companies and handling "
+                      "900 customer conversations per month.")
+    absent_current = any(re.search(
+        r"^(?:absent|missing|none)\b|\bLangGraph\b.{0,30}\bonly in Skills\b|"
+        r"\bno\s+(?:experience\s+)?bullet\b.{0,40}"
+        r"(?:names?|mentions?|demonstrates?|shows?|supports?)\b|"
+        r"\bnot\s+(?:named|mentioned|demonstrated|shown)\s+in\s+(?:any\s+)?(?:experience|bullets?)\b",
+        field.strip(' \"'), re.I)
+        for field in re.findall(r"Current:\s*([^\n]*)", text.replace("**", ""), re.I))
+    required = (
+        len(proposals) >= 2,
+        current_summary in text,
+        current_bullet in text or absent_current,
+        bool(re.search(r"LangGraph.{0,50}(?:runtime|agent)|(?:runtime|agent).{0,50}LangGraph",
+                       proposed, re.I)),
+        bool(re.search(r"\b(?:20|900)\b", proposed)),
+        bool(re.search(r"rationale|why|reason", text, re.I)),
+        "E1.B1" in text,
+        "experiences.yml" in text,
+        bool(re.search(r"private|absent from the CV|not (?:yet )?(?:in|visible in) the CV", text, re.I)),
+    )
+    unsupported = re.search(r"Senior AI Engineer|Staff Engineer|led (?:a|the) team", proposed, re.I)
+    stage_inference = unsupported_stage_assertion(text)
+    return None if all(required) and not unsupported and not stage_inference else (
+        "missing grounded summary/experience proposals, rationale or private-source distinction")
+
+
+def publication_feedback(run: Run) -> Optional[str]:
+    proposed = " ".join(proposed_passages(run.report.text))
+    required = (
+        bool(re.search(r"publish|release|shipped", proposed, re.I)),
+        bool(re.search(r"App Store|iOS", proposed, re.I)),
+        bool(re.search(r"Google Play|Android", proposed, re.I)),
+        bool(re.search(r"(?:three|3).{0,15}months", proposed, re.I)),
+        bool(re.search(r"internal.{0,20}test|test(?:ed|ing)?.{0,20}internal", proposed, re.I)),
+        "experiences.yml" in run.report.text,
+    )
+    unsafe = re.search(
+        r"zero (?:lost|duplicate)|eliminated.{0,35}(?:loss|duplicates)", proposed, re.I)
+    stage_inference = unsupported_stage_assertion(run.report.text, external_use=True)
+    false_conflict = re.search(
+        r"(?:CV|E1\.B1|publication claim)[^.\n]{0,70}(?:overstates|conflicts|is false|is incorrect)|"
+        r"published-to-stores claim is (?:false|incorrect)|"
+        r"publication contradicts internal testing", run.report.text, re.I)
+    return None if all(required) and not unsafe and not stage_inference and not false_conflict else (
+        "preserve verified publication and timing, limit use, and avoid a false contradiction")
+
+
+def advises_unsafe_consolidation(text: str) -> bool:
+    """Find advice to undo the consolidation, unless a negation precedes it in the clause."""
+    unsafe = re.compile(
+        r"(?:change|correct|replace).{0,50}(?:start|May 2025).{0,50}Sep(?:tember)? 2025|"
+        r"(?:must|should|recommend|need to) split.{0,40}(?:role|entry|employment)|"
+        r"(?:dates?|experience) (?:are|is) future[- ]dated", re.I)
+    negation = re.compile(r"\b(?:not|no|never|avoid)\b|n't\b", re.I)
+    return any(not negation.search(clause[:match.start()])
+               for clause in re.split(r"(?<=[.!?])\s+|[\n;]", text)
+               for match in unsafe.finditer(clause))
+
+
+def consolidation_feedback(run: Run) -> Optional[str]:
+    text = run.report.text
+    required = (
+        bool(re.search(r"consolidat|combined engagement|intentional", text, re.I)),
+        bool(re.search(r"May\.? 2025", text)),
+        bool(re.search(r"Sep(?:t(?:ember)?)?\.? 2026", text)),
+        bool(re.search(r"Jun(?:e)?\.? 2025|historical|source history|older vendor", text, re.I)),
+    )
+    return None if all(required) and not advises_unsafe_consolidation(text) else (
+        "respect the documented consolidation and distinguish its historical dates")
+
+
+def unverified_scope_feedback(run: Run) -> Optional[str]:
+    text = run.report.text
+    required = (
+        bool(re.search(r"LangGraph", text)),
+        bool(re.search(r"listed[- ]only|only.{0,25}skills|skills.{0,30}only", text, re.I)),
+        bool(re.search(r"(?:LangGraph[^\n?]*\?|(?:which|what|have you|did you|can you)"
+                       r"[^\n?]*LangGraph[^\n?]*\?)", text, re.I)),
+        bool(re.search(r"Sep(?:tember)?\.? 2026", text)),
+        bool(re.search(r"May\.? 2025", text)),
+        bool(re.search(r"reversed|impossible|end.{0,25}before.{0,20}start|"
+                       r"start.{0,25}after.{0,20}end", text, re.I)),
+    )
+    proposed = " ".join(proposed_passages(text))
+    unsafe = re.search(r"(?:built|owned|implemented|operated)[^.\n!?]{0,60}LangGraph|"
+                       r"LangGraph[^.\n!?]{0,40}(?:built|owned|implemented|operated)", proposed, re.I)
+    return None if all(required) and not unsafe else (
+        "ask about listed-only scope and identify the exact reversed date range")
+
+
+RETENTION_VERB = r"(?:retain(?:ing)?|preserv(?:e|ing)|keep(?:ing)?|leav(?:e|ing))"
+
+
+def retains_effective_copy(text: str) -> bool:
+    content = r"(?:summary|(?:experience\s+)?bullets?|wording|copy|text|content|CV|resume)"
+    return bool(re.search(
+        rf"\b(?:{RETENTION_VERB}|retention\s+of)\s+(?:the\s+)?"
+        rf"(?:current|existing|effective|strong|original)\s+{content}\b|"
+        rf"\b{RETENTION_VERB}\b[^.\n;]{{0,45}}\b{content}\b[^.\n;]{{0,25}}"
+        rf"\b(?:as[- ]is|unchanged|as written|intact)\b|"
+        rf"\bno\s+(?:material|substantive)\s+(?:wording\s+)?(?:changes?|edits?|rewrites?)\b"
+        rf"[^.\n;]{{0,35}}\b{content}\b|"
+        rf"\b{content}\b[^.\n;]{{0,45}}\b(?:effective|work well|already strong)\b"
+        rf"[^.\n;]{{0,25}}\bas written\b", text, re.I))
+
+
+def effective_cv_feedback(run: Run) -> Optional[str]:
+    text = run.report.text
+    retained = retains_effective_copy(text)
+    proposals = proposed_passages(text)
+    change = r"\b(?:add|rewrite|replace|insert|expand|rephrase|recast|include)\b"
+    safe_advice = all(
+        (bool(re.fullmatch(r"(?:none(?: needed)?|no (?:wording )?(?:changes?|edits?|rewrite)"
+                          r"(?: (?:needed|required))?)[.!]?", proposal, re.I)) or
+         retains_effective_copy(proposal)) and
+        not re.search(change, re.sub(r"^no rewrite\b", "", proposal, flags=re.I), re.I)
+        for proposal in proposals)
+    contradicts_retention = re.search(
+        rf"\b(?:{RETENTION_VERB}|retention\s+of)\b[^.\n;]{{0,90}}\b(?:but|and|while)\s+"
+        rf"(?:also\s+)?\b(?:add(?:ing)?|rewrit(?:e|ing)|replac(?:e|ing)|insert(?:ing)?|expand(?:ing)?|"
+        rf"rephras(?:e|ing)|recast(?:ing)?|includ(?:e|ing)|split(?:ting)?)\b", text, re.I)
+    # This all-clear fixture should not acquire CV-editing tasks merely because
+    # an interview could ask for more detail. Other cases still permit those tasks.
+    do_next = re.search(r"(?im)^\s*(?:#{1,6}\s+)?(?:\*\*)?(?:\d+[.)]\s*)?(?:\*\*)?Do next\b[ \t:*]*", text)
+    tasks = "" if not do_next else re.split(
+        r"(?m)^\s*(?:#{1,6}\s+\S|\*\*[^*\n]+\*\*\s*$)", text[do_next.end():], maxsplit=1)[0]
+    task_titles = re.findall(r"(?m)^\s*\d+\.\s+(.*)$", tasks)
+    unnecessary_tasks = (any(not retains_effective_copy(title.replace("**", ""))
+                             for title in task_titles) or "?" in tasks or bool(re.search(
+        r"(?im)(?:^|(?<=[.!])\s+)(?:if\b[^.\n]{0,200}\b)?"
+        r"(?:add|split|rewrite|replace|expand|insert|rephrase)\b", tasks)))
+    stage_denial = re.compile(
+        r"\b(?:production|(?:delivery|that|this) stage)\b[^.\n?]{0,100}"
+        r"\b(?:not (?:established|documented|demonstrated|verified|proven|confirmed|supported|shown)|"
+        r"isn't established|unconfirmed|unverified|unsupported)\b|"
+        r"\b(?:does not|doesn't|cannot|can't)\s+(?:establish|confirm|verify|support)\s+"
+        r"(?:the\s+)?production\b", re.I)
+    # E1.B3 is publication-only in this fixture, so denying its production use is accurate.
+    denies_supplied_stage = any(
+        stage_denial.search(sentence) and (
+            re.search(r"E1\.B1|support assistant", sentence, re.I) or
+            not re.search(r"E1\.B3|\bstore\b|publication|internal[- ]testing", sentence, re.I))
+        for sentence in re.split(r"(?<=[.!?])\s+|\n", text))
+    invented = re.search(r"\d+%|Staff Engineer|Senior AI Engineer", " ".join(proposals), re.I)
+    market_assumption = re.search(
+        r"\b(?:Brazilian|Brazil|ATS|postings)\b"
+        r"(?:(?!\b(?:no|not|never|without)\b|n't)[^.\n;:]){0,100}"
+        r"\b(?:screens?|requires?|required|must have)\b", text, re.I)
+    return None if (retained and safe_advice and not contradicts_retention and
+                    not unnecessary_tasks and not denies_supplied_stage and
+                    not invented and not market_assumption) else (
+        "retain effective copy without forced rewrites, stage denial or unsupported screening requirements")
+
+
 @dataclass(frozen=True)
 class Case:
     name: str
@@ -147,11 +433,11 @@ CASES = (
          context="Score this posting against my profile.",
          edit=lambda cv: (FIXTURES / "cases" / "selected_job_evidence.md").read_text(encoding="utf-8"),
          profile="selected_job_evidence"),
-    Case("strongest_proof_gaps", BASE, posting="strongest_proof_posting.md",
+    Case("strongest_proof_gaps", BASE + (recruiter_praise_stage,), posting="strongest_proof_posting.md",
          context="Review my resume against the supplied posting and give practical feedback.",
          edit=lambda cv: (FIXTURES / "cases" / "strongest_proof_gaps.md").read_text(encoding="utf-8"),
          profile="strongest_proof_gaps"),
-    Case("ownership_inflation", BASE,
+    Case("ownership_inflation", BASE + (recruiter_praise_stage,),
          context="Review my resume.",
          edit=lambda cv: (FIXTURES / "cases" / "ownership_inflation.md").read_text(encoding="utf-8"),
          profile="ownership_inflation"),
@@ -159,6 +445,26 @@ CASES = (
          context="Review my resume.",
          edit=lambda cv: (FIXTURES / "cases" / "pdf_with_source.md").read_text(encoding="utf-8"),
          profile="pdf_with_source", source_pdf="pdf_with_source.tex"),
+    Case("summary_ownership", BASE + (summary_ownership_feedback,),
+         edit=lambda cv: (FIXTURES / "cases" / "summary_ownership.md").read_text(encoding="utf-8"),
+         profile="summary_ownership",
+         context="Review my resume for Senior Software Engineer roles."),
+    Case("publication_internal_testing", BASE + (publication_feedback,),
+         edit=lambda cv: (FIXTURES / "cases" / "publication_internal_testing.md").read_text(encoding="utf-8"),
+         profile="publication_internal_testing", context="Review my resume."),
+    Case("intentional_consolidation", BASE + (consolidation_feedback,),
+         edit=lambda cv: (FIXTURES / "cases" / "intentional_consolidation.md").read_text(encoding="utf-8"),
+         profile="intentional_consolidation",
+         context="Review as of 2026-11-07. I intentionally consolidated the vendor/client work "
+                 "under Lumen Systems. Use May 2025 to September 2026 as the public engagement "
+                 "timeline; older vendor and direct-employment dates remain as source history."),
+    Case("unverified_scope_invalid_dates", BASE + (unverified_scope_feedback,),
+         edit=lambda cv: (FIXTURES / "cases" / "unverified_scope_invalid_dates.md").read_text(encoding="utf-8"),
+         context="Review as of 2026-11-07 for Software Engineer roles."),
+    Case("already_effective_cv", BASE + (effective_cv_feedback,),
+         edit=lambda cv: (FIXTURES / "cases" / "already_effective_cv.md").read_text(encoding="utf-8"),
+         context="Review as of 2026-11-07 for Software Engineer roles in Brazil."),
+
 )
 
 

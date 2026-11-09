@@ -1,0 +1,8 @@
+- company: Lumen Systems
+  position: Software Engineer
+  location: São Paulo, Brazil
+  date: May 2025 -- Sep 2026
+  summary:
+    - "Published a React Native field-operations app on the App Store and Google Play in about three months."
+    - "Built offline photo capture and geofenced check-ins with a SQLite outbox and idempotent backend commands for synchronization after reconnection."
+    - "The app was published in both stores, but its use was limited to internal testing. No external staff rollout occurred."
