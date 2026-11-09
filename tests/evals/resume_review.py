@@ -298,8 +298,10 @@ def effective_cv_feedback(run: Run) -> Optional[str]:
         r"\b(?:does not|doesn't|cannot|can't)\s+(?:establish|confirm|verify|support)\s+"
         r"(?:the\s+)?production\b", text, re.I)
     invented = re.search(r"\d+%|Staff Engineer|Senior AI Engineer", " ".join(proposals), re.I)
-    market_assumption = re.search(r"(?:Brazilian|Brazil|ATS|postings)[^.\n]{0,100}"
-                                  r"(?:screen|require|must have)", text, re.I)
+    market_assumption = re.search(
+        r"\b(?:Brazilian|Brazil|ATS|postings)\b"
+        r"(?:(?!\b(?:no|not|never|without)\b|n't)[^.\n]){0,100}"
+        r"\b(?:screens?|requires?|required|must have)\b", text, re.I)
     return None if (retained and safe_advice and not contradicts_retention and
                     not unnecessary_tasks and not denies_supplied_stage and
                     not invented and not market_assumption) else (

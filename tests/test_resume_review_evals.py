@@ -295,6 +295,24 @@ class ReviewOpportunityChecks(unittest.TestCase):
         self.assertEqual(resume_review.proposed_passages(text),
                          ["New wording. Supporting continuation.", "Another proposal."])
 
+    def test_effective_cv_allows_benign_market_wording(self):
+        valid = "Do next\nKeep the effective summary and bullets. No material wording change is needed."
+        for line in (
+            "Target: Software Engineer roles in Brazil (your request); no posting supplied, "
+            "so no requirement matrix.",
+            "Residence matches the Brazil target, so no work-authorization line is required.",
+            "Target: Software Engineer roles in Brazil, no screening assumptions applied.",
+        ):
+            with self.subTest(line=line):
+                self.assertIsNone(self.run_check("already_effective_cv", line + "\n" + valid))
+        for claim in (
+            "In Brazil, Docker is required.",
+            "Brazil roles must have Docker.",
+            "ATS tools screen for Docker.",
+        ):
+            with self.subTest(claim=claim):
+                self.assertIsNotNone(self.run_check("already_effective_cv", valid + " " + claim))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:
