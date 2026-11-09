@@ -313,6 +313,40 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(claim=claim):
                 self.assertIsNotNone(self.run_check("already_effective_cv", valid + " " + claim))
 
+    def test_stage_check_accepts_unknown_and_limited_wording(self):
+        for text in (
+            "It is unclear whether the assistant reached production.",
+            "Production use is not stated in the CV.",
+            "The CV is silent on production use.",
+            "Use was internal testing rather than external users.",
+            "The app was published before any external rollout.",
+            "Published the app in about three months, used in internal testing, not by external staff.",
+        ):
+            with self.subTest(allowed=text):
+                self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+        for text in (
+            "Production use is stated in the CV.",
+            "It is clear that the assistant reached production.",
+            "Use was external users rather than internal testing.",
+            "The app was published after external rollout.",
+            "Used by external staff, not internal testing.",
+            "It is unclear who owned it; the assistant reached production.",
+            "Production use is not stated in the CV, but the production assistant serves 20 companies.",
+            "The CV is silent on ownership of the production assistant.",
+        ):
+            with self.subTest(unsupported=text):
+                self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
+
+    def test_control_praise_ignores_posting_requirements(self):
+        self.assertIsNone(self.run_check(
+            "strongest_proof_gaps", "- **For:** The posting's Kubernetes in production requirement."))
+        for praise in (
+            "- **For:** The posting asks for Kubernetes; E1.B1 ran it in production.",
+            "- **For:** E1.B1 meets the posting's Kubernetes requirement with a production assistant.",
+        ):
+            with self.subTest(praise=praise):
+                self.assertIsNotNone(self.run_check("strongest_proof_gaps", praise))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

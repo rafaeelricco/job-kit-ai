@@ -116,7 +116,9 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
         for match in stage.finditer(clause):
             before, after = clause[:match.start()], clause[match.end():]
             denied = re.search(
-                r"\b(?:no|never|not(?:\s+(?:yet|currently|necessarily|in|a|an))*)\s*$|"
+                r"\b(?:no|never|not(?:\s+(?:yet|currently|necessarily|in|a|an|by))*)\s*$|"
+                r"\b(?:rather than|instead of|before any|silent (?:on|about))\s*$|"
+                r"\b(?:unclear|uncertain|unknown|not clear)\s+(?:whether|if)\b[^.?!;]{0,70}$|"
                 r"\b(?:unverified|unconfirmed|unknown|unsupported)\s*$|"
                 r"\b(?:no|without|lacks?)\s+(?:\w+\s+){0,2}(?:evidence|proof|confirmation)"
                 r"(?:\s+\w+){0,3}\s*$|"
@@ -128,7 +130,7 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
             unestablished = re.match(
                 r"\s*(?:(?:use|usage|adoption|rollout|deployment|stage|status)\s+)?"
                 r"(?:(?:is|was|are|were|remains?)\s+)?"
-                r"(?:not\s+(?:established|demonstrated|documented|confirmed|proven)|"
+                r"(?:not\s+(?:established|demonstrated|documented|confirmed|proven|stated|mentioned|specified)|"
                 r"unconfirmed|unverified|unknown|unsupported)\b", after, re.I)
             asked = ("?" in clause and (re.match(
                 r"^(?:is|was|were|does|did|has|have|had|can|could|would)\b", question, re.I) or
@@ -161,8 +163,10 @@ def recruiter_praise_stage(run: Run) -> Optional[str]:
     # Posting requirements and unanswered Kubernetes questions are not candidate praise.
     praise = re.findall(r"(?mi)^\s*(?:[-*]\s+)?For:\s*([^\n]+)",
                         run.report.text.replace("**", ""))
+    posting = re.compile(r"(?:\b(?:the\s+)?posting(?:'s)?\b|\brequirement:)[^.;]*?"
+                         r"\bKubernetes in production\b(?:\s+requirement\b)?", re.I)
     return ("recruiter praise infers a deployment stage from performance or delivery"
-            if any(unsupported_stage_assertion(line) for line in praise) else None)
+            if any(unsupported_stage_assertion(posting.sub("", line)) for line in praise) else None)
 
 
 def summary_ownership_feedback(run: Run) -> Optional[str]:
