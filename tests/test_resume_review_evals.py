@@ -392,6 +392,24 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(sentence=sentence):
                 self.assertIsNotNone(self.run_check("intentional_consolidation", valid + " " + sentence))
 
+    def test_proposal_extraction_stops_at_question_labels(self):
+        proposal = "Built React account-management workflows and Python endpoints."
+        ask = "Which LangGraph parts have you built or operated?"
+        for label in ("Questions: ", "Open question: ", "Confirm: ", "**Questions:** ", "- Questions: ",
+                      "Clarifying question: ", "To confirm: ", "### Questions\n"):
+            with self.subTest(label=label):
+                self.assertEqual(resume_review.proposed_passages(f"Proposed: {proposal}\n{label}{ask}\n"), [proposal])
+        for body in ("Confirmed zero data loss with reconciliation checks.", "Languages: TypeScript, Python"):
+            with self.subTest(body=body):
+                self.assertEqual(resume_review.proposed_passages(f"Proposed: {proposal}\n{body}\n"),
+                                 [f"{proposal} {body}"])
+        valid = (
+            "LangGraph is listed-only in Skills. Which LangGraph components did you implement?\n"
+            "E1 header: Sep 2026 to May 2025 is reversed: the end is before the start.\n"
+        )
+        self.assertIsNone(self.run_check(
+            "unverified_scope_invalid_dates", f"{valid}Proposed: {proposal}\nQuestions: {ask}\n"))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

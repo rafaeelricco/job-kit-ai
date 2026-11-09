@@ -84,7 +84,9 @@ def proposed_passages(text: str) -> List[str]:
             active = [proposal.group(1)]
             passages.append("")
         elif re.match(r"^(?:current|original|rationale|why|sources?|evidence|location|question)\b",
-                      plain, re.I) or re.match(r"^\d+\.\s", plain):
+                      plain, re.I) or re.match(
+                r"^(?:[\w-]+\s+){0,2}(?:questions?|confirm(?:ation)?)\s*:|^(?:open\s+)?questions?\s*$",
+                plain, re.I) or re.match(r"^\d+\.\s", plain):
             active = None
         elif active is not None and plain and not plain.startswith(("~~~", chr(96) * 3)):
             active.append(plain)
