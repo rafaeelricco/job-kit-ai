@@ -58,7 +58,8 @@ jobs:
         run: pnpm typecheck:release
 
   pipeline:
-    runs-on: ubuntu-latest
+    # setup-python ships no 3.9 build for ubuntu-26.04, which ubuntu-latest now resolves to.
+    runs-on: ${{ matrix.python-version == '3.9' && 'ubuntu-24.04' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
