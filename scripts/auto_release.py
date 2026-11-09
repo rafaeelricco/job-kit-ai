@@ -276,7 +276,9 @@ def decide_admission(runs: tuple[WorkflowRun, ...], current: RunNumber,
                      and skip_through < run.number < current
                      and (run.status != "completed" or run.conclusion not in {"success", "skipped"}))
     if blockers:
-        return Blocked("Repair and rerun the earlier release: " + min(blockers, key=lambda run: run.number).url)
+        earliest = min(blockers, key=lambda run: run.number)
+        return Blocked("Repair and rerun the earlier release, or set RELEASE_SKIP_THROUGH_RUN to "
+                       f"{earliest.number} if it cannot be rerun: {earliest.url}")
     return Proceed()
 
 
