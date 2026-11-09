@@ -114,7 +114,8 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
     clauses = re.split(r"(?<=[.!?])\s+|[\n;|]|\b(?:but|however|whereas)\b", text, flags=re.I)
     for clause in clauses:
         clause = clause.replace("**", "").replace("`", "").replace(chr(34), "").strip(" >-")
-        question = re.sub(r"^.*?:\s*", "", clause, count=1).lstrip('"')
+        question = re.sub(r"^(?:(?:E\d+(?:\.B\d+)?|summary|skills)\s*[—–-]\s*|.*?:\s*)", "", clause,
+                          count=1, flags=re.I).lstrip('"')
         for match in stage.finditer(clause):
             before, after = clause[:match.start()], clause[match.end():]
             # A comma and a new subject end a whether/if hedge once that hedge has its own verb.

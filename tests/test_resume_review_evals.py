@@ -474,6 +474,19 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(forced=sentence):
                 self.assertIsNotNone(self.run_check("already_effective_cv", "Do next\n" + sentence))
 
+    def test_stage_check_exempts_questions_after_dash_location(self):
+        for separator in ("—", "–", "-"):
+            text = f"E1.B1 {separator} Is the support assistant in production?"
+            with self.subTest(allowed=text):
+                self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+        for text in (
+            "E1.B1 — The assistant is in production.",
+            "E1.B1 - shipped to production?",
+            "The production assistant shipped — is that right?",
+        ):
+            with self.subTest(unsupported=text):
+                self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:
