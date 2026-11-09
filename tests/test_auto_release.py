@@ -49,6 +49,7 @@ class VersionAndOrderTests(unittest.TestCase):
                 decision = auto_release.decide_admission(runs, auto_release.RunNumber(3), auto_release.RunNumber(0))
                 self.assertIsInstance(decision, auto_release.Blocked)
                 self.assertIn("runs/2", decision.reason)
+                self.assertIn("RELEASE_SKIP_THROUGH_RUN to 2", decision.reason)
 
     def test_success_skip_and_manual_skip_boundaries(self):
         runs = tuple(map(auto_release.decode_run, [workflow_run(1, "failure", event="push"), workflow_run(2),
