@@ -359,6 +359,16 @@ class ReviewOpportunityChecks(unittest.TestCase):
         self.assertIsNotNone(self.run_check(
             "already_effective_cv", "E1.B1 production is not established, unlike E1.B3 internal testing.\n" + valid))
 
+    def test_effective_cv_reads_tasks_under_heading_variants(self):
+        tasks = "1. Add Docker to Skills.\n2. Split E1.B3 into two bullets.\nKeep the effective summary and bullets."
+        retained = "Keep the effective summary and bullets. No material wording change is needed."
+        for heading in ("8. Do next", "8. Do next:", "## 8. Do next", "**Do next:**", "### Do next (up to three)"):
+            with self.subTest(heading=heading):
+                self.assertIsNotNone(self.run_check("already_effective_cv", heading + "\n" + tasks))
+                self.assertIsNone(self.run_check("already_effective_cv", heading + "\n" + retained))
+        self.assertIsNotNone(self.run_check(
+            "already_effective_cv", "8. Do next: Add Docker to Skills. Keep the effective summary and bullets."))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

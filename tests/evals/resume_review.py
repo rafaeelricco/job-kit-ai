@@ -287,7 +287,7 @@ def effective_cv_feedback(run: Run) -> Optional[str]:
         rf"(?:also\s+)?{change}", text, re.I)
     # This all-clear fixture should not acquire CV-editing tasks merely because
     # an interview could ask for more detail. Other cases still permit those tasks.
-    do_next = re.search(r"(?im)^\s*(?:#{1,6}\s+)?(?:\*\*)?Do next(?:\*\*)?\s*:?\s*$", text)
+    do_next = re.search(r"(?im)^\s*(?:#{1,6}\s+)?(?:\*\*)?(?:\d+[.)]\s*)?(?:\*\*)?Do next\b[ \t:*]*", text)
     tasks = "" if not do_next else re.split(
         r"(?m)^\s*(?:#{1,6}\s+\S|\*\*[^*\n]+\*\*\s*$)", text[do_next.end():], maxsplit=1)[0]
     task_titles = re.findall(r"(?m)^\s*\d+\.\s+(.*)$", tasks)
