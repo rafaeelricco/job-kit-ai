@@ -487,6 +487,33 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(unsupported=text):
                 self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
 
+    def test_stage_check_accepts_accurate_denials_and_delivery_contrasts(self):
+        for text in (
+            "Rationale: Separates the store release from production use.",
+            "Distinguishes publication from production use.",
+            "Keeps delivery separate from external use.",
+            "No source states production use.",
+            "E1.B1 doesn't say the assistant is in production.",
+            "The CV does not say the assistant reached production.",
+            "Launched does not mean production.",
+            "The CV never says the assistant reached production.",
+            "Rationale: Keeps the bullet from implying production use.",
+            "Avoids implying production use.",
+        ):
+            with self.subTest(allowed=text):
+                self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
+        for text in (
+            "Separates the team from the production assistant serving 20 companies.",
+            "Keeps the production assistant separate from the pilot.",
+            "The assistant is separate from the production deployment it runs on.",
+            "Moved the app from internal testing to production use.",
+            "Separated staging from production.",
+            "The CV doesn't say who owned the production assistant.",
+            "No source states who ran production.",
+        ):
+            with self.subTest(unsupported=text):
+                self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

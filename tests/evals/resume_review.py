@@ -140,7 +140,20 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
                 r"haven't|hasn't|must not|should not)\s+"
                 r"(?:establish|prove|demonstrate|show|confirm|support|infer|claim|label|call|called|assume|state|imply)"
                 r"(?:\s+\w+){0,4}\s*$|"
-                r"\bavoid\s+(?:claiming|assuming|implying|asserting|inferring)\s*$", before, re.I)
+                r"\b(?:avoid(?:s|ed|ing)?|(?:keep|stop|prevent)\w*\b[^.?!;]{0,40}\bfrom)\s+"
+                r"(?:claiming|assuming|implying|asserting|inferring)\s*$", before, re.I)
+            reported = re.search(
+                r"\b(?:(?:do(?:es)? not|did not|doesn't|don't|didn't)\s+(?:say|mean)|"
+                r"never\s+(?:says?|states?|shows?|means?|establish(?:es)?|confirms?|mentions?)|"
+                r"no\s+(?:source|document|bullet|fact|record)s?\s+"
+                r"(?:says?|states?|shows?|establish(?:es)?|confirms?|mentions?))"
+                r"(?:(?:\s+(?!(?:who|which|how|what)\b)\w+){0,3}"
+                r"\s+(?!(?:who|which|how|what|the|an?|its|their|this|that|of)\b)\w+)?\s*$", before, re.I)
+            contrasted = re.search(
+                r"\b(?:separat\w+|distinguish\w*)\b[^.?!;]{0,40}"
+                r"\b(?:release|publication|publishing|delivery|launch\w*|shipping)\b[^.?!;]{0,20}\bfrom\s*$|"
+                r"\b(?:release|publication|publishing|delivery|launch\w*|shipping)\b[^.?!;]{0,20}"
+                r"\bseparate(?:ly)?\s+from\s*$", before, re.I)
             unestablished = re.match(
                 r"\s*(?:(?:use|usage|adoption|rollout|deployment|stage|status)\s+)?"
                 r"(?:(?:is|was|are|were|remains?)\s+)?"
@@ -166,7 +179,7 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
             release_interpretation = re.search(
                 r"\b(?:published|publication|release)\b\s+alone\s+"
                 r"(?:suggests|implies)\s+(?:an?\s+)?$", before, re.I)
-            if not any((denied, unestablished, asked, pending, stage_to_confirm,
+            if not any((denied, reported, contrasted, unestablished, asked, pending, stage_to_confirm,
                         reader_assumption, unstated, warning, release_interpretation)):
                 return True
     return False
