@@ -369,6 +369,29 @@ class ReviewOpportunityChecks(unittest.TestCase):
         self.assertIsNotNone(self.run_check(
             "already_effective_cv", "8. Do next: Add Docker to Skills. Keep the effective summary and bullets."))
 
+    def test_consolidation_ignores_negated_advice(self):
+        valid = (
+            "The intentional consolidated engagement remains May 2025 to Sep 2026. "
+            "The historical vendor record is Jun 2025 to Sep 2025. "
+            "As of 2026-11-07, these are historical dates. Keep the user-approved timeline."
+        )
+        for sentence in (
+            "Do not change the May 2025 start to Sep 2025.",
+            "Don't replace the May 2025 start with the Sep 2025 direct-employment date.",
+            "There is no need to split the entry.",
+            "No dates are future-dated.",
+        ):
+            with self.subTest(sentence=sentence):
+                self.assertIsNone(self.run_check("intentional_consolidation", valid + " " + sentence))
+        for sentence in (
+            "Change the May 2025 start to Sep 2025.",
+            "You need to split the entry.",
+            "Do not keep it; change the May 2025 start to Sep 2025.",
+            "Change the May 2025 start to Sep 2025, not Jun 2025.",
+        ):
+            with self.subTest(sentence=sentence):
+                self.assertIsNotNone(self.run_check("intentional_consolidation", valid + " " + sentence))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

@@ -222,6 +222,18 @@ def publication_feedback(run: Run) -> Optional[str]:
         "preserve verified publication and timing, limit use, and avoid a false contradiction")
 
 
+def advises_unsafe_consolidation(text: str) -> bool:
+    """Find advice to undo the consolidation, unless a negation precedes it in the clause."""
+    unsafe = re.compile(
+        r"(?:change|correct|replace).{0,50}(?:start|May 2025).{0,50}Sep(?:tember)? 2025|"
+        r"(?:must|should|recommend|need to) split.{0,40}(?:role|entry|employment)|"
+        r"(?:dates?|experience) (?:are|is) future[- ]dated", re.I)
+    negation = re.compile(r"\b(?:not|no|never|avoid)\b|n't\b", re.I)
+    return any(not negation.search(clause[:match.start()])
+               for clause in re.split(r"(?<=[.!?])\s+|[\n;]", text)
+               for match in unsafe.finditer(clause))
+
+
 def consolidation_feedback(run: Run) -> Optional[str]:
     text = run.report.text
     required = (
@@ -230,12 +242,7 @@ def consolidation_feedback(run: Run) -> Optional[str]:
         bool(re.search(r"Sep(?:t(?:ember)?)?\.? 2026", text)),
         bool(re.search(r"Jun(?:e)?\.? 2025|historical|source history|older vendor", text, re.I)),
     )
-    unsafe = re.search(
-        r"(?:change|correct|replace).{0,50}(?:start|May 2025).{0,50}Sep(?:tember)? 2025|"
-        r"(?<!not )(?:must|should|recommend|need to) split.{0,40}(?:role|entry|employment)|"
-        r"(?:dates?|experience) (?:are|is) future[- ]dated",
-        text, re.I)
-    return None if all(required) and not unsafe else (
+    return None if all(required) and not advises_unsafe_consolidation(text) else (
         "respect the documented consolidation and distinguish its historical dates")
 
 
