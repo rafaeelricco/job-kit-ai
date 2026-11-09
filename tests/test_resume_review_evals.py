@@ -302,6 +302,12 @@ class ReviewOpportunityChecks(unittest.TestCase):
             "so no requirement matrix.",
             "Residence matches the Brazil target, so no work-authorization line is required.",
             "Target: Software Engineer roles in Brazil, no screening assumptions applied.",
+            "Logical organization: Brazilian norm met; the CV requires no change.",
+            "Market norm applied: Brazil (from the request); the CV omits photo, date of birth, "
+            "marital status and CPF, as that norm requires.",
+            "Norm applied: Brazilian market; personal data (photo, date of birth, marital status, CPF) "
+            "is absent, as required.",
+            "Brazil target: the CV meets the norm, so nothing further is required.",
         ):
             with self.subTest(line=line):
                 self.assertIsNone(self.run_check("already_effective_cv", line + "\n" + valid))
@@ -309,6 +315,8 @@ class ReviewOpportunityChecks(unittest.TestCase):
             "In Brazil, Docker is required.",
             "Brazil roles must have Docker.",
             "ATS tools screen for Docker.",
+            "Brazilian employers requires a Portuguese summary.",
+            "Brazilian employers require Docker, as the norm requires.",
         ):
             with self.subTest(claim=claim):
                 self.assertIsNotNone(self.run_check("already_effective_cv", valid + " " + claim))
