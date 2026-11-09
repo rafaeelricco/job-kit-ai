@@ -452,6 +452,28 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(allowed=text):
                 self.assertFalse(resume_review.unsupported_stage_assertion(text, external_use=True))
 
+    def test_effective_cv_accepts_inflected_retention_wording(self):
+        for sentence in (
+            "I recommend retaining the current CV.",
+            "Recommend keeping the current CV unchanged.",
+            "I recommend keeping the CV as is.",
+            "I recommend retention of the current CV.",
+            "I recommend preserving the existing CV.",
+            "I recommend leaving the CV unchanged.",
+        ):
+            with self.subTest(retained=sentence):
+                self.assertIsNone(self.run_check("already_effective_cv", "Do next\n" + sentence))
+        kept = "Keep the effective summary and bullets. No material wording change is needed."
+        for sentence in (
+            "I recommend keeping the current CV but adding Docker.",
+            f"{kept} Keeping the CV but adding Docker.",
+            f"{kept} I recommend keeping the summary and add Docker.",
+            "1. Retain the current bullet but split E1.B3.",
+            "I recommend retention of the current CV but add Docker.",
+        ):
+            with self.subTest(forced=sentence):
+                self.assertIsNotNone(self.run_check("already_effective_cv", "Do next\n" + sentence))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

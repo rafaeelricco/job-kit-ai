@@ -280,12 +280,15 @@ def unverified_scope_feedback(run: Run) -> Optional[str]:
         "ask about listed-only scope and identify the exact reversed date range")
 
 
+RETENTION_VERB = r"(?:retain(?:ing)?|preserv(?:e|ing)|keep(?:ing)?|leav(?:e|ing))"
+
+
 def retains_effective_copy(text: str) -> bool:
     content = r"(?:summary|(?:experience\s+)?bullets?|wording|copy|text|content|CV|resume)"
     return bool(re.search(
-        rf"\b(?:retain|preserve|keep|leave)\s+(?:the\s+)?"
+        rf"\b(?:{RETENTION_VERB}|retention\s+of)\s+(?:the\s+)?"
         rf"(?:current|existing|effective|strong|original)\s+{content}\b|"
-        rf"\b(?:keep|leave|retain|preserve)\b[^.\n;]{{0,45}}\b{content}\b[^.\n;]{{0,25}}"
+        rf"\b{RETENTION_VERB}\b[^.\n;]{{0,45}}\b{content}\b[^.\n;]{{0,25}}"
         rf"\b(?:as[- ]is|unchanged|as written|intact)\b|"
         rf"\bno\s+(?:material|substantive)\s+(?:wording\s+)?(?:changes?|edits?|rewrites?)\b"
         rf"[^.\n;]{{0,35}}\b{content}\b|"
@@ -305,8 +308,9 @@ def effective_cv_feedback(run: Run) -> Optional[str]:
         not re.search(change, re.sub(r"^no rewrite\b", "", proposal, flags=re.I), re.I)
         for proposal in proposals)
     contradicts_retention = re.search(
-        rf"\b(?:keep|retain|preserve|leave)\b[^.\n;]{{0,90}}\b(?:but|and|while)\s+"
-        rf"(?:also\s+)?{change}", text, re.I)
+        rf"\b(?:{RETENTION_VERB}|retention\s+of)\b[^.\n;]{{0,90}}\b(?:but|and|while)\s+"
+        rf"(?:also\s+)?\b(?:add(?:ing)?|rewrit(?:e|ing)|replac(?:e|ing)|insert(?:ing)?|expand(?:ing)?|"
+        rf"rephras(?:e|ing)|recast(?:ing)?|includ(?:e|ing)|split(?:ting)?)\b", text, re.I)
     # This all-clear fixture should not acquire CV-editing tasks merely because
     # an interview could ask for more detail. Other cases still permit those tasks.
     do_next = re.search(r"(?im)^\s*(?:#{1,6}\s+)?(?:\*\*)?(?:\d+[.)]\s*)?(?:\*\*)?Do next\b[ \t:*]*", text)
