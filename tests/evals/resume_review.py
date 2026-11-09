@@ -165,8 +165,10 @@ def recruiter_praise_stage(run: Run) -> Optional[str]:
     # Posting requirements and unanswered Kubernetes questions are not candidate praise.
     praise = re.findall(r"(?mi)^\s*(?:[-*]\s+)?For:\s*([^\n]+)",
                         run.report.text.replace("**", ""))
-    posting = re.compile(r"(?:\b(?:the\s+)?posting(?:'s)?\b|\brequirement:)[^.;]*?"
-                         r"\bKubernetes in production\b(?:\s+requirement\b)?", re.I)
+    posting = re.compile(r"(?:\b(?:the\s+)?posting(?:'s)?\s+"
+                         r"(?:(?:asks?\s+for|calls?\s+for|requires?|needs?|wants?|lists?|seeks?)\s+)?|"
+                         r"\brequirement:\s*)"
+                         r"Kubernetes in production\b(?:\s+requirement\b)?", re.I)
     return ("recruiter praise infers a deployment stage from performance or delivery"
             if any(unsupported_stage_assertion(posting.sub("", line)) for line in praise) else None)
 

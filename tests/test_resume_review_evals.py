@@ -410,6 +410,24 @@ class ReviewOpportunityChecks(unittest.TestCase):
         self.assertIsNone(self.run_check(
             "unverified_scope_invalid_dates", f"{valid}Proposed: {proposal}\nQuestions: {ask}\n"))
 
+    def test_control_praise_strips_only_requirement_restatements(self):
+        for case in ("strongest_proof_gaps", "ownership_inflation"):
+            for line in (
+                "The posting's Kubernetes in production requirement.",
+                "E1.B1 shows API performance work; the posting asks for Kubernetes in production.",
+                "Posting requirement: Kubernetes in production.",
+            ):
+                with self.subTest(case=case, restatement=line):
+                    self.assertIsNone(self.run_check(case, f"- **For:** {line}"))
+            for line in (
+                "The posting requires Kubernetes, and the candidate ran Kubernetes in production.",
+                "Matches the posting: ran Kubernetes in production for 20 companies.",
+                "E1.B1 meets the posting and shows Kubernetes in production.",
+                "Meets requirement: ran Kubernetes in production.",
+            ):
+                with self.subTest(case=case, claim=line):
+                    self.assertIsNotNone(self.run_check(case, f"- **For:** {line}"))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:
