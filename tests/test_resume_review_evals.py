@@ -347,6 +347,18 @@ class ReviewOpportunityChecks(unittest.TestCase):
             with self.subTest(praise=praise):
                 self.assertIsNotNone(self.run_check("strongest_proof_gaps", praise))
 
+    def test_effective_cv_stage_denial_skips_publication_only_bullet(self):
+        valid = "Do next\nKeep the effective summary and bullets. No material wording change is needed."
+        for line in (
+            "E1.B3: store publication alone does not establish production use, "
+            "and the CV correctly limits it to internal testing.",
+            "E1.B3: production use is not established by the store release",
+        ):
+            with self.subTest(line=line):
+                self.assertIsNone(self.run_check("already_effective_cv", line + "\n" + valid))
+        self.assertIsNotNone(self.run_check(
+            "already_effective_cv", "E1.B1 production is not established, unlike E1.B3 internal testing.\n" + valid))
+
     def test_new_profiles_prepare_without_gold_in_the_prompt(self):
         for name in ("summary_ownership", "publication_internal_testing", "intentional_consolidation"):
             with self.subTest(case=name), tempfile.TemporaryDirectory() as tmp:

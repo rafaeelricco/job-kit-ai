@@ -295,12 +295,18 @@ def effective_cv_feedback(run: Run) -> Optional[str]:
                              for title in task_titles) or "?" in tasks or bool(re.search(
         r"(?im)(?:^|(?<=[.!])\s+)(?:if\b[^.\n]{0,200}\b)?"
         r"(?:add|split|rewrite|replace|expand|insert|rephrase)\b", tasks)))
-    denies_supplied_stage = re.search(
+    stage_denial = re.compile(
         r"\b(?:production|(?:delivery|that|this) stage)\b[^.\n?]{0,100}"
         r"\b(?:not (?:established|documented|demonstrated|verified|proven|confirmed|supported|shown)|"
         r"isn't established|unconfirmed|unverified|unsupported)\b|"
         r"\b(?:does not|doesn't|cannot|can't)\s+(?:establish|confirm|verify|support)\s+"
-        r"(?:the\s+)?production\b", text, re.I)
+        r"(?:the\s+)?production\b", re.I)
+    # E1.B3 is publication-only in this fixture, so denying its production use is accurate.
+    denies_supplied_stage = any(
+        stage_denial.search(sentence) and (
+            re.search(r"E1\.B1|support assistant", sentence, re.I) or
+            not re.search(r"E1\.B3|\bstore\b|publication|internal[- ]testing", sentence, re.I))
+        for sentence in re.split(r"(?<=[.!?])\s+|\n", text))
     invented = re.search(r"\d+%|Staff Engineer|Senior AI Engineer", " ".join(proposals), re.I)
     market_assumption = re.search(
         r"\b(?:Brazilian|Brazil|ATS|postings)\b"
