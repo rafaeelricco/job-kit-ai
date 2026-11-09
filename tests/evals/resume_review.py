@@ -117,10 +117,17 @@ def unsupported_stage_assertion(text: str, *, external_use: bool = False) -> boo
         question = re.sub(r"^.*?:\s*", "", clause, count=1).lstrip('"')
         for match in stage.finditer(clause):
             before, after = clause[:match.start()], clause[match.end():]
-            # A comma that opens a new subject-led clause ends any hedge before it.
-            before = re.split(
-                r",\s*(?:and\s+)?(?=(?:the|this|that|its|it|he|she|they|we|E\d+\.B\d+)\b"
-                r"(?:\s+(?!and\b|or\b)\w+){1,6}\s*$)", before, flags=re.I)[-1]
+            # A comma and a new subject end a whether/if hedge once that hedge has its own verb.
+            hedge = [m.end() for m in re.finditer(r"\b(?:whether|if)\b", before, re.I)]
+            if hedge:
+                for comma in reversed(list(re.finditer(
+                        r",\s*(?:and\s+)?(?=(?:the|this|that|its|it|he|she|they|we|E\d+\.B\d+)\b)",
+                        before[hedge[-1]:], re.I))):
+                    if re.search(
+                            r"\b(?:is|are|was|were|has|have|had|do|does|did|can|could|will|would|"
+                            r"built|ran|runs?|made|\w+ed)\b", before[hedge[-1]:hedge[-1] + comma.start()], re.I):
+                        before = before[hedge[-1] + comma.end():]
+                        break
             denied = re.search(
                 r"\b(?:no|never|not(?:\s+(?:yet|currently|necessarily|in|a|an|by))*)\s*$|"
                 r"\b(?:rather than|instead of|before any|silent (?:on|about))\s*$|"

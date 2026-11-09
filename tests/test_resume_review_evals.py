@@ -435,6 +435,7 @@ class ReviewOpportunityChecks(unittest.TestCase):
             "Confirm whether the candidate led the team, and the assistant runs in production.",
             "The CV does not say whether the candidate led the team, and the assistant runs in production.",
             "It is unclear whether the team owned it, and E1.B1 runs in production.",
+            "It is unclear whether the team owned it, and the production assistant serves 20 companies.",
         ):
             with self.subTest(unsupported=text):
                 self.assertTrue(resume_review.unsupported_stage_assertion(text, external_use=True))
@@ -445,6 +446,7 @@ class ReviewOpportunityChecks(unittest.TestCase):
             "It is unclear whether the app, once published, reached production.",
             "It is unclear whether the app, the site or the API reached production.",
             "It is unclear whether the app, the site and the API reached production.",
+            "It is unclear whether the app, the site, and the API reached production.",
             "It is unclear whether iOS and Android reached production.",
         ):
             with self.subTest(allowed=text):
