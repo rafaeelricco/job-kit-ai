@@ -594,6 +594,26 @@ def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
     return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
 
 
+def unquoted_at(text: str, position: int) -> bool:
+    """Whether `position` in `text` sits outside quotes and is not backslash-escaped."""
+    quote, index = None, 0
+    while index < position:
+        char = text[index]
+        if quote:
+            if char == quote:
+                quote = None
+            elif char == "\\" and quote == '"':
+                index += 1
+        elif char in "'\"":
+            quote = char
+        elif char == "\\":
+            index += 1
+            if index >= position:
+                return False
+        index += 1
+    return quote is None
+
+
 def heredoc_as_stdin(command: str) -> Optional[str]:
     """Drop one trailing heredoc body, which is the scorer's stdin, and return the command line.
 
@@ -601,10 +621,14 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
     delimiter compared with them removed). None when the heredoc is unterminated, another
     command follows its delimiter, or an unquoted body could expand or join lines.
     """
-    match = re.search(r"(?<!<)<<(-?)[ \t]*((?:'[^'\n]*'|\"[^\"\n]*\"|\\.|[^\s<>|;&()'\"\\])+)", command)
+    match = next((found for found in re.finditer(
+        r"(?<!<)<<(-?)[ \t]*((?:'[^'\n]*'|\"[^\"\n]*\"|\\.|[^\s<>|;&()'\"\\])+)", command)
+        if unquoted_at(command, found.start())), None)
     if not match:
         return command
     raw = match.group(2)
+    if "$" in raw:
+        return None  # bash reads `$'EOF'` and `$"EOF"` differently from shlex
     quoted = any(char in raw for char in "'\"\\")
     try:
         delimiter = "".join(shlex.split(raw))
@@ -627,8 +651,8 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
 
 # Only these interpreter options leave score.py's own code and imports in charge.
 SAFE_OPTIONS = re.compile(r"-[uIBEsSqv]+|-X|-Xutf8|--")
-# Bash expands these after shlex has split the words (globs, braces, parameters, tilde).
-EXPANDING = re.compile(r"[{}$`*?\[\]~]")
+# Bash expands these after shlex has split the words (globs, braces, parameters, a leading tilde).
+EXPANDING = re.compile(r"[{}$`*?\[\]]|^~")
 
 
 def untrusted_scorer_call(command: str, cwd: Optional[str], scorers: Sequence[str] = ()) -> Optional[str]:
@@ -739,14 +763,17 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
             if block.get("type") == "tool_use" and block.get("name") == "Bash":
                 command = block["input"].get("command", "")
                 commands.append(command)
-                if re.search(r"(?<![\w./-])(?:cd|pushd|popd)(?![\w./-])", command):
-                    working_dir = None  # Bash keeps cd across calls: trust only absolute scorer paths
+                reason = "is not a scorer call"
                 if block.get("id") and re.search(r"(?s)\bpy(?:thon3?)?\b.*\bscore\.py\b", command):
                     reason = untrusted_scorer_call(command, working_dir, scorers)
                     if reason is None:
                         scorer_calls.add(block["id"])
                     else:
                         rejected.append(f"a score.py call {reason}")
+                if reason is not None:
+                    # Bash keeps cd across calls, however it is spelled (`c''d`, `eval`), so
+                    # after any other command trust only absolute scorer paths.
+                    working_dir = None
             if (block.get("type") != "tool_result" or block.get("is_error")
                     or block.get("tool_use_id") not in scorer_calls):
                 continue

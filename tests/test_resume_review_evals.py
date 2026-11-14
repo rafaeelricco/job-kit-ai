@@ -613,6 +613,10 @@ class RunnerTests(unittest.TestCase):
             ("python3 \r/frozen/score.py < in.json", False),
             ("python3 -X pycache_prefix=/tmp/x /frozen/score.py < in.json", False),
             ("python3 /fro*/score.py < in.json", False),
+            ("python3 /frozen/score.py \"x<<true\" 2>/dev/null </missing\necho '[{\"match_score\": 79}]'\ntrue", False),
+            ("python3 /frozen/score.py <<$'EOF' 2>/dev/null </missing\necho '[{\"match_score\": 79}]'\nEOF", False),
+            ("python3 C:/Users/RUNNER~1/frozen/score.py < C:/Users/RUNNER~1/in.json", True),
+            ("python3 ~/frozen/score.py < in.json", False),
             ("python3 /frozen/score.py < in.json \u00b2> /tmp/x", False),
             ("python3 /frozen/score.py < in.json >&\u00b9", False),
             ("python3 /frozen/score.py <<\\true 1<>/dev/null\ntrue\necho '[{\"match_score\": 79}]'\n\\true", False),
@@ -661,6 +665,12 @@ class RunnerTests(unittest.TestCase):
             (".claude/skills/job-match/scripts/score.py", "/ws", ({"type": "assistant", "message": {
                 "content": [{"type": "tool_use", "name": "Bash", "id": "cd-call",
                              "input": {"command": "cd tmp"}}]}},), False),
+            (".claude/skills/job-match/scripts/score.py", "/ws", ({"type": "assistant", "message": {
+                "content": [{"type": "tool_use", "name": "Bash", "id": "cd-call",
+                             "input": {"command": "c''d tmp"}}]}},), False),
+            ("/ws/.claude/skills/job-match/scripts/score.py", "/ws", ({"type": "assistant", "message": {
+                "content": [{"type": "tool_use", "name": "Bash", "id": "cd-call",
+                             "input": {"command": "eval c\\d tmp"}}]}},), True),
         ):
             with self.subTest(script=script, before=bool(before)):
                 run = resume_review.read_stream(
