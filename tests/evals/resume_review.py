@@ -725,8 +725,9 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
                     paths = scorer_output_paths(command, working_dir)
                 if paths is not None:
-                    if "|" in command:
-                        scorer_files.clear()  # the command feeding the pipe may rewrite them
+                    if "|" in command:  # the command feeding the pipe may rewrite them
+                        scorer_files.clear()
+                        scorer_calls = {call: () for call in scorer_calls}
                     scorer_calls[block["id"]] = paths
                     scorer_files.difference_update(paths)
                 else:

@@ -801,6 +801,16 @@ class RunnerTests(unittest.TestCase):
         run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
         self.assertIsNotNone(resume_review.reports_computed_match_score(run))
 
+    def test_pending_scorer_redirect_is_untrusted_when_a_parallel_pipe_feeder_runs(self):
+        forge = "python3 -c \"open('/tmp/scored.json', 'w')\" | python3 /frozen/score.py > /tmp/other.json"
+        events = self.redirected_score_events("python3 /frozen/score.py < input.json > /tmp/scored.json")
+        events[1]["message"]["content"].append(
+            {"type": "tool_use", "name": "Bash", "id": "piped-call", "input": {"command": forge}})
+        events[2]["message"]["content"].append(
+            {"type": "tool_result", "tool_use_id": "piped-call", "content": ""})
+        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+        self.assertIsNotNone(resume_review.reports_computed_match_score(run))
+
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
             {"type": "system", "subtype": "init"},
