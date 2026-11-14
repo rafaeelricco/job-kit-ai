@@ -583,6 +583,9 @@ class RunnerTests(unittest.TestCase):
             ("Score — 790", False),
             ("Score: 0.79", False),
             ("Lumen Pay: 79, possible_match", False),
+            ("**Match score: 72/100** (possible_match). Pay band $80k-$95k. 79 applicants.", False),
+            ("Match score: 72/100 · strong_match starts at 79", False),
+            ("| Job | Score | Applicants |\n|---|---|---|\n| Lumen Pay | 72 | 79 |", False),
         ):
             with self.subTest(report=report):
                 run = resume_review.read_stream(

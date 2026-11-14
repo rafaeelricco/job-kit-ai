@@ -75,15 +75,51 @@ def reports_computed_match_score(run: Run) -> Optional[str]:
     if not run.match_scores:
         ignored = f" (ignored: {'; '.join(run.scorer_rejections)})" if run.scorer_rejections else ""
         return f"score.py printed no successful match score{ignored}"
-    # match_scores come only from verified scorer output and the flow sets no report layout,
-    # so require a score label anywhere (prose, heading, table header) and the computed value
-    # as a standalone number anywhere: `| Job | Score |` over `| Lumen | 79 |` counts.
-    if not re.search(r"(?i)\b(?:match[_ ]score|score|fit)\b", run.report.text):
-        return f"report did not show a computed match score {run.match_scores}"
-    reported = re.findall(r"(?<![\w.])([0-9]{1,3})(?![0-9]|\.[0-9])", run.report.text)
-    if any(int(value) in run.match_scores for value in reported):
+    reported = labelled_scores(run.report.text)
+    if any(value in run.match_scores for value in reported):
         return None
-    return f"report did not show a computed match score {run.match_scores}"
+    shown = f", report labels {tuple(reported)}" if reported else ""
+    return f"report did not show a computed match score {run.match_scores}{shown}"
+
+
+SCORE_LABEL = re.compile(r"(?i)\b(?:match[_ ]score|score|fit)\b")
+SCORE_NUMBER = re.compile(r"(?<![\w.$])([0-9]{1,3})(?![0-9]|\.[0-9]|[kK%])")
+
+
+def labelled_scores(text: str) -> List[int]:
+    """Numbers the report ties to a score label: the first number after the label on its
+    line (skipping a `(0-100)` range), or the cell under a `Score` column of a Markdown table.
+
+    The flow sets no report layout, so both prose (`Match score: 79/100`) and tables count,
+    but a number elsewhere (a pay band, a band floor) does not.
+    """
+    scores: List[int] = []
+    lines = text.splitlines()
+    for line in lines:
+        for label in SCORE_LABEL.finditer(line):
+            after = re.sub(r"\(\s*[0-9]+\s*[-–]\s*[0-9]+\s*\)", "", line[label.end():]).lstrip()
+            if after.startswith("|"):  # `| Match score | 79 |`: only the next cell
+                after = after[1:].split("|", 1)[0]
+            number = SCORE_NUMBER.search(after)
+            if number:
+                scores.append(int(number.group(1)))
+    columns: List[int] = []
+    for line in lines:
+        if not line.strip().startswith("|"):
+            columns = []
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if all(re.fullmatch(r":?-+:?", cell) for cell in cells if cell):
+            continue
+        if any(SCORE_LABEL.search(cell) for cell in cells) and not any(
+                SCORE_NUMBER.fullmatch(cell) for cell in cells):
+            columns = [index for index, cell in enumerate(cells) if SCORE_LABEL.search(cell)]
+            continue
+        for index in columns:
+            number = SCORE_NUMBER.match(cells[index]) if index < len(cells) else None
+            if number:
+                scores.append(int(number.group(1)))
+    return scores
 
 
 def score_at_most(limit: int) -> Check:
