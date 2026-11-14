@@ -720,6 +720,28 @@ class RunnerTests(unittest.TestCase):
                 run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
                 self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
 
+    def test_redirected_score_credits_only_absolute_paths_after_a_directory_change(self):
+        for change in ("cd tmp", "pushd tmp", "popd"):
+            for output, read_path, passes in (
+                ("scored.json", "/tmp/scorer-run/scored.json", False),
+                ("scored.json", "/tmp/scorer-run/tmp/scored.json", False),
+                ("/tmp/scored.json", "/tmp/scored.json", True),
+            ):
+                with self.subTest(change=change, output=output, read_path=read_path):
+                    events = self.redirected_score_events(
+                        f"python3 /frozen/score.py < /tmp/in.json > {output}", read_path=read_path)
+                    events[1:1] = [
+                        {"type": "assistant", "message": {"content": [{
+                            "type": "tool_use", "name": "Bash", "id": "cd-call",
+                            "input": {"command": change},
+                        }]}},
+                        {"type": "user", "message": {"content": [{
+                            "type": "tool_result", "tool_use_id": "cd-call", "content": "",
+                        }]}},
+                    ]
+                    run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                    self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
+
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
             {"type": "system", "subtype": "init"},

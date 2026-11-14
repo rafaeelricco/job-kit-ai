@@ -575,10 +575,15 @@ def prompt_for(case: Case, root: Path, skills_root: Optional[Path] = None,
     return prompt
 
 
-def transcript_path(path: str, cwd: Optional[str]) -> str:
-    """Compare transcript paths without resolving them on the evaluator's host."""
+def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
+    """Compare transcript paths without resolving them on the evaluator's host.
+
+    None when the path is relative and the shell's cwd is unknown.
+    """
     path = path.replace("\\", "/")
-    if cwd and not (posixpath.isabs(path) or re.match(r"^[A-Za-z]:/", path)):
+    if not (posixpath.isabs(path) or re.match(r"^[A-Za-z]:/", path)):
+        if not cwd:
+            return None
         path = posixpath.join(cwd.replace("\\", "/"), path)
     path = posixpath.normpath(path)
     return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
@@ -617,9 +622,8 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
         output = tokens[index + 1]
     if output is None:
         return ()
-    if any(char in output for char in "$`~"):
-        return None
-    return (transcript_path(output, cwd),)
+    path = None if any(char in output for char in "$`~") else transcript_path(output, cwd)
+    return None if path is None else (path,)
 
 
 def tool_json(content: object, file_read: bool = False) -> object:
@@ -663,6 +667,8 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
             if block.get("type") == "tool_use" and block.get("name") == "Bash":
                 command = block["input"].get("command", "")
                 commands.append(command)
+                if re.search(r"(?<![\w./-])(?:cd|pushd|popd)(?![\w./-])", command):
+                    working_dir = None  # Bash keeps cd across calls: credit only absolute paths
                 paths = None
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
                     paths = scorer_output_paths(command, working_dir)
@@ -689,7 +695,7 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                 path = block.get("input", {}).get("file_path")
                 if isinstance(path, str):
                     path = transcript_path(path, working_dir)
-                    if path in scorer_files:
+                    if path is not None and path in scorer_files:
                         read_calls[block["id"]] = path
             if block.get("type") != "tool_result" or block.get("is_error"):
                 continue
