@@ -23,6 +23,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from harness import REPO, read, skill_dirs  # noqa: E402
 
+sys.path.insert(0, str(REPO / "scripts"))
+
+from package_release import RETIRED_REQUIRED_FILES  # noqa: E402
+
 REMOTE_SH: Path = REPO / "scripts" / "remote.sh"
 REMOTE_PS1: Path = REPO / "scripts" / "remote.ps1"
 TEST_SH: Path = REPO / "scripts" / "test.sh"
@@ -113,10 +117,13 @@ def _powershell_list(
     return entries
 
 
-def required_files(path: Path) -> Tuple[str, ...]:
+def required_files(path: Path, text: Optional[str] = None) -> Tuple[str, ...]:
     """Every repo path one installer's required-file list declares, in order,
-    normalized to forward slashes. Handles both the .sh and .ps1 forms."""
-    text = read(path)
+    normalized to forward slashes. Handles both the .sh and .ps1 forms.
+
+    ``text`` overrides the file on disk, for reading an older revision."""
+    if text is None:
+        text = read(path)
     if path.suffix == ".ps1":
         entries = _powershell_list(text, POWERSHELL_REQUIRED_VAR)
     else:
@@ -230,6 +237,42 @@ class RequiredFilesTests(unittest.TestCase):
             "remote.sh and remote.ps1 required-file lists differ; "
             "symmetric difference: %s" % sorted(difference),
         )
+
+    def test_previous_release_required_files_still_declared(self):
+        # An installed remote.sh / remote.ps1 checks a newer bundle against its
+        # own list, so dropping a path breaks updates from that release.
+        described = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", "HEAD"],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+        )
+        tag = described.stdout.strip()
+        if described.returncode != 0 or not tag:
+            self.skipTest("no release tag reachable from HEAD (shallow clone?)")
+        for installer in INSTALLERS:
+            shown = subprocess.run(
+                ["git", "show", "%s:%s" % (tag, installer.relative)],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+            )
+            if shown.returncode != 0:
+                continue
+            previous = required_files(installer.path, shown.stdout)
+            with self.subTest(installer=installer.label, release=tag):
+                # A retired path package_release.py ships as a stub still
+                # reaches the bundle without being listed.
+                kept = set(self.declared[installer.label]) | set(RETIRED_REQUIRED_FILES)
+                dropped = sorted(set(previous) - kept)
+                self.assertEqual(
+                    dropped,
+                    [],
+                    "%s drops paths that %s's installer requires in a bundle; "
+                    "keep each listed, or ship it from RETIRED_REQUIRED_FILES "
+                    "in scripts/package_release.py: %s"
+                    % (installer.relative, tag, dropped),
+                )
 
     def test_required_scripts_are_import_closed(self):
         for installer in INSTALLERS:
