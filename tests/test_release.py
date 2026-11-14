@@ -234,7 +234,7 @@ class InstallFixture:
         with self.wrapper.open("w", encoding="utf-8", newline="\n") as stream:
             stream.write(BASH_FIXTURES if self.kind == "bash" else POWERSHELL_FIXTURES)
 
-    def run(self, *args, version="v1.0.0", extra=None, cached=False):
+    def run(self, *args, version="v1.0.0", extra=None, cached=False, source=None):
         env = {k: v for k, v in os.environ.items()
                if not k.startswith(("JOB_KIT_", "RELEASE_TEST_"))
                and k not in ("BASH_ENV", "ENV", "CLAUDE_SKILLS", "ASIDE_SKILLS", "ASIDE_ACCOUNT")}
@@ -250,7 +250,7 @@ class InstallFixture:
                    PYTHONDONTWRITEBYTECODE="1")
         if extra:
             env.update(extra)
-        source = self.package if cached else REPO
+        source = source or (self.package if cached else REPO)
         installer = source / "scripts" / ("remote.sh" if self.kind == "bash" else "remote.ps1")
         if self.kind == "bash":
             env["BASH_ENV"] = shell_path(self.wrapper, self.kind)
@@ -478,9 +478,13 @@ class ReleaseInstallerTests(unittest.TestCase):
         def scenario(f):
             self.success(f.run("fetch"))
             # Model a remote installer from a release that still required the
-            # retired skill, then upgrade through it.
-            installer = f.package / "scripts" / ("remote.sh" if f.kind == "bash" else "remote.ps1")
-            text = installer.read_bytes().decode("utf-8")
+            # retired skill, then upgrade through it. Run it from outside the
+            # cache: Windows cannot move a directory holding the running script.
+            name = "remote.sh" if f.kind == "bash" else "remote.ps1"
+            old_kit = f.root / "old installer"
+            installer = old_kit / "scripts" / name
+            installer.parent.mkdir(parents=True)
+            text = (f.package / "scripts" / name).read_bytes().decode("utf-8")
             newline = "\r\n" if "\r\n" in text else "\n"
             anchor, old = (("skill/job-store/SKILL.md", "skill/job-profile-root/SKILL.md")
                            if f.kind == "bash" else
@@ -488,7 +492,7 @@ class ReleaseInstallerTests(unittest.TestCase):
             anchor += newline
             self.assertEqual(text.count(anchor), 1)
             installer.write_bytes(text.replace(anchor, old + newline + anchor).encode("utf-8"))
-            self.success(f.run("agents", version="v1.0.1", cached=True))
+            self.success(f.run("agents", version="v1.0.1", source=old_kit))
             self.assertEqual((f.package / "VERSION").read_text(encoding="utf-8"), "v1.0.1\n")
             self.assertTrue((f.package / "skill/job-profile-root/SKILL.md").is_file())
             self.assertFalse(os.path.lexists(f.agents / "job-profile-root"))
