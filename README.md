@@ -108,8 +108,8 @@ Each skill contains its usage and detailed workflow:
 | [job-profile](skill/job-profile/SKILL.md)             | Create, register, or edit a profile.                                           |
 | [job-company-scout](skill/job-company-scout/SKILL.md) | Discover employers and save verified careers pages in search packs.            |
 | [job-scout](skill/job-scout/SKILL.md)                 | Find and rank live openings.                                                   |
-| [job-list](skill/job-list/SKILL.md)                   | Compatibility alias for `/job-match list`.                                                  |
-| [job-match](skill/job-match/SKILL.md)                 | List saved dossiers, assess fit, and get resume guidance.                                            |
+| [job-list](skill/job-list/SKILL.md)                   | Compatibility alias for `/job-match list`.                                     |
+| [job-match](skill/job-match/SKILL.md)                 | List saved dossiers, assess fit, and get resume guidance.                      |
 | [job-prep](skill/job-prep/SKILL.md)                   | Prepare applications without submitting.                                       |
 | [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                                                |
 | [job-resume-refine](skill/job-resume-refine/SKILL.md) | Refine a base resume for a posting.                                            |
