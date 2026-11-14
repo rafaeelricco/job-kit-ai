@@ -9,31 +9,22 @@ Keep: match decision at/above `possible_match` (`match_score` ≥ 70)
 after the existing validation and re-scoring below.
 Drop to Gaps, no dossier, only for the Match failures defined below.
 
-Match: resolve the installed `job-match` skill root, then derive CandidateProfile
-once per its `references/schemas/schema-state.md`. Load `references/workers/worker-extract.md`,
-`references/contracts/contract-match.md`, and `references/workers/worker-match.md`. The scorer is
-`scripts/score.py`; resolve its Python 3 launcher per job-match
-`references/flows/flow-match.md` **score**, and fan out per that flow. Per row,
-that row's Verified extract is the posting body — never fetch, never open
-Profile root.
+Resolve the installed `job-match` skill root and derive CandidateProfile once
+per `job-match/references/schemas/schema-state.md`. Use
+`job-match/references/flows/flow-score.md` for extraction, the required language
+filter, matching, scoring, and review. The scout gate already applied the
+eligibility filters.
 
-extract → JobProfile. Malformed → Gaps, drop.
-HF8 (`contract-match.md` hard filter 8, language) → Gaps `match blocked`, drop. Do not re-run hard filters 1–7; the scout gate applied them.
-match → MatchResult. When the run carried `--typesafe`, run
-`job-match/scripts/typesafe_match.py` (same launcher) with
-`{"candidate": <CandidateProfile>, "jobs": <JobProfiles>}` on stdin instead of
-the match worker; otherwise run the match worker. A row carrying
-`match_error` → Gaps `match unavailable`, drop.
-Then invoke the resolved scorer with
-`{"candidate": <CandidateProfile>, "jobs": <JobProfiles>, "matches": <MatchResults>}`
-on stdin. A row carrying `score_error` → Gaps; continue with the remaining rows.
-A row whose scorer `confidence` is below `0.9`, or that carries a
-`match_uncertain` list, was scored on collapsed cells:
-load `job-match/references/workers/worker-validate.md`, re-review that row
-alone, and re-score it before the bar below. Never drop a row on an uncertain
-answer — uncertainty is a reason to look again, never a reason to discard.
-`decision` below `possible_match` (`weak_match` or `skip`) after that review →
-Gaps `match below bar`, drop.
+Use the Verified extract as the posting body. Prepare the
+structured facts for matching without compensation fields. Workers receive only supplied
+text and facts. They never fetch, open a browser, or open Profile root.
+
+Send a language block to Gaps as `match blocked`. Send a TypeSafe failure to
+Gaps as `match unavailable` and drop the affected rows. Review a row whose
+`confidence` is below `0.9` or that carries a `match_uncertain` list.
+
+A final decision below `possible_match` (`weak_match` or `skip`) goes to Gaps as
+`match below bar` and is dropped.
 
 Carry the scorer's `match_score`, `decision`, and `confidence` on each kept row as Posting-facts `match_score`, `match_decision`, and `match_confidence` (`job-store/references/schemas/schema-dossier.md`). Scout `score` stays the 0–10 skill share. Do not print the job-match report.
 

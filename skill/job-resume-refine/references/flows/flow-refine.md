@@ -71,8 +71,9 @@ count, and log result.
 ## 3. Target and guidance
 
 Resolve the installed `job-match` root and load its CandidateProfile and
-JobProfile schemas, extractor, `ResumeGuidance` contract, guidance worker, and
-validator. Derive the thin CandidateProfile from the Facts already read in
+JobProfile schemas, extractor, `ResumeGuidance` contract,
+`job-match/references/workers/worker-resume-guidance.md`, and validator.
+Derive the thin CandidateProfile from the Facts already read in
 §2. Extract one JobProfile from the current posting resolved in §1; never
 fetch it again. Scaffold one `ResumeGuidance` with
 `job-match/scripts/scaffold_guidance.py`, have the guidance worker classify it,

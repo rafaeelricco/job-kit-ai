@@ -10,17 +10,8 @@ Reader law: `job-store/references/flows/flow-read.md`.
 Store source (below) and the store is absent or unreadable → name the path and end. A pasted posting (rule 1) does not need the store.
 
 ```
-bind → profile → candidates → filter₁ → extract → filter₂ → match → score
-                                                              │
-report ◄─ evidence ◄─ advise ◄─ select ◄─ order ◄─ validate ◄─┘
+bind → profile → candidates → eligibility → score → order → select → advise → report
 ```
-
-Fan-out only on extract, match, validate, advise, and evidence. Batch ~10 when the harness can spawn a worker; else inline sequential. A node with 3 rows or fewer
-runs inline even when spawning works — except validate, which spawns whenever it
-can so the review stays independent of the pass that wrote the row.
-Hand each worker one slice file in the run directory — exactly its batch, plus
-the same `state.candidate` for match, validate, and advise — and the paths of the worker and contract files it obeys. Never paste JSON
-into a brief. Main runs every script, with the launcher **score** resolves.
 
 ## bind
 
@@ -52,60 +43,30 @@ leftover tokens, or two selectors → stop.
 3. `all`, or `--exclude` with no selector → `select: "all"`: every parseable dossier except `dropped` and dead-by-log, minus `--exclude` statuses.
 4. Empty → `select: "new"`: frontmatter `status:` = `new`, not dead-by-log, minus `--exclude` statuses.
 
-Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` with `{"root", "select", "exclude"}`; it applies those filters. Its `filter` rows are the Posting facts
-filter₁ reads, and its `gaps` go to `state.gaps`. A rule 2 dossier that lands in `gaps`
-is unparseable: stop and name it.
+Store selectors (rules 2–4) run `job-store/scripts/slice_store.py` once with
+`{"root", "select", "exclude"}`. Keep its `filter` and `excerpts` in the
+run-local workspace, paired by dossier filename. Copy its `gaps` to
+`state.gaps`. If the named dossier is unparseable, stop and name it.
+Zero dossiers → `No dossiers to match.` and end.
 
-Zero → `No dossiers to match.` and end.
-Pasted posting: run **extract** before **filter₁**. Store sources keep the graph order.
+## Eligibility
 
-## filter₁
-
-Main. Contract hard filters 1–7 on Posting facts + frontmatter `company` / `title` + `state.candidate`. Pasted posting (no Posting facts table): the JobProfile's `company` / `title` / `location` / `work_model` / `work_auth` / `hiring_route` / `eligibility`, and `pay_usd_year` from `job-store/scripts/pay.py` run on its `salary`. First hit → `state.blocked`. Do not score.
-
-## extract
-
-Load `./references/workers/worker-extract.md`. Store sources: rerun `job-store/scripts/slice_store.py` with `skip` = the rows filter₁ blocked, `out` = the run directory, and `batch` = 10, and hand each extract worker one batch file. Pasted posting: hand over the supplied body. Write `state.jobs[]`. Malformed → `state.gaps`.
-
-## filter₂
-
-Main. Contract HF8 on JobProfile + `state.candidate`. Hit → move to `state.blocked`, drop from `state.jobs`.
-
-## match
-
-`--typesafe` → run `./scripts/typesafe_match.py` instead of the worker, with `{"candidate": state.candidate, "jobs": state.jobs}`
-on stdin. It sends that CandidateProfile and each JobProfile to
-`api.typesafe.ai`. Non-zero exit → print its
-`match_error`, or its stderr when stdout is not JSON, and end. Every row
-carrying `match_error` → print the first one and end. Otherwise a row carrying
-`match_error` → `state.gaps` and drop it; write the rest to `state.matches[]`.
-A cell TypeSafe answered below its confidence floor arrives as `null` — the
-contract's `—` — so **score** lowers that row's `confidence` and **validate**
-re-checks it. An uncertain answer is never scored `0`.
-
-Otherwise, load `./references/workers/worker-match.md`; each worker gets its JobProfile batch, no dossier prose.
-Write `state.matches[]`. Malformed → `state.gaps`.
+For store sources, run MatchingPolicy's eligibility filters on the `filter` rows
+and CandidateProfile. Record the first hit in `state.blocked` and pass only
+the surviving excerpts to scoring. For a pasted posting, run those same filters
+on the JobProfile after extraction, before the required language filter.
 
 ## score
 
-Main. Resolve the first working Python 3 launcher: `python3`; on Windows, `py -3`; otherwise
-`python` only when its reported major version is 3. Missing launcher or unreadable
-scorer → name the dependency and end.
+Load `./references/flows/flow-score.md` for the launcher and the shared extraction,
+language filter, matching, scoring, and review steps. Keep the resulting JobProfiles
+and MatchResults in `state.jobs` and `state.matches`.
 
-Run the resolved launcher and absolute scorer path with one JSON object on
-stdin: `{"candidate": state.candidate, "jobs": state.jobs, "matches": state.matches}`.
-It returns the matches array scored per the contract, with unquoted `strengths` / `gaps` / `blockers`
-items moved to `evidence_dropped`.
-A row carrying `score_error` → `state.gaps` and drop that row; a row carrying
-`evidence_dropped` → note those items in `state.gaps` and keep the row.
-
-## validate
-
-Load `./references/workers/worker-validate.md`. Rows with `match_score >= 75`, rows that carry a
-`match_uncertain` list, and rows with `confidence < 0.7` and `match_score >= 60` after score are
-selected once.
-Each worker's slice carries the MatchResult currently in `state.matches`. `APPROVED` leaves the row; `CORRECTION_REQUIRED` replaces it, and a replaced row goes back through **score** before order.
-Malformed or failed validate output → `state.gaps` and drop the row.
+Review a row when `match_score >= 75`, it carries a `match_uncertain` list, or
+`confidence < 0.7` and `match_score >= 60`. Send language blocks to `state.blocked`.
+For an initial TypeSafe invocation failure, print its `match_error` or stderr
+if stdout is not JSON, and end. If every row returned `match_error`, print the
+first error and end. Otherwise send failed rows to `state.gaps` and continue.
 
 ## order
 
@@ -120,21 +81,32 @@ the rest are reported without guidance.
 
 ## advise
 
-Run `./scripts/scaffold_guidance.py` with
-`{"candidate": state.candidate, "jobs": <selected JobProfiles>}` on stdin; it
-emits one ResumeGuidance skeleton per job. Load `./references/contracts/contract-resume-guidance.md` and
-`./references/workers/worker-resume-guidance.md`. Pass CandidateProfile, selected JobProfiles, the
-skeletons, and the Skill hold law—never dossier prose or MatchResult claims.
-Validate the batch with `./scripts/validate_guidance.py` with
-`{"candidate": state.candidate, "jobs": <selected JobProfiles>, "guidance": <worker rows>}`
-on stdin. Add valid rows to
-`state.guidance`; add invalid rows to `state.gaps` without dropping their match.
+For the selected JobProfiles, run `./scripts/scaffold_guidance.py` with
+`{"candidate", "jobs"}` on stdin. Build the trusted source inventory from
+canonical `experiences.yml` `summary[]`, optional `projects.yml` `description[]`,
+and profile skills. Include all achievements with exact text and locations.
+Keep this inventory out of CandidateProfile, scoring, review, and TypeSafe.
 
-## evidence
+Load `./references/contracts/contract-resume-guidance.md` and
+`./references/contracts/contract-resume-evidence.md`. Load
+`./references/workers/worker-resume-match.md` with the two worker references it
+uses. Build one trusted evidence case per selected job. Assign requirement IDs
+R1.. in required-then-preferred order
+without deduplicating. Use the job URL or `posting:<ordinal>` as the evidence
+target, and set `cv_assessed` false. The scaffold keeps the JobProfile's URL,
+including the empty string for a posting without one.
 
-Run for the retained jobs eligible for advise, even if their ResumeGuidance failed. Main derives a separate trusted source inventory from canonical `experiences.yml` `summary[]` strings, optional `projects.yml` `description[]` strings, and profile skills. Consider all achievements, not only `priority_roles`. Preserve exact source text/locations. Do not add these sources to CandidateProfile or send them to scoring, validation of match scores, or TypeSafe.
+Dispatch one worker per batch using the shared scoring flow's batching rules.
+The slice contains CandidateProfile and paired JobProfiles, scaffolds, and
+evidence cases. Omit MatchResults and posting excerpts. If scaffolding fails,
+record a guidance gap and still send the evidence cases.
 
-Load `./references/contracts/contract-resume-evidence.md` and `./references/workers/worker-resume-evidence.md`. Make requirement IDs R1.. in the existing selected JobProfile required-then-preferred order, retaining occurrences; target is job URL or `posting:<ordinal>`. Set `cv_assessed` false. Workers receive named slice files with trusted cases and no score claims. Main validates with `./scripts/resume_evidence.py` using cases/assessments payload. Store valid rows in `state.resume_evidence`; flatten invalid errors to `state.gaps` with url/path and reason, without dropping matches or existing guidance.
+Validate each returned array independently. Run `./scripts/validate_guidance.py`
+with `{"candidate", "jobs", "guidance"}` and `./scripts/resume_evidence.py`
+with `{"cases", "assessments"}`. For a missing or malformed array, record that
+half as unavailable and validate the other. Record valid rows in
+`state.guidance` or `state.resume_evidence`. Record invalid or missing rows as
+gaps with URL or path and reason. Keep the scored match and any valid peer output.
 
 ## report
 
