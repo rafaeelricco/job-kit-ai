@@ -1,6 +1,10 @@
+import io
 import json
+import sys
 import unittest
+from unittest import mock
 
+import collect as collect_module
 from collect import collect
 
 
@@ -215,6 +219,23 @@ class AshbyCollectTests(unittest.TestCase):
                 self.assertEqual(code, 0)
                 self.assertEqual(fetch.calls, [expected])
                 self.assertEqual(out["candidates"][0]["api_evidence"]["request_url"], expected)
+
+    def test_main_writes_valid_output_when_a_description_has_a_lone_surrogate(self):
+        rows = [board(), board("good", "Good", "https://jobs.ashbyhq.com/good")]
+        bodies = {
+            api_url("acme"): '{"jobs": [' + json.dumps(job())[:-1] + ', "descriptionPlain": "Great team \\ud83d"}]}',
+            api_url("good"): json.dumps({"jobs": [job("good")]}),
+        }
+        stdin = io.TextIOWrapper(io.BytesIO(json.dumps(self.payload(rows)).encode("utf-8")))
+        stdout = io.TextIOWrapper(io.BytesIO())
+        with mock.patch.object(collect_module, "http_fetch", lambda url: (200, bodies[url], None)), \
+                mock.patch.object(sys, "stdin", stdin), mock.patch.object(sys, "stdout", stdout):
+            code = collect_module.main()
+        out = json.loads(stdout.buffer.getvalue().decode("utf-8"))
+        self.assertEqual(code, 0)
+        self.assertEqual([row["status"] for row in out["slugs"]], ["ok", "ok"])
+        acme = next(row for row in out["candidates"] if row["slug"] == "acme")
+        self.assertEqual(acme["api_evidence"]["job"]["descriptionPlain"], "Great team \ud83d")
 
     def test_route_rows_and_legacy_inputs_are_validated_before_fetch(self):
         invalid_payloads = [

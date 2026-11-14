@@ -482,7 +482,8 @@ def main() -> int:
         code, result = 1, {"collect_error": "invalid JSON: {0}".format(error)}
     else:
         code, result = collect(payload, http_fetch)
-    text = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+    # ASCII escapes keep lone surrogates from raw API text encodable.
+    text = json.dumps(result, indent=2, ensure_ascii=True) + "\n"
     sys.stdout.buffer.write(text.encode("utf-8"))
     sys.stdout.buffer.flush()
     return code
