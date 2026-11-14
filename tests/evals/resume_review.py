@@ -755,6 +755,15 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                tuple(dict.fromkeys(rejected)))
 
 
+def trusted_scorers(root: Path, skills_root: Optional[Path] = None) -> Tuple[str, ...]:
+    """Every spelling of the frozen job-match scorer a session in `root` may run."""
+    scorer = Path("job-match") / "scripts" / "score.py"
+    trusted = {base / scorer for base in (skills_root or (REPO / "skill"), root / ".claude" / "skills")}
+    # The session may spell the link or its target, through the logical or physical root.
+    trusted |= {path.resolve() for path in trusted} | {root.resolve() / ".claude" / "skills" / scorer}
+    return tuple(sorted(str(path) for path in trusted))
+
+
 def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional[Path] = None,
              isolated: bool = False, prepared_prompt: Optional[str] = None) -> Tuple[Run, str]:
     scratch = root / "tmp"  # TMPDIR: the skill's temp files stay inside the workspace
@@ -781,11 +790,8 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
         partial_stderr = error.stderr or b""
         stderr = partial_stderr.decode("utf-8", "replace") if isinstance(partial_stderr, bytes) else partial_stderr
         return Run(parse(""), [], f"timed out after {TIMEOUT} s", stderr, None), stdout
-    scorer = Path("job-match") / "scripts" / "score.py"
-    trusted = {base / scorer for base in (skills_root or (REPO / "skill"), root / ".claude" / "skills")}
-    trusted |= {path.resolve() for path in trusted}  # the session may spell either form
     return read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root,
-                       scorers=tuple(sorted(str(path) for path in trusted))), proc.stdout
+                       scorers=trusted_scorers(root, skills_root)), proc.stdout
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

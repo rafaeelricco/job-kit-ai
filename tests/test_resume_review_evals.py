@@ -658,6 +658,24 @@ class RunnerTests(unittest.TestCase):
                     scorers=scorers)
                 self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
 
+    def test_trusted_scorers_include_the_physical_workspace_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            real = Path(tmp) / "real"
+            real.mkdir()
+            link = Path(tmp) / "link"
+            link.symlink_to(real, target_is_directory=True)
+            root = link / "ws"
+            resume_review.workspace(root)
+            trusted = resume_review.trusted_scorers(root)
+            scorer = Path(".claude") / "skills" / "job-match" / "scripts" / "score.py"
+            for spelled in (root / scorer, root.resolve() / scorer,
+                            resume_review.REPO / "skill" / "job-match" / "scripts" / "score.py"):
+                with self.subTest(spelled=spelled):
+                    run = resume_review.read_stream(
+                        self.scorer_events(f"python3 '{spelled}' < in.json", cwd=str(root.resolve())),
+                        scorers=trusted)
+                    self.assertIsNone(resume_review.reports_computed_match_score(run))
+
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
             {"type": "system", "subtype": "init"},
