@@ -595,18 +595,15 @@ def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
 
 
 def heredoc_as_stdin(command: str) -> Optional[str]:
-    """Join line continuations and drop one trailing heredoc body, which is the scorer's stdin.
+    """Drop one trailing heredoc body, which is the scorer's stdin, and return the command line.
 
     Follows bash: a delimiter with any quote or backslash is quoted (body kept literally,
-    delimiter compared with them removed); an unquoted body joins continuations first.
-    None when the heredoc is unterminated, another command follows its delimiter, or an
-    unquoted body runs a command substitution.
+    delimiter compared with them removed). None when the heredoc is unterminated, another
+    command follows its delimiter, or an unquoted body could expand or join lines.
     """
-    def joined(text: str) -> str:
-        return re.sub(r"\\\r?\n", "", text)
     match = re.search(r"(?<!<)<<(-?)[ \t]*((?:'[^'\n]*'|\"[^\"\n]*\"|\\.|[^\s<>|;&()'\"\\])+)", command)
     if not match:
-        return joined(command)
+        return command
     raw = match.group(2)
     quoted = any(char in raw for char in "'\"\\")
     try:
@@ -614,35 +611,44 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
     except ValueError:
         return None
     rest = command[match.end():]
-    newline = next((m.start() for m in re.finditer(r"\n", rest)
-                    if not rest[:m.start()].rstrip("\r").endswith("\\")), -1)
-    if newline < 0 or not delimiter:
+    newline = rest.find("\n")
+    line = command[:match.start()] + rest[:max(newline, 0)]
+    if newline < 0 or not delimiter or line.endswith("\\"):
         return None
-    text = rest[newline + 1:]
-    body = (text if quoted else joined(text)).split("\n")
-    strip = (lambda line: line.lstrip("\t")) if match.group(1) else (lambda line: line)
-    end = next((index for index, line in enumerate(body)
-                if strip(line.rstrip("\r")) == delimiter), None)
-    if end is None or any(line.strip() for line in body[end + 1:]):
+    body = rest[newline + 1:].split("\n")
+    strip = (lambda text: text.lstrip("\t")) if match.group(1) else (lambda text: text)
+    end = next((index for index, text in enumerate(body) if strip(text) == delimiter), None)
+    if end is None or any(text.strip() for text in body[end + 1:]):
         return None
-    if not quoted and re.search(r"\$\(|`", "\n".join(body[:end])):
-        return None  # an unquoted heredoc runs command substitutions in its body
-    line = joined(command[:match.start()] + rest[:newline])
+    if not quoted and re.search(r"[$`\\]", "\n".join(body[:end])):
+        return None  # an unquoted body expands `$`, backquotes and backslash-newlines
     return None if re.search(r"(?<!<)<<(?!<)", line) else line
+
+
+# Only these interpreter options leave score.py's own code and imports in charge.
+SAFE_OPTIONS = re.compile(r"-[uIBEsSqv]+|-X|-Xutf8|--")
+# Bash expands these after shlex has split the words (globs, braces, parameters, tilde).
+EXPANDING = re.compile(r"[{}$`*?\[\]~]")
 
 
 def untrusted_scorer_call(command: str, cwd: Optional[str], scorers: Sequence[str] = ()) -> Optional[str]:
     """None when `command` is one simple scorer call whose stdout is the scorer's JSON.
 
     Otherwise say why its output cannot be credited. Scores come only from the scorer's
-    printed stdout (flow-score.md), so a stdout redirect, a pipe or any other compound
-    command fails closed, as does a script that is not one of `scorers` when given.
+    printed stdout (flow-score.md), so anything the parser cannot read the way bash does
+    fails closed: redirects of stdout, pipes, compound commands, line continuations,
+    expansions, unknown interpreter options, `..` script paths, and a script that is not
+    one of `scorers` when given.
     """
+    if "\r" in command:
+        return "contains a carriage return"
     command = heredoc_as_stdin(command)
     if command is None:
-        return "has an unterminated heredoc, a command after it, or a substitution in it"
+        return "has a heredoc the eval cannot follow"
+    if re.search(r"\\\n", command):
+        return "has a line continuation"
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
-    lexer.whitespace = " \t\r"
+    lexer.whitespace = " \t"
     lexer.whitespace_split = True
     lexer.commenters = ""  # shlex comments start mid-word and would swallow later separators
     try:
@@ -651,44 +657,45 @@ def untrusted_scorer_call(command: str, cwd: Optional[str], scorers: Sequence[st
         return "cannot be tokenized"
     if any(token.startswith("#") for token in tokens):
         return "has a shell comment that may hide another command"
-    if any("$(" in token or "`" in token for token in tokens):
-        return "runs a command substitution"
-    while tokens and tokens[-1].isspace():
+    while tokens and tokens[-1] == "\n":
         tokens.pop()
     # A pipe or compound command can mask the scorer's failure or mix another process's
     # output into the result. Do not infer provenance without knowing shell semantics.
     if any(token and all(char in ";&|()\n" for char in token) for token in tokens):
         return "is a pipe or compound command"
+    if any(EXPANDING.search(token) for token in tokens[1:]):
+        return "has a word bash would expand"
     executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
     script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
     while script_index < len(tokens) and tokens[script_index].startswith("-"):
         option = tokens[script_index]
+        if not SAFE_OPTIONS.fullmatch(option):
+            return f"uses interpreter option {option!r}, which can change what runs"
+        if option == "-X":
+            if tokens[script_index + 1:script_index + 2] != ["utf8"]:
+                return "uses an -X setting other than utf8"
+            script_index += 1
+        script_index += 1
         if option == "--":
-            script_index += 1  # end of options: the script comes next
-            break
-        if option == "-":
-            return "reads its program from stdin instead of running score.py"
-        takes_argument = False
-        for index, flag in enumerate(option[1:] if not option.startswith("--") else ""):
-            if flag in "cm":
-                return "runs inline code or a module instead of score.py"
-            if flag in "XW":
-                takes_argument = index == len(option) - 2  # `-X utf8`, unlike `-Xutf8`
-                break
-        script_index += 2 if takes_argument else 1
+            break  # end of options: the script comes next
     if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
             or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
         return "does not run score.py directly"
+    if ".." in re.split(r"[\\/]", tokens[script_index]):
+        return "reaches score.py through a `..` segment, which a symlink can redirect"
     if scorers and transcript_path(tokens[script_index], cwd) not in {
             transcript_path(scorer, None) for scorer in scorers}:
         return "runs a score.py that is not the frozen skill's scorer"
+    def number(token: str) -> Optional[int]:
+        return int(token) if re.fullmatch(r"[0-9]+", token) else None
     for index, token in enumerate(tokens[script_index + 1:], start=script_index + 1):
         if token in ("&>", "&>>", "<>"):
             return "redirects its stdout away from the tool result"  # `<>` fails closed too
         if token in (">", ">>", ">|", ">&"):
-            descriptor = int(tokens[index - 1]) if tokens[index - 1].isdigit() else 1
-            target = tokens[index + 1] if index + 1 < len(tokens) else ""
-            if descriptor == 1 and not (token == ">&" and target.isdigit() and int(target) == 1):
+            descriptor = number(tokens[index - 1])
+            descriptor = 1 if descriptor is None else descriptor
+            target = number(tokens[index + 1]) if index + 1 < len(tokens) else None
+            if descriptor == 1 and not (token == ">&" and target == 1):
                 return "redirects its stdout away from the tool result"
     return None
 
