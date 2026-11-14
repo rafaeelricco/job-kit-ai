@@ -71,6 +71,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
+          # Full history and tags, so the packaging test can compare the
+          # required-file lists with the latest release tag's.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
