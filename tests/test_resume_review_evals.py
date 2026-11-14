@@ -535,27 +535,33 @@ class ReviewOpportunityChecks(unittest.TestCase):
 
 
 class RunnerTests(unittest.TestCase):
+    @staticmethod
+    def scorer_events(command, content='[{"match_score": 79}]', report="**Match score: 79.**",
+                      failed=False, cwd="/ws", before=()):
+        events = [{"type": "system", "subtype": "init", "cwd": cwd}, *before]
+        events += [
+            {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Bash", "id": "score-call", "input": {"command": command},
+            }]}},
+            {"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": "score-call", "is_error": failed, "content": content,
+            }]}},
+            {"type": "result", "result": report, "is_error": failed},
+        ]
+        return "\n".join(json.dumps(event) for event in events)
+
     def test_selected_job_evidence_checks_successful_scorer_output_against_report(self):
         case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
-        call = {"type": "assistant", "message": {"content": [{
-            "type": "tool_use", "name": "Bash", "id": "score-call",
-            "input": {"command": "py -3 D:/frozen/skill/job-match/scripts/score.py < score_in.json"},
-        }]}}
-        for failed, report, passes in (
-            (False, "**Score: 79, `possible_match`, confidence 0.90.**", True),
-            (False, "**Match score: 78.**", False),
-            (True, "**Score: 79.**", False),
+        command = "py -3 D:/frozen/skill/job-match/scripts/score.py < score_in.json"
+        for failed, report, content, passes in (
+            (False, "**Score: 79, `possible_match`, confidence 0.90.**", '[{"match_score": 79}]', True),
+            (False, "**Match score: 78.**", '[{"match_score": 79}]', False),
+            (True, "**Score: 79.**", '[{"match_score": 79}]', False),
+            (False, "**Score: 79.**", [{"type": "text", "text": '[{"match_score": 79}]'}], True),
+            (False, "**Score: 79.**", '[{"match_score": 79, "score_error": "x"}]', False),
         ):
-            with self.subTest(failed=failed, report=report):
-                events = [
-                    call,
-                    {"type": "user", "message": {"content": [{
-                        "type": "tool_result", "tool_use_id": "score-call", "is_error": failed,
-                        "content": '[{"match_score": 79}]',
-                    }]}},
-                    {"type": "result", "result": report, "is_error": failed},
-                ]
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+            with self.subTest(failed=failed, report=report, content=content):
+                run = resume_review.read_stream(self.scorer_events(command, content, report, failed))
                 self.assertEqual(all(check(run) is None for check in case.checks), passes)
                 self.assertEqual(bool(run.error), failed)
 
@@ -579,278 +585,71 @@ class RunnerTests(unittest.TestCase):
             ("Lumen Pay: 79, possible_match", False),
         ):
             with self.subTest(report=report):
-                events = [
-                    {"type": "assistant", "message": {"content": [{
-                        "type": "tool_use", "name": "Bash", "id": "score-call",
-                        "input": {"command": "python3 /frozen/score.py < score_in.json"},
-                    }]}},
-                    {"type": "user", "message": {"content": [{
-                        "type": "tool_result", "tool_use_id": "score-call",
-                        "content": '[{"match_score": 79}]',
-                    }]}},
-                    {"type": "result", "result": report},
-                ]
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                run = resume_review.read_stream(
+                    self.scorer_events("python3 /frozen/score.py < score_in.json", report=report))
                 self.assertEqual(all(check(run) is None for check in case.checks), passes)
 
-    def test_selected_job_evidence_rejects_stdout_from_untrusted_scorer_commands(self):
+    def test_selected_job_evidence_credits_only_a_simple_scorer_calls_printed_stdout(self):
         case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
         for command, passes in (
             ("python3 /frozen/score.py < in.json", True),
-            ("python3 /missing/score.py || printf '[{\"match_score\":79}]'", False),
-            ("python3 /frozen/score.py < in.json; echo '[{\"match_score\":79}]'", False),
-            ("python3 /frozen/score.py < in.json | tee out.json", False),
-            ("python3 /frozen/score.py < in.json > $OUT", False),
+            ("python3 /frozen/score.py < in.json 2> /tmp/err.log", True),
+            ("python3 /frozen/score.py < in.json 2>&1", True),
             ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}\nEOF", True),
             ("python3 /frozen/score.py <<-EOF\n\t{\"job\": 1}\n\tEOF\n", True),
+            ("python3 /frozen/score.py <<'JSON-EOF'\n{\"job\": 1}\nJSON-EOF", True),
             ("python3 \\\n  /frozen/score.py < in.json", True),
+            ("python3 -X utf8 /frozen/score.py < in.json", True),
+            ("python3 -Xutf8 /frozen/score.py < in.json", True),
+            ("python3 -u -W ignore /frozen/score.py < in.json", True),
+            ("python3 -u -- /frozen/score.py < in.json", True),
+            ("python3 /missing/score.py || printf '[{\"match_score\":79}]'", False),
+            ("python3 /frozen/score.py < in.json; echo '[{\"match_score\":79}]'", False),
+            ("cat in.json | python3 /frozen/score.py", False),
+            ("python3 /frozen/score.py < in.json | tee out.json", False),
             ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}\nEOF\necho '[{\"match_score\":79}]'", False),
             ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}", False),
-            ("cat /tmp/in.json | python3 /frozen/score.py", True),
-            ("echo '{\"job\": 1}' | python3 /frozen/score.py", True),
-            ("python3 /frozen/score.py <<'JSON-EOF'\n{\"job\": 1}\nJSON-EOF", True),
-            ("python3 -X utf8 /frozen/score.py < in.json", True),
-            ("python3 -u -W ignore /frozen/score.py < in.json", True),
-            ("python3 /frozen/score.py < in.json | tee out.json", False),
-            ("cat in.json | python3 /frozen/score.py | head", False),
-            ("false || cat in.json | python3 /frozen/score.py", False),
+            ("python3 /frozen/score.py <<EOF\n$(python3 -c 'print(1)')\nEOF", False),
+            ("python3 /frozen/score.py <<< \"$(cat in.json)\"", False),
             ("python3 -c 'print(1)' /frozen/score.py", False),
-            ("python3 - /frozen/score.py <<'EOF'\nprint('[{\"match_score\": 79}]')\nEOF", False),
-            ("echo 'print(1)' | python3 - /frozen/score.py", False),
-            ("python3 -u -- /frozen/score.py < in.json", True),
             ("python3 -uc 'print(1)#/score.py'", False),
             ("python3 -Im json.tool /frozen/score.py", False),
-            ("python3 -Xutf8 /frozen/score.py < in.json", True),
+            ("python3 - /frozen/score.py <<'EOF'\nprint('[{\"match_score\": 79}]')\nEOF", False),
             ("python3 /missing/score.py < in#.json; echo '[{\"match_score\": 79}]'", False),
             ("python3 /frozen/score.py < in.json # run scorer", False),
         ):
             with self.subTest(command=command):
-                events = [
-                    {"type": "assistant", "message": {"content": [{
-                        "type": "tool_use", "name": "Bash", "id": "score-call",
-                        "input": {"command": command},
-                    }]}},
-                    {"type": "user", "message": {"content": [{
-                        "type": "tool_result", "tool_use_id": "score-call",
-                        "content": '[{"match_score": 79}]',
-                    }]}},
-                    {"type": "result", "result": "**Match score: 79.**"},
-                ]
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                run = resume_review.read_stream(self.scorer_events(command))
                 self.assertEqual(all(check(run) is None for check in case.checks), passes)
 
-    @staticmethod
-    def redirected_score_events(command, read_path="/tmp/scored.json", content='[{"match_score": 79}]',
-                                score_failed=False, read_failed=False, reported=79):
-        return [
-            {"type": "system", "subtype": "init", "cwd": "/tmp/scorer-run"},
-            {"type": "assistant", "message": {"content": [{
-                "type": "tool_use", "name": "Bash", "id": "score-call",
-                "input": {"command": command},
-            }]}},
-            {"type": "user", "message": {"content": [{
-                "type": "tool_result", "tool_use_id": "score-call",
-                "is_error": score_failed, "content": "",
-            }]}},
-            {"type": "assistant", "message": {"content": [{
-                "type": "tool_use", "name": "Read", "id": "read-call",
-                "input": {"file_path": read_path},
-            }]}},
-            {"type": "user", "message": {"content": [{
-                "type": "tool_result", "tool_use_id": "read-call",
-                "is_error": read_failed, "content": content,
-            }]}},
-            {"type": "result", "result": f"**Match score: {reported}.**"},
-        ]
-
-    def test_selected_job_evidence_accepts_only_the_successful_scorers_redirected_file(self):
-        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
-        command = "python3 /frozen/skill/job-match/scripts/score.py < input.json > /tmp/scored.json"
-        numbered = '     1\u2192[\n     2\u2192  {"match_score": 79}\n     3\u2192]'
-        scenarios = (
-            ("absolute output", command, "/tmp/scored.json", '[{"match_score": 79}]',
-             False, False, 79, True),
-            ("quoted relative output", command.replace("/tmp/scored.json", '"scored result.json"'),
-             "/tmp/scorer-run/scored result.json", [{"type": "text", "text": numbered}],
-             False, False, 79, True),
-            ("numbered read with reminder", command, "/tmp/scored.json",
-             numbered + "\n\n<system-reminder>Read-only source file.</system-reminder>",
-             False, False, 79, True),
-            ("wrong reported score", command, "/tmp/scored.json", '[{"match_score": 79}]',
-             False, False, 78, False),
-            ("unrelated file", command, "/tmp/unrelated.json", '[{"match_score": 79}]',
-             False, False, 79, False),
-            ("failed scorer", command, "/tmp/scored.json", '[{"match_score": 79}]',
-             True, False, 79, False),
-            ("failed read", command, "/tmp/scored.json", '[{"match_score": 79}]',
-             False, True, 79, False),
-            ("stderr file", command.replace(" > ", " 2> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, False),
-            ("explicit stdout descriptor", command.replace(" > ", " 1> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, True),
-            ("stdout and stderr redirect", command.replace(" > ", " &> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, True),
-            ("appended stdout and stderr", command.replace(" > ", " &>> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, False),
-            ("appended stdout", command.replace(" > ", " >> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, False),
-            ("csh-style redirect", command.replace(" > ", " >& "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, True),
-            ("stderr duplicated to a file", command.replace(" > ", " 2>& "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, False),
-            ("compound cwd change", "cd /tmp/other && " + command.replace("/tmp/scored.json", "scored.json"),
-             "/tmp/scorer-run/scored.json", '[{"match_score": 79}]', False, False, 79, False),
-            ("masked scorer failure", command + " || true", "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, False),
-        )
-        for name, score_command, read_path, content, score_failed, read_failed, reported, passes in scenarios:
-            with self.subTest(name=name):
-                events = self.redirected_score_events(score_command, read_path, content,
-                                                      score_failed, read_failed, reported)
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-                self.assertIsNone(run.error)
-                self.assertEqual(all(check(run) is None for check in case.checks), passes)
-
-    def test_redirected_score_uses_supplied_cwd_without_a_stream_init_event(self):
-        events = self.redirected_score_events(
-            'python3 /frozen/score.py < input.json > "scored result.json"',
-            read_path="/tmp/scorer-run/scored result.json")
-        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events[1:]),
-                                        cwd=Path("/tmp/scorer-run"))
-        self.assertIsNone(resume_review.reports_computed_match_score(run))
-
-    def test_redirected_score_requires_the_latest_write_to_finish_successfully_before_read(self):
-        command = "python3 /frozen/score.py < input.json > /tmp/scored.json"
-        for name in ("failed rerun", "read before completion"):
-            with self.subTest(name=name):
-                events = self.redirected_score_events(command)
-                if name == "failed rerun":
-                    retry = self.redirected_score_events(command, score_failed=True)[1:3]
-                    retry[0]["message"]["content"][0]["id"] = "retry-call"
-                    retry[1]["message"]["content"][0]["tool_use_id"] = "retry-call"
-                    events[3:3] = retry
-                else:
-                    events[2], events[3] = events[3], events[2]
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-                self.assertIsNotNone(resume_review.reports_computed_match_score(run))
-
-    def test_redirected_score_is_untrusted_once_another_tool_may_rewrite_the_file(self):
-        command = "python3 /frozen/score.py < input.json > /tmp/scored.json"
-        rewrites = (
-            ("Write", {"file_path": "/tmp/scored.json", "content": '[{"match_score": 79}]'}, False),
-            ("Edit", {"file_path": "/tmp/scored.json", "old_string": "1", "new_string": "9"}, False),
-            ("Bash", {"command": "python3 -c \"open('/tmp/scored.json', 'w')\""}, False),
-            ("Bash", {"command": "mktemp"}, False),
-            ("Write", {"file_path": "/tmp/notes.md", "content": "notes"}, True),
-        )
-        for name, tool_input, passes in rewrites:
-            with self.subTest(name=name, tool_input=tool_input):
-                events = self.redirected_score_events(command)
-                events[3:3] = [
-                    {"type": "assistant", "message": {"content": [{
-                        "type": "tool_use", "name": name, "id": "rewrite-call", "input": tool_input,
-                    }]}},
-                    {"type": "user", "message": {"content": [{
-                        "type": "tool_result", "tool_use_id": "rewrite-call", "content": "",
-                    }]}},
-                ]
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-                self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
-
-    def test_redirected_score_credits_only_absolute_paths_after_a_directory_change(self):
-        for change in ("cd tmp", "pushd tmp", "popd"):
-            for output, read_path, passes in (
-                ("scored.json", "/tmp/scorer-run/scored.json", False),
-                ("scored.json", "/tmp/scorer-run/tmp/scored.json", False),
-                ("/tmp/scored.json", "/tmp/scored.json", True),
-            ):
-                with self.subTest(change=change, output=output, read_path=read_path):
-                    events = self.redirected_score_events(
-                        f"python3 /frozen/score.py < /tmp/in.json > {output}", read_path=read_path)
-                    events[1:1] = [
-                        {"type": "assistant", "message": {"content": [{
-                            "type": "tool_use", "name": "Bash", "id": "cd-call",
-                            "input": {"command": change},
-                        }]}},
-                        {"type": "user", "message": {"content": [{
-                            "type": "tool_result", "tool_use_id": "cd-call", "content": "",
-                        }]}},
-                    ]
-                    run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-                    self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
-
-    def test_redirected_score_matches_git_bash_and_native_windows_paths(self):
-        for output, read_path in (
-            ("/c/Users/me/ws/tmp/out.json", r"C:\Users\me\ws\tmp\out.json"),
-            (r"C:/Users/me/ws/tmp/out.json", "/c/Users/me/ws/tmp/out.json"),
-            ("tmp/out.json", r"C:\Users\me\ws\tmp\out.json"),
-        ):
-            with self.subTest(output=output, read_path=read_path):
-                events = self.redirected_score_events(
-                    f"py -3 C:/s/score.py < in.json > {output}", read_path=read_path)
-                events[0]["cwd"] = "/c/Users/me/ws"
-                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-                self.assertIsNone(resume_review.reports_computed_match_score(run))
-
-    def test_redirected_score_is_untrusted_after_a_pipe_feeder_may_rewrite_it(self):
-        events = self.redirected_score_events("python3 /frozen/score.py < in.json > /tmp/scored.json")
-        events[3:3] = [
-            {"type": "assistant", "message": {"content": [{
-                "type": "tool_use", "name": "Bash", "id": "piped-call",
-                "input": {"command": "echo x > /tmp/scored.json | python3 /frozen/score.py"},
-            }]}},
-            {"type": "user", "message": {"content": [{
-                "type": "tool_result", "tool_use_id": "piped-call", "is_error": True, "content": "",
-            }]}},
-        ]
-        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-        self.assertIsNotNone(resume_review.reports_computed_match_score(run))
-
-    def test_pending_scorer_redirect_is_untrusted_when_a_parallel_pipe_feeder_runs(self):
-        forge = "python3 -c \"open('/tmp/scored.json', 'w')\" | python3 /frozen/score.py > /tmp/other.json"
-        events = self.redirected_score_events("python3 /frozen/score.py < input.json > /tmp/scored.json")
-        events[1]["message"]["content"].append(
-            {"type": "tool_use", "name": "Bash", "id": "piped-call", "input": {"command": forge}})
-        events[2]["message"]["content"].append(
-            {"type": "tool_result", "tool_use_id": "piped-call", "content": ""})
-        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-        self.assertIsNotNone(resume_review.reports_computed_match_score(run))
-
-    def test_redirected_scorer_result_is_never_decoded_as_scorer_json(self):
-        feeder = "python3 -c \"import sys; sys.stderr.write('[{\\\"match_score\\\": 79}]')\""
-        events = [
-            {"type": "assistant", "message": {"content": [{
-                "type": "tool_use", "name": "Bash", "id": "score-call",
-                "input": {"command": feeder + " | python3 /frozen/score.py > /tmp/o.json"},
-            }]}},
-            {"type": "user", "message": {"content": [{
-                "type": "tool_result", "tool_use_id": "score-call", "content": '[{"match_score": 79}]',
-            }]}},
-            {"type": "result", "result": "**Match score: 79.**"},
-        ]
-        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
-        self.assertEqual(run.match_scores, ())
+    def test_redirected_scorer_stdout_fails_closed_with_a_clear_reason(self):
+        for operator in (">", "1>", ">>", "&>", "&>>", ">&", ">|"):
+            with self.subTest(operator=operator):
+                run = resume_review.read_stream(self.scorer_events(
+                    f"python3 /frozen/score.py < in.json {operator} /tmp/scored.json"))
+                self.assertEqual(run.match_scores, ())
+                problem = resume_review.reports_computed_match_score(run)
+                self.assertIn("redirects its stdout away from the tool result", problem)
 
     def test_only_the_frozen_scorer_is_trusted_when_scorer_paths_are_given(self):
-        for script, passes in (("/ws/.claude/skills/job-match/scripts/score.py", True),
-                               ("/snap/job-match/scripts/score.py", True),
-                               ("/ws/tmp/score.py", False),
-                               ("tmp/score.py", False)):
-            with self.subTest(script=script):
-                events = [
-                    {"type": "system", "subtype": "init", "cwd": "/ws"},
-                    {"type": "assistant", "message": {"content": [{
-                        "type": "tool_use", "name": "Bash", "id": "score-call",
-                        "input": {"command": f"python3 {script} < in.json"},
-                    }]}},
-                    {"type": "user", "message": {"content": [{
-                        "type": "tool_result", "tool_use_id": "score-call", "content": '[{"match_score": 79}]',
-                    }]}},
-                    {"type": "result", "result": "**Match score: 79.**"},
-                ]
+        scorers = ("/ws/.claude/skills/job-match/scripts/score.py", "/snap/job-match/scripts/score.py",
+                   "C:/snap/job-match/scripts/score.py")
+        for script, cwd, before, passes in (
+            ("/ws/.claude/skills/job-match/scripts/score.py", "/ws", (), True),
+            ("/snap/job-match/scripts/score.py", "/ws", (), True),
+            (".claude/skills/job-match/scripts/score.py", "/ws", (), True),
+            ("/c/snap/job-match/scripts/score.py", "/ws", (), True),
+            (r'"C:\snap\job-match\scripts\score.py"', "/ws", (), True),
+            ("/ws/tmp/score.py", "/ws", (), False),
+            ("tmp/score.py", "/ws", (), False),
+            (".claude/skills/job-match/scripts/score.py", "/ws", ({"type": "assistant", "message": {
+                "content": [{"type": "tool_use", "name": "Bash", "id": "cd-call",
+                             "input": {"command": "cd tmp"}}]}},), False),
+        ):
+            with self.subTest(script=script, before=bool(before)):
                 run = resume_review.read_stream(
-                    "\n".join(json.dumps(event) for event in events), scorers=(
-                        "/ws/.claude/skills/job-match/scripts/score.py", "/snap/job-match/scripts/score.py"))
+                    self.scorer_events(f"python3 {script} < in.json", cwd=cwd, before=before),
+                    scorers=scorers)
                 self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
 
     def test_read_stream_takes_final_result_and_bash_commands(self):
