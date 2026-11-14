@@ -34,8 +34,9 @@ ad reads and the caller handles that wall separately.
 
 Read `data/cvs.yaml`: `adapt_per_vacancy` (absent means `true`) and `base`.
 Apply evaluates its own rule 0 before these shared rules; Prep starts at rule
+
 1. The chosen file must open as a PDF. Never author LaTeX, compile, or carry a
-`.tex` file.
+   `.tex` file.
 
 1. `adapt_per_vacancy` is true and the dossier's frontmatter `status:` is
    `new` → print `Chained job-resume-refine · {filename}` and spawn one
@@ -51,11 +52,11 @@ Apply evaluates its own rule 0 before these shared rules; Prep starts at rule
    child outcome, including `refinement is off`, produces no PDF for this
    rule.
 
-2. Rule 1 produced no PDF and `adapt_per_vacancy` is true → a leftover
+1. Rule 1 produced no PDF and `adapt_per_vacancy` is true → a leftover
    `scout/applications/{slug}/*_Resume.pdf` whose `match-report.md` prints
    `verdict: **PASS**`.
 
-3. `base` under `cv/`; absent, unreadable, or empty →
+1. `base` under `cv/`; absent, unreadable, or empty →
    `cv/en-us-resume.pdf`.
 
 If the selected file is not a readable PDF, the caller skips the posting.
