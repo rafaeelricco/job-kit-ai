@@ -583,26 +583,30 @@ def transcript_path(path: str, cwd: Optional[str]) -> str:
     return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
 
 
-def scorer_output_paths(command: str, cwd: Optional[str]) -> Tuple[str, ...]:
-    """Find literal stdout targets of simple Python scorer commands."""
+def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str, ...]]:
+    """Find literal stdout targets of simple Python scorer commands.
+
+    None means the command is not a scorer invocation we can trust (compound, not
+    score.py, or an unresolvable redirect); () means the scorer writes JSON to stdout.
+    """
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
     lexer.whitespace = " \t\r"
     lexer.whitespace_split = True
     try:
         tokens = list(lexer)
     except ValueError:
-        return ()
+        return None
     while tokens and tokens[-1].isspace():
         tokens.pop()
     # Compound commands can change cwd or mask the scorer's failure. Do not
     # infer an artifact's provenance without knowing shell execution semantics.
     if any(token and all(char in ";&|()\n" for char in token) for token in tokens):
-        return ()
+        return None
     executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
     script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
     if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
             or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
-        return ()
+        return None
     output = None
     for index in range(script_index + 1, len(tokens) - 1):
         if tokens[index] not in (">", ">>"):
@@ -610,9 +614,11 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Tuple[str, ...]:
         if tokens[index - 1].isdigit() and tokens[index - 1] != "1":
             continue  # stderr and other descriptors are not scorer JSON
         output = tokens[index + 1]
-    if output and not any(char in output for char in "$`~"):
-        return (transcript_path(output, cwd),)
-    return ()
+    if output is None:
+        return ()
+    if any(char in output for char in "$`~"):
+        return None
+    return (transcript_path(output, cwd),)
 
 
 def tool_json(content: object, file_read: bool = False) -> object:
@@ -658,8 +664,9 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                 commands.append(command)
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
                     paths = scorer_output_paths(command, working_dir)
-                    scorer_calls[block["id"]] = paths
-                    scorer_files.difference_update(paths)
+                    if paths is not None:
+                        scorer_calls[block["id"]] = paths
+                        scorer_files.difference_update(paths)
             if block.get("type") == "tool_use" and block.get("name") == "Read" and block.get("id"):
                 path = block.get("input", {}).get("file_path")
                 if isinstance(path, str):
