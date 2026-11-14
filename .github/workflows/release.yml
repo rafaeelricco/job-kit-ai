@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   admission:
-    if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    if: github.repository == 'rafaeelricco/job-kit-ai' && github.event.pull_request.merged == true
+    runs-on: r1cco-ci
     outputs:
       proceed: ${{ steps.admit.outputs.proceed }}
       merge_sha: ${{ steps.admit.outputs.merge_sha }}
@@ -39,14 +39,14 @@ jobs:
 
   verify:
     needs: admission
-    if: needs.admission.outputs.proceed == 'true'
+    if: github.repository == 'rafaeelricco/job-kit-ai' && needs.admission.outputs.proceed == 'true'
     uses: ./.github/workflows/test.yml
     with:
       ref: ${{ needs.admission.outputs.merge_sha }}
 
   publish:
     needs: [admission, verify]
-    runs-on: ubuntu-latest
+    runs-on: r1cco-ci
     permissions:
       contents: write
     steps:

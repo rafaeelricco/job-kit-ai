@@ -35,21 +35,21 @@ on:
 
 jobs:
   release_types:
-    runs-on: ubuntu-latest
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: r1cco-ci
     name: Release automation types
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: "10.33.0"
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-          cache: pnpm
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.33.0"
 
       - name: Install development dependencies
         run: pnpm install --frozen-lockfile
@@ -58,8 +58,9 @@ jobs:
         run: pnpm typecheck:release
 
   pipeline:
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     # setup-python ships no 3.9 build for ubuntu-26.04, which ubuntu-latest now resolves to.
-    runs-on: ${{ matrix.python-version == '3.9' && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    runs-on: r1cco-ci
     strategy:
       fail-fast: false
       matrix:
@@ -89,7 +90,8 @@ jobs:
         run: bash scripts/test.sh
 
   shell:
-    runs-on: ubuntu-latest
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: r1cco-ci
     name: Shell script syntax
     steps:
       - uses: actions/checkout@v4
@@ -106,11 +108,13 @@ jobs:
           exit $status
 
   release_installers:
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        # Native macOS/Windows installer coverage is disabled; this pool is Linux VPS only.
+        os: [ubuntu-latest]
+    runs-on: r1cco-ci
     name: Release installers (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v4
