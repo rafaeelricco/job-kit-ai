@@ -591,12 +591,38 @@ def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
     return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
 
 
+def heredoc_as_stdin(command: str) -> Optional[str]:
+    """Join line continuations and drop one trailing heredoc body, which is the scorer's stdin.
+
+    None when the heredoc is unterminated or another command follows its delimiter.
+    """
+    command = re.sub(r"\\\r?\n", " ", command)
+    match = re.search(r"(?<!<)<<(-?)\s*(['\"]?)([A-Za-z_]\w*)\2", command)
+    if not match:
+        return command
+    rest = command[match.end():]
+    newline = rest.find("\n")
+    if newline < 0:
+        return None
+    body = rest[newline + 1:].split("\n")
+    strip = (lambda line: line.lstrip("\t")) if match.group(1) else (lambda line: line)
+    end = next((index for index, line in enumerate(body)
+                if strip(line.rstrip("\r")) == match.group(3)), None)
+    if end is None or any(line.strip() for line in body[end + 1:]):
+        return None
+    line = command[:match.start()] + rest[:newline]
+    return None if re.search(r"(?<!<)<<(?!<)", line) else line
+
+
 def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str, ...]]:
     """Find literal stdout targets of simple Python scorer commands.
 
     None means the command is not a scorer invocation we can trust (compound, not
     score.py, or an unresolvable redirect); () means the scorer writes JSON to stdout.
     """
+    command = heredoc_as_stdin(command)
+    if command is None:
+        return None
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
     lexer.whitespace = " \t\r"
     lexer.whitespace_split = True

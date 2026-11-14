@@ -601,6 +601,11 @@ class RunnerTests(unittest.TestCase):
             ("python3 /frozen/score.py < in.json; echo '[{\"match_score\":79}]'", False),
             ("python3 /frozen/score.py < in.json | tee out.json", False),
             ("python3 /frozen/score.py < in.json > $OUT", False),
+            ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}\nEOF", True),
+            ("python3 /frozen/score.py <<-EOF\n\t{\"job\": 1}\n\tEOF\n", True),
+            ("python3 \\\n  /frozen/score.py < in.json", True),
+            ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}\nEOF\necho '[{\"match_score\":79}]'", False),
+            ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}", False),
         ):
             with self.subTest(command=command):
                 events = [
