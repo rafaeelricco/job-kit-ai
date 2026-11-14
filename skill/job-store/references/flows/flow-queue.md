@@ -16,6 +16,11 @@ A dossier is apply-eligible when every clause holds, first failure named:
 | 6   | Posting facts `eligibility` is not `incompatible` (`unknown` passes)                                                                                                                                                                                                                                                                        | `Incompatible per scout/jobs/{filename}: {eligibility_evidence}` |
 | 7   | Run `job-store/scripts/pay.py` (launcher as `job-store/references/schemas/schema-dossier.md` "URL normalize") with the current `job_search.yaml` `salary_expectations.min` and this row's raw `salary`. Fail only when the result's `below_min` is true. Use that result's `pay_usd_year` in the message. Ignore any legacy dossier `pay_usd_year` row. | `Pay below min per scout/jobs/{filename}: {pay_usd_year}`        |
 
+Before checking any row, a valued `salary_expectations.salary_range_usd`, a
+`min` / `target` with `amount` or `period`, or a `pay.py` exit 1 stops the
+queue: name the key or the `pay_error`, and migrate via `/job-profile`. No row
+passes clause 7 on a stop.
+
 Clause 5 is the only company+title comparison in the kit; identity stays the
 normalized `url`. A caller may state a retry exception for clause 3 or a
 proceed exception for clause 5; clauses 1, 2, 4, 6, and 7 have none. `unknown`
