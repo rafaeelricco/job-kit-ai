@@ -662,10 +662,12 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
         return None
     output = None
     for index in range(script_index + 1, len(tokens) - 1):
-        if tokens[index] not in (">", ">>"):
+        if tokens[index] not in (">", ">>", "&>", "&>>", ">&"):
             continue
-        if tokens[index - 1].isdigit() and tokens[index - 1] != "1":
+        if tokens[index] in (">", ">>", ">&") and tokens[index - 1].isdigit() and tokens[index - 1] != "1":
             continue  # stderr and other descriptors are not scorer JSON
+        if tokens[index] == ">&" and (tokens[index + 1].isdigit() or tokens[index + 1] == "-"):
+            continue  # descriptor duplication or close, not a file
         output = tokens[index + 1]
     if output is None:
         return ()
