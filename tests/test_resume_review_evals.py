@@ -570,8 +570,13 @@ class RunnerTests(unittest.TestCase):
             ("1. **Score:** 79", True),
             ("Match score = 79", True),
             ("## Lumen Pay — Match score: 79", True),
+            ("| Job | Score | Decision |\n|---|---|---|\n| Lumen Pay | 79 | possible_match |", True),
+            ("Match score (0-100): 79", True),
+            ("Fit: possible_match (79/100)", True),
             ("| Match score | 78 |", False),
             ("Score — 790", False),
+            ("Score: 0.79", False),
+            ("Lumen Pay: 79, possible_match", False),
         ):
             with self.subTest(report=report):
                 events = [
