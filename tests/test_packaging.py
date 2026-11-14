@@ -207,6 +207,15 @@ class RequiredFilesTests(unittest.TestCase):
                     )
 
     def test_shell_installer_is_executable(self):
+        if sys.platform == "win32":
+            # Windows cannot expose a shell script's POSIX mode through stat.
+            entry = subprocess.check_output(
+                ["git", "ls-files", "--stage", "--", "scripts/remote.sh"],
+                cwd=REPO,
+                text=True,
+            )
+            self.assertTrue(entry.startswith("100755 "), entry)
+            return
         self.assertTrue(
             REMOTE_SH.stat().st_mode & 0o111,
             "scripts/remote.sh must remain directly executable",
