@@ -597,27 +597,37 @@ def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
 def heredoc_as_stdin(command: str) -> Optional[str]:
     """Join line continuations and drop one trailing heredoc body, which is the scorer's stdin.
 
+    Follows bash: a delimiter with any quote or backslash is quoted (body kept literally,
+    delimiter compared with them removed); an unquoted body joins continuations first.
     None when the heredoc is unterminated, another command follows its delimiter, or an
     unquoted body runs a command substitution.
     """
-    command = re.sub(r"\\\r?\n", " ", command)
-    match = re.search(r"(?<!<)<<(-?)[ \t]*(?:'([^'\n]+)'|\"([^\"\n]+)\"|([^\s<>|;&()'\"]+))", command)
+    def joined(text: str) -> str:
+        return re.sub(r"\\\r?\n", "", text)
+    match = re.search(r"(?<!<)<<(-?)[ \t]*((?:'[^'\n]*'|\"[^\"\n]*\"|\\.|[^\s<>|;&()'\"\\])+)", command)
     if not match:
-        return command
-    delimiter = match.group(2) or match.group(3) or match.group(4)
-    rest = command[match.end():]
-    newline = rest.find("\n")
-    if newline < 0:
+        return joined(command)
+    raw = match.group(2)
+    quoted = any(char in raw for char in "'\"\\")
+    try:
+        delimiter = "".join(shlex.split(raw))
+    except ValueError:
         return None
-    body = rest[newline + 1:].split("\n")
+    rest = command[match.end():]
+    newline = next((m.start() for m in re.finditer(r"\n", rest)
+                    if not rest[:m.start()].rstrip("\r").endswith("\\")), -1)
+    if newline < 0 or not delimiter:
+        return None
+    text = rest[newline + 1:]
+    body = (text if quoted else joined(text)).split("\n")
     strip = (lambda line: line.lstrip("\t")) if match.group(1) else (lambda line: line)
     end = next((index for index, line in enumerate(body)
                 if strip(line.rstrip("\r")) == delimiter), None)
     if end is None or any(line.strip() for line in body[end + 1:]):
         return None
-    if match.group(4) and re.search(r"\$\(|`", "\n".join(body[:end])):
+    if not quoted and re.search(r"\$\(|`", "\n".join(body[:end])):
         return None  # an unquoted heredoc runs command substitutions in its body
-    line = command[:match.start()] + rest[:newline]
+    line = joined(command[:match.start()] + rest[:newline])
     return None if re.search(r"(?<!<)<<(?!<)", line) else line
 
 
@@ -673,12 +683,12 @@ def untrusted_scorer_call(command: str, cwd: Optional[str], scorers: Sequence[st
             transcript_path(scorer, None) for scorer in scorers}:
         return "runs a score.py that is not the frozen skill's scorer"
     for index, token in enumerate(tokens[script_index + 1:], start=script_index + 1):
-        if token in ("&>", "&>>"):
-            return "redirects its stdout away from the tool result"
+        if token in ("&>", "&>>", "<>"):
+            return "redirects its stdout away from the tool result"  # `<>` fails closed too
         if token in (">", ">>", ">|", ">&"):
-            descriptor = tokens[index - 1] if tokens[index - 1].isdigit() else "1"
+            descriptor = int(tokens[index - 1]) if tokens[index - 1].isdigit() else 1
             target = tokens[index + 1] if index + 1 < len(tokens) else ""
-            if descriptor == "1" and not (token == ">&" and target == "1"):
+            if descriptor == 1 and not (token == ">&" and target.isdigit() and int(target) == 1):
                 return "redirects its stdout away from the tool result"
     return None
 
