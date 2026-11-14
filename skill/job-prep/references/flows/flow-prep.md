@@ -81,48 +81,53 @@ has exactly one final outcome.
 
 ## 2. Liveness
 
-Open the `url`. A posting dead by the signals of
-`job-apply/references/flows/flow-apply.md` §2 gets that section's one-line
-append — same lock, `{reason}` rule, and skip when the latest posting-state
-line already reads dead — with job-prep as writer:
+Load `job-apply/references/contracts/contract-application-inputs.md` §1 and
+read the live ad. A read-blocker skips the posting; job-prep never signs in.
+A dead posting by §1's signals gets one line under the
+`job-store/references/contracts/contract-persistence.md` lock, unless the
+latest posting-state line already reads dead per
+`job-store/references/flows/flow-read.md`. Append exactly one line below the
+ownership marker:
 
     - {YYYY-MM-DD} · posting dead: {reason} — job-prep
 
-`{reason}` is posting-derived: never let it contain the ownership marker. Add
-the posting and reason to `### Dead`, then take the next; a dead posting gets
-no `plan.json`.
+Use §1's `{reason}` rule. It is posting-derived: never let it contain the
+ownership marker. Add the posting and reason to `### Dead`, then take the
+next; a dead posting gets no `plan.json`.
 
 ## 3. Read · 4. CV · 5. Fields
 
-Obey `job-apply/references/flows/flow-apply.md` §2, §3, and §4 verbatim, with these
-substitutions:
+Load `job-apply/references/contracts/contract-application-inputs.md` §§2–3 and
+`job-apply/references/contracts/contract-screening.md`. Use the live ad read in
+§2 above, the shared CV rules, and the shared field discovery and screening
+map with these Prep-specific behaviors:
 
-- `--prepared-only` and `send` are absent and §5 is unreachable. Nothing that posts or saves is ever clicked;
-  "Save draft", "Continue" past the last read-only step, and account creation
-  count as posting.
-- §2 read-blocker clearing is disabled: a read-blocker skips the posting;
-  job-prep never signs in. A plan is written only for an ad that read this run.
-- §3 rule 0 is disabled for every prep run, including explicit `<dossier>` queues.
-  Start at rule 1, which chains `job-resume-refine`; its PDF
-  is this plan's `cv`. Rule 2 or 3 → `cv` is that path.
-- §4 stages values but prints no package. Record every field the form asks
-  except the CV upload control as a `fields[]` row per
-  `./references/schemas/schema-plan.md`, which owns `source` and how `cv`
-  represents the upload. Compose no free
+- `--prepared-only` and `send` are absent and no Apply submit step is reachable.
+  Never fill live fields or click any submit, post, or save control; "Save draft",
+  "Continue" past the last read-only step, and account creation count as
+  posting. Stage resolved values for the offline plan and package only. A plan
+  is written only for an ad that read this run.
+- Apply's CV rule 0 does not apply to Prep, including explicit `<dossier>`
+  queues. Start at shared rule 1, which chains `job-resume-refine`; its PDF is
+  this plan's `cv`. Shared rule 2 or 3 → `cv` is that path.
+- Record every field the form asks except the CV upload control as a
+  `fields[]` row per `./references/schemas/schema-plan.md`, which owns
+  `source` and how `cv` represents the upload. Compose no free
   text — no cover letter, message, or essay: a composed-prose field is recorded
   with `"value": null` and `"source": "authored"`; job-apply §4 authors it at
-  apply time. A required field the resolution order cannot fill (rule 7) is
-  a `needs_you` entry. A wall on the apply path (captcha, bot check, account
-  demanded) is its own exact string in `walls`, never cleared here — job-apply
-  §5 clears it at apply time; never join distinct wall values.
-- `channel: ats`: load the field map for the URL host's family (`job-store/references/schemas/schema-dossier.md` "ATS family") as the starting guess —
+  apply time. Rule 6 fields use the decline option when available; a required
+  rule 6 field with no decline option skips the posting. A required field left
+  unanswered by rule 7 is a `needs_you` entry. A wall on the apply path
+  (captcha, bot check, account demanded) is its own exact string in `walls`,
+  never cleared here — job-apply §5 clears it at apply time; never join
+  distinct wall values.
+- `channel: ats`: load the field map for the URL host's family (`job-store/references/schemas/schema-dossier.md` "ATS family") as the starting guess -
   `./references/ats/ats-greenhouse.md`, `./references/ats/ats-lever.md`, or
-  `./references/ats/ats-ashby.md`; any other host has none. The live form wins; a
-  mapped selector absent this run is dropped from the plan. Custom questions are
-  per-posting and never cached across companies.
+  `./references/ats/ats-ashby.md`; any other host has none. Use these selectors
+  only as hints under shared §3.
 - `channel: dm_request`, `direct_email`, or `founder`: no form. `ats` is
   `null`, `fields` is `[]`, and `needs_you` is `[]`; job-apply §4 authors the
-  outbound message at send time. The CV still resolves per §3.
+  outbound message at send time. The CV resolves under shared §2.
 
 ## 6. Plan
 

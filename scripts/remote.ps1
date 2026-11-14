@@ -106,6 +106,7 @@ $script:KitRequiredFiles = $script:KitOwnershipFiles + @(
   'skill\job-list\SKILL.md',
   'skill\job-list\references\flows\flow-job-list.md',
   'skill\job-match\SKILL.md',
+  'skill\job-apply\references\contracts\contract-application-inputs.md',
   'skill\job-match\scripts\score.py',
   'skill\job-match\scripts\models.py',
   'skill\job-match\scripts\scaffold_guidance.py',

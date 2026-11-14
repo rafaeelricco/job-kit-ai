@@ -15,7 +15,8 @@ Store law: load the `job-store` skill now; obey it end-to-end.
 
 Resolve every profile path against Profile root (not CWD, not skill dir).
 Unreadable Profile root, or a present but unreadable `data/cvs.yaml` → stop and
-say so; an absent `data/cvs.yaml` falls back per `flow-apply.md` §3.
+say so; an absent `data/cvs.yaml` falls back per
+`./references/contracts/contract-application-inputs.md` §2 rule 3.
 `data/candidate.yaml` present → stop; migrate via `/job-profile`.
 
 ## Writes

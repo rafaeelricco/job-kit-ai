@@ -110,44 +110,32 @@ unless it names account creation.
 
 ## 2. Read
 
-Read the dossier, then open its `url`. `## The role` is a snapshot that may have
-gone stale; the live page wins.
-
-Reader SSOT: `job-store/references/flows/flow-read.md`. A dossier that will not read or
-parse is this posting's failure: name the path, skip it. Never repair it.
-
-Print `{company} · {title} · {channel} · {url}` — frontmatter values, except
-where the live page corrects one. `channel` is `ats`, `direct_email`,
-`dm_request`, or `founder`; no route printed is `—`.
-
-A URL that redirects to the board's index, or a page that prints 404, expired,
-filled, withdrawn, or that it is not accepting applications → quote any printed
-line and, unless the dossier's latest posting-state line already reads dead per
+Load `./references/contracts/contract-application-inputs.md` and obey §1 for
+the live ad, its identity, and liveness signals. Print
+`{company} · {title} · {channel} · {url}` using the live correction rules
+there. For a dead dossier-backed posting, unless
+the dossier's latest posting-state line already reads dead per
 `job-store/references/flows/flow-read.md`, append under the
 `job-store/references/contracts/contract-persistence.md` lock exactly one line below the
 ownership marker:
-`- {YYYY-MM-DD} · posting dead: {reason} — job-apply`, where `{reason}` is the
-quoted page line collapsed to one line and cut at 80 characters, or `http 404`
-/ `redirect to board index` when no line printed. Touch nothing else — not
-`status:`, not the body. Then skip this posting.
+`- {YYYY-MM-DD} · posting dead: {reason} — job-apply`. Touch nothing else —
+not `status:`, not the body. A dead dossier-less URL gets no write. Skip every
+dead posting.
 
-A **read-blocker** is anything that stops this run reading the ad itself: a
-sign-in on the posting page, an account wall in front of it, an SSO handoff.
-Clear it only with a session the browser already holds that the page shows
-signed in as `data/basics.yaml` `email`, or a `Continue with
+Clear a **read-blocker** only with a session the browser already holds that
+the page shows signed in as `data/basics.yaml` `email`, or a `Continue with
 Google` control signed in as that `email`; a held session showing another
 identity, or none the page prints, is never used. Never type a password,
 never create an account. A wall that only opens by creating an account skips
 the posting, reason `account creation required`; still blocked for any other
 reason leaves it unfinished, name why.
 
-A check on the **apply path only** — a captcha, a bot check, an account the form
-demands at submit — is not a read-blocker. The ad reads, so the package is built;
-§5 clears the wall.
-
 ## 3. CV
 
-Read `data/cvs.yaml`: `adapt_per_vacancy` (absent → true) and `base`.
+Load `./references/contracts/contract-application-inputs.md` §2, which reads
+`data/cvs.yaml` once and defines shared rules 1–3. Apply evaluates its
+prepared-plan rule 0 first; if rule 0 does not resolve the CV and does not
+require a `--prepared-only` skip, continue with rules 1–3.
 
 Exactly one CV per application, first match:
 
@@ -168,39 +156,20 @@ Exactly one CV per application, first match:
    `/job-apply {filename}` without `--prepared-only`; never fall through under
    advance approval. Without `--prepared-only`, fall through to rule 1.
 
-1. `adapt_per_vacancy` is true and this dossier's frontmatter `status:` is `new`
-   → print `Chained job-resume-refine · {filename}` and spawn one isolated child:
-
-       Load the job-resume-refine skill and obey it end-to-end.
-       Argument: {filename}
-
-   One argument, always: that skill refuses a second argument and returns no PDF.
-
-   Take its PDF only when the child printed `verdict: **PASS**` and exactly one
-   `scout/applications/{slug}/*_Resume.pdf` opens as a PDF. `{slug}` is
-   `{filename}` minus `.md`, never rebuilt from company and title. Any other
-   child outcome, including `refinement is off`, falls through.
-
-2. Rule 1 produced no PDF and `adapt_per_vacancy` is true → a leftover
-   `scout/applications/{slug}/*_Resume.pdf` whose `match-report.md` prints
-   `verdict: **PASS**`.
-
-3. `base` under `cv/`; absent, unreadable, or empty → `cv/en-us-resume.pdf`.
-
-The file must open as a PDF or this posting is skipped. Never author LaTeX,
-never compile, never carry a `.tex`.
+The selected file must open as a PDF or this posting is skipped.
 
 ## 4. Package
 
-Load `./references/contracts/contract-screening.md`. Load
+Load `./references/contracts/contract-application-inputs.md` §3 and
+`./references/contracts/contract-screening.md`. Load
 `./references/contracts/contract-prose.md` the first time
 a field wants composed prose.
 
-Open the apply path and read its fields. Label is not authority: a control that
-only reveals the form is navigation and is allowed here; the same label that
-posts is submit, and nothing that posts is clicked before §5.
+Open the apply path and discover its live fields per the shared contract.
+Label is not authority: a control that posts is submit, and nothing that posts
+is clicked before §5.
 
-Stage a value for every field the form asks by the resolution order in
+Resolve every field the form asks by the resolution order in
 `contract-screening.md`. A composed-prose field — cover letter, message,
 essay, a question that wants sentences — is authored under
 `contract-prose.md`: draft from its named sources, then load the
@@ -259,7 +228,8 @@ tool name; none resolvable → skip the posting, reason `no mail transport`.
    is in flight before anything else is clicked. An upload the form refuses
    is retried: re-attach up to three times. Still refused under `--prepared-only` or a
    rule-0 plan → skip the posting, reason `upload refused`; the approved bytes
-   did not go. Otherwise resolve `base` by §3 rule 3 — it must open as a PDF,
+   did not go. Otherwise resolve `base` by
+   `contract-application-inputs.md` §2 rule 3 — it must open as a PDF,
    else skip — attach it once, and reprint the full package with `### CV` as
    `base`, `why` `upload refused, rule 3`, and a `### Cleared` line
    `upload refused — base attached, attempt 4`; still refused → skip the
