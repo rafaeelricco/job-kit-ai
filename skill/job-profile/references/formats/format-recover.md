@@ -3,7 +3,7 @@
 ## Why dual-home
 
 Aside `$HOME` is often `…/.aside/runtime/home`, so this process may lack
-`PROFILE_ROOT`. Host pointer + host-default probe (SKILL steps 3–4) bridge host
+`PROFILE_ROOT`. Host pointer + host-default probe (`flow-resolve-root.md`) bridge host
 and Aside.
 
 ## Who writes pointers

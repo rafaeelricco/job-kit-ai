@@ -1,7 +1,3 @@
----
-name: job-profile-root
-description: "Print the absolute job-kit Profile root path. Read-only."
----
 
 # Job profile root
 

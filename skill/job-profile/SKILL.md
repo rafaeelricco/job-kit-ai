@@ -1,21 +1,27 @@
 ---
 name: job-profile
-description: "Create, register, or edit a job-search profile. Use when the user runs /job-profile, /job-profile-init, or /job-profile-me, asks to scaffold a profile, show search config, change positions or packs, or what is missing for scout."
-argument-hint: "[show | gaps | cv | continue fill [<field>] | search set … | packs [list|enable|disable|formulations|location|add|remove] … | card refresh | cv set … | qa <add|answer|remove|ingest> …]"
+description: "Create, register, or edit a job-search profile. Use when the user runs /job-profile, asks to scaffold a profile, show search config, change positions or packs, resolve Profile root, or what is missing for scout."
+argument-hint: "[root | show | gaps | cv | continue fill [<field>] | search set … | packs [list|enable|disable|formulations|location|add|remove] … | card refresh | cv set … | qa <add|answer|remove|ingest> …]"
 ---
 
 # Job profile
 
 Create or register a profile, or edit one that already exists.
 
+## Root route (first)
+
+When the operator runs `/job-profile root`, read
+`./references/flows/flow-resolve-root.md` now, obey it end-to-end, and stop.
+A calling skill that needs Profile-root resolution reads that same reference
+directly and obeys it end-to-end.
+
 **Init** (create / register): when the operator asks to create / scaffold /
 register a profile, or no Profile root resolves: if `$HOME` ends with
 `/.aside/runtime/home`, STOP — profile setup requires a coding agent.
 Otherwise read `./references/flows/flow-intake.md` now and obey it
-end-to-end. Do not load `job-profile-root` on the create path.
+end-to-end. Do not load the root resolver on the create path.
 
-When a Profile root already resolves and the operator is not creating: load
-the `job-profile-root` skill now; obey it end-to-end; then **Edit**.
+When a Profile root already resolves and the operator is not creating: read `./references/flows/flow-resolve-root.md` now; obey it end-to-end; then **Edit**.
 
 ## Edit (existing profile)
 
@@ -25,7 +31,7 @@ Skill-local files: `./references/**`, `./scripts/geography.py` and its bundled
 `./scripts/geography.json`, plus `./templates/data/answers.yaml` for the legacy
 `candidate.yaml` move.
 
-When the operator runs `/job-profile` itself (not a skill loading this edit
+when the operator runs `/job-profile` itself (not a skill loading this edit
 path) and `data/candidate.yaml` exists, read `./references/flows/flow-mutate.md`
 now and offer its legacy `candidate.yaml` move first; after that cycle ends,
 continue with the route below.

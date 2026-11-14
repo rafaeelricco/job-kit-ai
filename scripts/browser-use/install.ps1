@@ -116,6 +116,7 @@ function Get-PlanRowsBrowser {
       $dest = Get-SkillDest $override $name
       $rows.Add((New-PlanRowAgent $dest $name $source)) | Out-Null
     }
+    Add-PlanRowsLegacyAgentSkills $rows $override
     $rows.Add((New-PlanRowDriver $override)) | Out-Null
     return $rows
   }
@@ -135,6 +136,7 @@ function Get-PlanRowsBrowser {
       $dest = Get-SkillDest $root $name
       $rows.Add((New-PlanRowAgent $dest $name $source)) | Out-Null
     }
+    Add-PlanRowsLegacyAgentSkills $rows $root
     $rows.Add((New-PlanRowDriver $root)) | Out-Null
   }
   return $rows

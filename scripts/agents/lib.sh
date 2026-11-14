@@ -3,7 +3,7 @@
 # Compatible with macOS Bash 3.2. Source only — do not execute.
 
 # Skill folder names under skill/ for coding agents.
-CORE_SKILL_NAMES="job-profile-root job-store"
+CORE_SKILL_NAMES="job-store"
 SKILL_NAMES="job-company-scout job-profile job-list job-match job-stories job-inbox job-humanize job-resume-refine job-resume-review ${CORE_SKILL_NAMES}"
 # Browser-channel skills: same agent homes, installed only by the `browser-use`
 # target, which needs the browser-use CLI to drive a real browser.
@@ -31,17 +31,16 @@ agents_names_for_root() {
   done
   printf '%s\n' "${SKILL_NAMES}"
 }
-# Prior basenames for browser-channel skills only. A browser-use uninstall
-# sweeps these and not LEGACY_SKILL_NAMES below: those orphans belong to the
-# agents target, and the two channels share the same agent homes.
-BROWSER_LEGACY_SKILL_NAMES="job-resume"
+# Prior basenames the browser target may remove. In a combined agents/browser
+# uninstall, job-profile-root is assigned to the agents legacy sweep.
+BROWSER_LEGACY_SKILL_NAMES="job-resume job-profile-root"
 # Every basename this channel may own under an agent home. Removal and the
 # cache-purge survivor scan use the union, so an agents uninstall reaches
 # browser-channel links no matter which target installed them.
 ALL_SKILL_NAMES="${SKILL_NAMES} ${BROWSER_SKILL_NAMES} ${BROWSER_SHARED_DEPS}"
 # Prior basenames for this channel; install/uninstall may remove orphans.
 # Predicates use is_kit_skill_link (readlink == REPO/skill/NAME); source dir need not exist.
-LEGACY_SKILL_NAMES="profile-init job-profile-config job-tracker job-resume job-profile-init job-profile-me job-pitch job-captcha-solver"
+LEGACY_SKILL_NAMES="profile-init job-profile-config job-tracker job-resume job-profile-init job-profile-me job-pitch job-captcha-solver job-profile-root"
 
 # AGENT_TARGETS — space-separated ids. Dest map matches personal dotfiles:
 #   claude → $HOME/.claude/skills   (parent $HOME/.claude)
@@ -175,6 +174,17 @@ is_kit_skill_link() {
   expected="$(skill_source "${repo}" "${name}")"
   current="$(readlink "${dest}")"
   [ "${current}" = "${expected}" ]
+}
+
+# Include cleanup in the install plan even when all active links are current.
+plan_rows_legacy_agent_skills() {
+  local root="$1" repo="$2" name dest
+  for name in ${LEGACY_SKILL_NAMES}; do
+    dest="$(skill_dest "${root}" "${name}")"
+    if is_kit_skill_link "${dest}" "${repo}" "${name}"; then
+      printf 'I%sremove legacy link%s%s\n' "${ROW_FS}" "${ROW_FS}" "${dest}"
+    fi
+  done
 }
 
 # unlink_legacy_skills DEST_ROOT REPO

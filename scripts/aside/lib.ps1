@@ -1,7 +1,7 @@
 # Shared helpers for Aside skill install/uninstall on Windows.
 # Source only. Source after scripts\agents\lib.ps1.
 
-$script:AsideCoreSkillNames = @('job-profile-root', 'job-store')
+$script:AsideCoreSkillNames = @('job-store')
 $script:AsideSkillNames = @(
   'job-company-scout', 'job-scout', 'job-apply', 'job-prep', 'job-resume-refine', 'job-resume-review',
   'job-profile', 'job-list', 'job-match', 'job-stories',
@@ -10,7 +10,7 @@ $script:AsideSkillNames = @(
 $script:AsideLegacySkillNames = @(
   'job-discovery', 'job-application', 'profile-scaffold',
   'application-stage', 'profile-init', 'job-profile-config',
-  'job-tracker', 'job-resume', 'job-profile-me', 'job-pitch'
+  'job-tracker', 'job-resume', 'job-profile-me', 'job-pitch', 'job-profile-root'
 )
 $script:AsideKitMarker = '.job-kit'
 

@@ -406,7 +406,7 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertFalse((f.package / ".git").exists())
             installed = f.agents / "job-match"
             self.assertEqual(installed.resolve(), (f.physical / "skill/job-match").resolve())
-            self.assertEqual(len(list(f.agents.iterdir())), 11)
+            self.assertEqual(len(list(f.agents.iterdir())), 10)
             review = f.agents / "job-resume-review"
             self.assertEqual(review.resolve(), (f.physical / "skill/job-resume-review").resolve())
             for resource in ("SKILL.md", "references/rubric.md", "references/report.md", "references/research.md",
@@ -424,6 +424,55 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertEqual(list(f.agents.iterdir()), [])
             self.assertTrue(f.package.is_dir())
         self.each_shell(scenario)
+
+    def test_upgrade_removes_retired_skill_and_preserves_alias_and_foreign_entries(self):
+        def scenario(f):
+            self.success(f.run("agents"))
+            self.success(f.run("aside"))
+
+            # Model the old release's profile-root link and marked Aside copy.
+            old_source = f.package / "skill" / "job-profile-root"
+            old_source.mkdir(parents=True)
+            (old_source / "SKILL.md").write_text("old profile-root skill\n", encoding="utf-8")
+            old_link = f.agents / "job-profile-root"
+            if os.name == "nt":
+                subprocess.run(["cmd", "/c", "mklink", "/J", str(old_link), str(old_source)],
+                               check=True, capture_output=True)
+            else:
+                old_link.symlink_to(old_source, target_is_directory=True)
+
+            old_copy = f.aside / "job-profile-root"
+            old_copy.mkdir()
+            (old_copy / "SKILL.md").write_text("old profile-root skill\n", encoding="utf-8")
+            (old_copy / ".job-kit").write_text(shell_path(old_source, f.kind) + "\n", encoding="utf-8")
+
+            self.success(f.run("fetch", version="v1.0.1"))
+            self.assertTrue(os.path.lexists(old_link), "old link should be dangling before cleanup")
+            self.assertFalse((old_link / "SKILL.md").is_file())
+
+            self.success(f.run("agents", version="v1.0.1"))
+            self.success(f.run("aside", version="v1.0.1"))
+            self.assertFalse(os.path.lexists(old_link))
+            self.assertFalse(old_copy.exists())
+            for root in (f.agents, f.aside):
+                self.assertTrue((root / "job-list" / "SKILL.md").is_file())
+        self.each_shell(scenario)
+
+        def foreign_scenario(f):
+            self.success(f.run("agents"))
+            self.success(f.run("aside"))
+            foreign_agent = f.agents / "job-profile-root"
+            foreign_agent.mkdir()
+            (foreign_agent / "keep.txt").write_text("agent-owned\n", encoding="utf-8")
+            foreign_aside = f.aside / "job-profile-root"
+            foreign_aside.mkdir()
+            (foreign_aside / "keep.txt").write_text("aside-owned\n", encoding="utf-8")
+
+            self.success(f.run("agents", version="v1.0.1"))
+            self.success(f.run("aside", version="v1.0.1"))
+            self.assertEqual((foreign_agent / "keep.txt").read_text(encoding="utf-8"), "agent-owned\n")
+            self.assertEqual((foreign_aside / "keep.txt").read_text(encoding="utf-8"), "aside-owned\n")
+        self.each_shell(foreign_scenario)
 
     def test_latest_resolves_once_and_pin_skips_pointer(self):
         def scenario(f):

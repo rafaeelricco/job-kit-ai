@@ -142,6 +142,9 @@ exit /b 97
     def link_solver(self):
         source = self.kit / "skill" / SOLVER
         dest = self.skills / SOLVER
+        self.link_directory(dest, source)
+
+    def link_directory(self, dest, source):
         if os.name == "nt":
             subprocess.run(["cmd", "/c", "mklink", "/J", str(dest), str(source)],
                            check=True, capture_output=True)
@@ -206,20 +209,31 @@ class BrowserChannelTests(unittest.TestCase):
         def scenario(f):
             self.success(f.run("agents/install"))
             self.success(f.run("browser-use/install"))
+            legacy_source = f.kit / "skill" / "job-profile-root"
+            legacy_source.mkdir()
+            (legacy_source / "SKILL.md").write_text("old profile-root skill\n", encoding="utf-8")
+            legacy_link = f.skills / "job-profile-root"
+            f.link_directory(legacy_link, legacy_source)
             self.assertTrue((f.skills / SOLVER / "SKILL.md").is_file())
             before = f.names()
             preview = f.run("uninstall", "browser-use", "--dry-run")
             self.success(preview)
             self.assertIn(SOLVER, preview.stdout)
+            self.assertIn("job-profile-root", preview.stdout)
             self.assertNotIn("job-match", preview.stdout)
             self.assertEqual(f.names(), before)
             self.success(f.run("uninstall", "browser-use"))
             self.assertEqual(before - f.names(),
-                             {SOLVER, "job-scout", "job-apply", "job-prep", "browser-use"})
+                             {SOLVER, "job-scout", "job-apply", "job-prep", "browser-use", "job-profile-root"})
             self.assertIn("job-company-scout", f.names())
             self.assertIn("job-match", f.names())
             self.assertIn("job-profile", f.names())
-            self.success(f.run("uninstall", "agents"))
+
+            f.link_directory(legacy_link, legacy_source)
+            combined = f.run("uninstall", "agents", "browser-use", "--dry-run")
+            self.success(combined)
+            self.assertEqual(combined.stdout.count("job-profile-root"), 1)
+            self.success(f.run("uninstall", "agents", "browser-use"))
             self.assertEqual(f.names(), set())
         self.each_shell(scenario)
 
@@ -399,6 +413,8 @@ class BrowserDependencyTests(unittest.TestCase):
             ("SKILL_NAMES", "SkillNames"),
             ("BROWSER_SKILL_NAMES", "BrowserSkillNames"),
             ("BROWSER_SHARED_DEPS", "BrowserSharedDeps"),
+            ("BROWSER_LEGACY_SKILL_NAMES", "BrowserLegacySkillNames"),
+            ("LEGACY_SKILL_NAMES", "LegacySkillNames"),
             ("ALL_SKILL_NAMES", "AllSkillNames"),
         ):
             with self.subTest(list=sh_name):
@@ -416,6 +432,19 @@ class BrowserDependencyTests(unittest.TestCase):
         self.assertEqual(_shell_list(aside, "LEGACY_SKILL_NAMES"),
                          _powershell_list(aside_ps, "AsideLegacySkillNames"))
         self.assertNotIn(SOLVER, _powershell_list(aside_ps, "AsideSkillNames"))
+        for active in (
+            _shell_list(bash, "SKILL_NAMES"),
+            _shell_list(bash, "BROWSER_SHARED_DEPS"),
+            _shell_list(aside, "SKILL_NAMES"),
+            _powershell_list(powershell, "SkillNames"),
+            _powershell_list(powershell, "BrowserSharedDeps"),
+            _powershell_list(aside_ps, "AsideSkillNames"),
+        ):
+            self.assertIn("job-list", active)
+            self.assertNotIn("job-profile-root", active)
+        self.assertIn("job-profile-root", _shell_list(bash, "LEGACY_SKILL_NAMES"))
+        self.assertIn("job-profile-root", _shell_list(bash, "BROWSER_LEGACY_SKILL_NAMES"))
+        self.assertIn("job-profile-root", _shell_list(aside, "LEGACY_SKILL_NAMES"))
 
 
 class _VersionHandler(http.server.BaseHTTPRequestHandler):

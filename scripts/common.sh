@@ -127,9 +127,8 @@ render_plan() {
     flush_pend
 
     if [ "${k}" = I ] && [ -n "${leaf}" ]; then
-      # Labels: "link", "relink", "copy", "copy (refresh)", "install driver"
       case "${lab}" in
-        "link"|"relink"|"copy"|"copy (refresh)"|"install driver")
+        "link"|"relink"|"copy"|"copy (refresh)"|"install driver"|"remove legacy link")
           printf '  %-16s %s\n' "${lab}" "${leaf}"
           return 0
           ;;
