@@ -559,6 +559,35 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(all(check(run) is None for check in case.checks), passes)
                 self.assertEqual(bool(run.error), failed)
 
+    def test_selected_job_evidence_finds_the_computed_score_in_any_report_layout(self):
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        for report, passes in (
+            ("| Match score | 79 |", True),
+            ("| Match score | 79/100 |", True),
+            ("The match score is **79/100**.", True),
+            ("**Decision:** possible_match · **Score:** 79", True),
+            ("Score — 79", True),
+            ("1. **Score:** 79", True),
+            ("Match score = 79", True),
+            ("## Lumen Pay — Match score: 79", True),
+            ("| Match score | 78 |", False),
+            ("Score — 790", False),
+        ):
+            with self.subTest(report=report):
+                events = [
+                    {"type": "assistant", "message": {"content": [{
+                        "type": "tool_use", "name": "Bash", "id": "score-call",
+                        "input": {"command": "python3 /frozen/score.py < score_in.json"},
+                    }]}},
+                    {"type": "user", "message": {"content": [{
+                        "type": "tool_result", "tool_use_id": "score-call",
+                        "content": '[{"match_score": 79}]',
+                    }]}},
+                    {"type": "result", "result": report},
+                ]
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertEqual(all(check(run) is None for check in case.checks), passes)
+
     @staticmethod
     def redirected_score_events(command, read_path="/tmp/scored.json", content='[{"match_score": 79}]',
                                 score_failed=False, read_failed=False, reported=79):

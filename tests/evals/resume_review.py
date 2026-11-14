@@ -74,7 +74,9 @@ def reports_computed_match_score(run: Run) -> Optional[str]:
     if not run.match_scores:
         return "score.py returned no successful match score"
     label = r"(?:match[_ ]score|score|fit(?: score)?)"
-    reported = re.findall(rf"(?im)^\s*[-*# ]*{label}\b[\s:*]*([0-9]{{1,3}})\b", run.report.text)
+    # The flow sets no report layout: accept the label anywhere (table cell, prose, heading)
+    # followed by a short non-digit gap, so `| Match score | 79 |` and `Score — 79` count.
+    reported = re.findall(rf"(?i)\b{label}\b[^0-9\n]{{0,12}}?([0-9]{{1,3}})(?![0-9])", run.report.text)
     if any(int(value) in run.match_scores for value in reported):
         return None
     return f"report did not show a computed match score {run.match_scores}"
