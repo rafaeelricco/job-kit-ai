@@ -48,7 +48,10 @@ For the selected profile pack only, this branch applies when `route.kind` is
 disabled `pack.boards` rows before validating board URLs; an absent `enabled`
 means enabled. A route or enabled-board configuration error records
 `defect: query_not_submitted`, names the error, and makes no API or browser
-request. `entry`, `site:` results, stored dossiers, and `slug_lists` are not
+request. One exception: an enabled board whose `url` is not a valid Ashby
+board root fails only that board. The collector reports it `failed` with an
+`invalid board url` error and makes no request for it, the other boards are
+still scanned, and the board is named under Gaps without fallback. `entry`, `site:` results, stored dossiers, and `slug_lists` are not
 inputs to this branch.
 
 If no enabled board remains, report `defect: no_boards` and make no request.

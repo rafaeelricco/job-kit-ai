@@ -162,7 +162,7 @@ class AshbyCollectTests(unittest.TestCase):
         }]), fetch)
         self.assertEqual((code, out["candidates"], out["slugs"], out["lists"], fetch.calls), (0, [], [], [], []))
 
-    def test_invalid_board_urls_are_rejected_before_any_get(self):
+    def test_invalid_board_urls_fail_only_their_board_without_a_get(self):
         invalid_urls = [
             "http://jobs.ashbyhq.com/acme",
             "https://evil.example/acme",
@@ -179,9 +179,31 @@ class AshbyCollectTests(unittest.TestCase):
             with self.subTest(url=url):
                 fetch = make_fetch({})
                 code, out = self.run_collect(self.payload([board(url=url)]), fetch)
-                self.assertEqual(code, 1)
-                self.assertIn("collect_error", out)
+                self.assertEqual(code, 0)
+                self.assertEqual(out["candidates"], [])
+                [report] = out["slugs"]
+                self.assertEqual((report["company_id"], report["board_url"], report["status"]),
+                                 ("acme", url, "failed"))
+                self.assertTrue(report["error"].startswith("invalid board url: "))
                 self.assertEqual(fetch.calls, [])
+
+    def test_one_invalid_board_url_does_not_stop_valid_boards_in_the_pack(self):
+        rows = [
+            board(),
+            board("beta", "Beta", "https://jobs.ashbyhq.com/beta?utm_source=careers"),
+            board("gamma", "Gamma", "http://jobs.ashbyhq.com/gamma"),
+        ]
+        fetch = make_fetch({api_url("acme"): ok({"jobs": [job()]})})
+        code, out = self.run_collect(self.payload(rows), fetch)
+
+        self.assertEqual(code, 0)
+        self.assertEqual(fetch.calls, [api_url("acme")])
+        self.assertEqual([row["slug"] for row in out["candidates"]], ["acme"])
+        acme, beta, gamma = out["slugs"]
+        self.assertEqual((acme["status"], acme["kept"]), ("ok", 1))
+        for report in (beta, gamma):
+            self.assertEqual((report["status"], report["http_status"]), ("failed", 0))
+            self.assertIn("invalid board url", report["error"])
 
     def test_route_rows_and_legacy_inputs_are_validated_before_fetch(self):
         invalid_payloads = [

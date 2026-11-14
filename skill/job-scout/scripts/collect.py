@@ -283,8 +283,16 @@ def validate_ashby_config(route: dict, boards: object) -> List[dict]:
         try:
             tenant = ashby_tenant(board["url"])
         except ValueError as error:
-            raise ValueError("boards[{0}].url: {1}".format(index, error))
-        if board.get("enabled", True) and tenant.casefold() not in seen:
+            # One bad board root fails only that board; route errors stay pack-wide.
+            prepared.append({
+                "company_id": board["company_id"],
+                "name": board["name"].strip(),
+                "board_url": board["url"],
+                "slug": "",
+                "error": "invalid board url: {0}".format(error),
+            })
+            continue
+        if tenant.casefold() not in seen:
             seen.add(tenant.casefold())
             prepared.append({
                 "company_id": board["company_id"],
@@ -303,6 +311,9 @@ def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Opti
         "board_url": board["board_url"], "status": "failed", "error": "", "items": 0,
         "kept": 0, "http_status": 0,
     }
+    if board.get("error"):
+        report["error"] = board["error"]
+        return report, []
     status, body = get(board["request_url"], fetch, sleep)
     report["http_status"] = status
     if status != 200:
