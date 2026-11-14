@@ -432,7 +432,7 @@ class ReleaseInstallerTests(unittest.TestCase):
 
             # Model the old release's profile-root link and marked Aside copy.
             old_source = f.package / "skill" / "job-profile-root"
-            old_source.mkdir(parents=True)
+            old_source.mkdir(parents=True, exist_ok=True)
             (old_source / "SKILL.md").write_text("old profile-root skill\n", encoding="utf-8")
             old_link = f.agents / "job-profile-root"
             if os.name == "nt":
@@ -447,8 +447,8 @@ class ReleaseInstallerTests(unittest.TestCase):
             (old_copy / ".job-kit").write_text(shell_path(old_source, f.kind) + "\n", encoding="utf-8")
 
             self.success(f.run("fetch", version="v1.0.1"))
-            self.assertTrue(os.path.lexists(old_link), "old link should be dangling before cleanup")
-            self.assertFalse((old_link / "SKILL.md").is_file())
+            self.assertTrue(os.path.lexists(old_link), "old link should survive fetch until cleanup")
+            self.assertIn("Retired", (old_link / "SKILL.md").read_text(encoding="utf-8"))
 
             self.success(f.run("agents", version="v1.0.1"))
             self.success(f.run("aside", version="v1.0.1"))
@@ -473,6 +473,27 @@ class ReleaseInstallerTests(unittest.TestCase):
             self.assertEqual((foreign_agent / "keep.txt").read_text(encoding="utf-8"), "agent-owned\n")
             self.assertEqual((foreign_aside / "keep.txt").read_text(encoding="utf-8"), "aside-owned\n")
         self.each_shell(foreign_scenario)
+
+    def test_previously_installed_remote_accepts_bundle_without_retired_skill(self):
+        def scenario(f):
+            self.success(f.run("fetch"))
+            # Model a remote installer from a release that still required the
+            # retired skill, then upgrade through it.
+            installer = f.package / "scripts" / ("remote.sh" if f.kind == "bash" else "remote.ps1")
+            text = installer.read_bytes().decode("utf-8")
+            newline = "\r\n" if "\r\n" in text else "\n"
+            anchor, old = (("skill/job-store/SKILL.md", "skill/job-profile-root/SKILL.md")
+                           if f.kind == "bash" else
+                           ("  'skill\\job-store\\SKILL.md',", "  'skill\\job-profile-root\\SKILL.md',"))
+            anchor += newline
+            self.assertEqual(text.count(anchor), 1)
+            installer.write_bytes(text.replace(anchor, old + newline + anchor).encode("utf-8"))
+            self.success(f.run("agents", version="v1.0.1", cached=True))
+            self.assertEqual((f.package / "VERSION").read_text(encoding="utf-8"), "v1.0.1\n")
+            self.assertTrue((f.package / "skill/job-profile-root/SKILL.md").is_file())
+            self.assertFalse(os.path.lexists(f.agents / "job-profile-root"))
+            self.assertTrue((f.agents / "job-profile" / "SKILL.md").is_file())
+        self.each_shell(scenario)
 
     def test_latest_resolves_once_and_pin_skips_pointer(self):
         def scenario(f):
