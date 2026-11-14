@@ -597,9 +597,10 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
     None when the heredoc is unterminated or another command follows its delimiter.
     """
     command = re.sub(r"\\\r?\n", " ", command)
-    match = re.search(r"(?<!<)<<(-?)\s*(['\"]?)([A-Za-z_]\w*)\2", command)
+    match = re.search(r"(?<!<)<<(-?)[ \t]*(?:'([^'\n]+)'|\"([^\"\n]+)\"|([^\s<>|;&()'\"]+))", command)
     if not match:
         return command
+    delimiter = match.group(2) or match.group(3) or match.group(4)
     rest = command[match.end():]
     newline = rest.find("\n")
     if newline < 0:
@@ -607,7 +608,7 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
     body = rest[newline + 1:].split("\n")
     strip = (lambda line: line.lstrip("\t")) if match.group(1) else (lambda line: line)
     end = next((index for index, line in enumerate(body)
-                if strip(line.rstrip("\r")) == match.group(3)), None)
+                if strip(line.rstrip("\r")) == delimiter), None)
     if end is None or any(line.strip() for line in body[end + 1:]):
         return None
     line = command[:match.start()] + rest[:newline]
@@ -634,10 +635,23 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
         tokens.pop()
     # Compound commands can change cwd or mask the scorer's failure. Do not
     # infer an artifact's provenance without knowing shell execution semantics.
-    if any(token and all(char in ";&|()\n" for char in token) for token in tokens):
+    def separator(token: str) -> bool:
+        return bool(token) and all(char in ";&|()\n" for char in token)
+    # One pipe into the scorer only feeds its stdin: the pipeline's stdout and exit
+    # status are the scorer's own (read_stream still untrusts files the feeder may write).
+    if tokens.count("|") == 1:
+        pipe = tokens.index("|")
+        feeder, tokens = tokens[:pipe], tokens[pipe + 1:]
+        if not feeder or any(separator(token) for token in feeder):
+            return None
+    if any(separator(token) for token in tokens):
         return None
     executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
     script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
+    while script_index < len(tokens) and tokens[script_index].startswith("-"):
+        if tokens[script_index] in ("-c", "-m") or tokens[script_index].startswith(("-c", "-m")):
+            return None  # inline code or a module runs instead of the script
+        script_index += 2 if tokens[script_index] in ("-X", "-W") else 1
     if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
             or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
         return None
@@ -701,6 +715,8 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
                     paths = scorer_output_paths(command, working_dir)
                 if paths is not None:
+                    if "|" in command:
+                        scorer_files.clear()  # the command feeding the pipe may rewrite them
                     scorer_calls[block["id"]] = paths
                     scorer_files.difference_update(paths)
                 else:

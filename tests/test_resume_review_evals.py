@@ -606,6 +606,15 @@ class RunnerTests(unittest.TestCase):
             ("python3 \\\n  /frozen/score.py < in.json", True),
             ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}\nEOF\necho '[{\"match_score\":79}]'", False),
             ("python3 /frozen/score.py <<'EOF'\n{\"job\": 1}", False),
+            ("cat /tmp/in.json | python3 /frozen/score.py", True),
+            ("echo '{\"job\": 1}' | python3 /frozen/score.py", True),
+            ("python3 /frozen/score.py <<'JSON-EOF'\n{\"job\": 1}\nJSON-EOF", True),
+            ("python3 -X utf8 /frozen/score.py < in.json", True),
+            ("python3 -u -W ignore /frozen/score.py < in.json", True),
+            ("python3 /frozen/score.py < in.json | tee out.json", False),
+            ("cat in.json | python3 /frozen/score.py | head", False),
+            ("false || cat in.json | python3 /frozen/score.py", False),
+            ("python3 -c 'print(1)' /frozen/score.py", False),
         ):
             with self.subTest(command=command):
                 events = [
@@ -751,6 +760,20 @@ class RunnerTests(unittest.TestCase):
                     ]
                     run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
                     self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
+
+    def test_redirected_score_is_untrusted_after_a_pipe_feeder_may_rewrite_it(self):
+        events = self.redirected_score_events("python3 /frozen/score.py < in.json > /tmp/scored.json")
+        events[3:3] = [
+            {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Bash", "id": "piped-call",
+                "input": {"command": "echo x > /tmp/scored.json | python3 /frozen/score.py"},
+            }]}},
+            {"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": "piped-call", "is_error": True, "content": "",
+            }]}},
+        ]
+        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+        self.assertIsNotNone(resume_review.reports_computed_match_score(run))
 
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
