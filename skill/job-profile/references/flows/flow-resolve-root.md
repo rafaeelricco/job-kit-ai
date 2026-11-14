@@ -1,7 +1,3 @@
----
-name: job-profile-root
-description: "Print the absolute job-kit Profile root path. Read-only."
----
 
 # Job profile root
 
@@ -16,6 +12,6 @@ Read-only: never invent a path (callers resolve their files against it) or scaff
    - `JOB_KIT_CONFIG`: non-empty `$XDG_CONFIG_HOME` → `$XDG_CONFIG_HOME/job-kit`, else `$HOME/.config/job-kit`.
    - **Host-default fallback:** `$HOST_HOME/.config/job-kit` (`HOST_HOME` from step 3, else `$HOME`). Probe when that path differs from `JOB_KIT_CONFIG`.
 5. Walk session CWD upward until probe passes.
-6. None passed → stop with no path. Name each attempt (env, each pointer file + line, each default config path, walk start), then point at `job-profile` in a coding agent (**create new**, or **register existing** with Activate = Yes). Load `./references/formats/format-recover.md` on stop or step 2–4 fail.
+6. None passed → stop with no path. Name each attempt (env, each pointer file + line, each default config path, walk start), then point at `job-profile` in a coding agent (**create new**, or **register existing** with Activate = Yes). Load `job-profile/references/formats/format-recover.md` on stop or step 2–4 fail.
 
 Output, printed before returning: `Profile root: {absolute path}`. Caller resolves its own `data/*` / `scout/` against that path.

@@ -10,8 +10,8 @@ disable-model-invocation: true
 Discover companies from configured market sources and maintain their verified
 company and careers-board records in `data/search_packs.yaml`.
 
-Profile root: load the `job-profile-root` skill now; obey it end-to-end. A
-`job-profile-root` stop means no profile, so stop here; never scaffold one.
+Profile root: read `job-profile/references/flows/flow-resolve-root.md` now; obey it end-to-end. A
+root-resolver stop means no profile, so stop here; never scaffold one.
 Resolve `data/*` against Profile root.
 
 Skill-local files: `./references/*` and `./scripts/*` only.

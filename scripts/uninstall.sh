@@ -245,8 +245,8 @@ Usage: uninstall.sh                 # interactive menu (TTY required)
        uninstall.sh -h|--help
 
 Targets:
-  aside     Aside skills (job-company-scout, job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
-  agents    Coding-agent skills (job-company-scout, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store, job-resume-refine, job-resume-review)
+  aside     Aside skills (job-company-scout, job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-store)
+  agents    Coding-agent skills (job-company-scout, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-store, job-resume-refine, job-resume-review)
   browser-use  Browser skills (job-scout, job-apply, job-prep) in coding-agent homes, plus
                the browser-use driver: its skill, its CLI, its state directory.
                Never a browser app bundle
@@ -341,13 +341,14 @@ uninstall_browser_use() {
   (
     # shellcheck source=agents/lib.sh
     . "${repo}/scripts/agents/lib.sh"
-    local override dest_root target parent label name dest
+    local override dest_root target parent label name dest legacy_names
     local cli_failed=0
+    legacy_names="$(browser_legacy_skill_names_for_uninstall)"
 
     # Remove browser skills and dependencies unused by a remaining agents install.
     unlink_browser_skills_from() {
       local root="$1" n d agents_owned=0
-      for n in ${BROWSER_SKILL_NAMES} ${BROWSER_LEGACY_SKILL_NAMES}; do
+      for n in ${BROWSER_SKILL_NAMES} ${legacy_names}; do
         d="$(skill_dest "${root}" "${n}")"
         unlink_skill "${d}" "${repo}" "${n}"
       done
@@ -447,6 +448,21 @@ uninstall_browser_use() {
     [ "${cli_failed}" -eq 0 ] || exit 1
     echo "Uninstall completed"
   )
+}
+
+# browser_legacy_skill_names_for_uninstall
+# job-profile-root is owned by agents whenever both targets are selected.
+browser_legacy_skill_names_for_uninstall() {
+  local name names=""
+  for name in ${BROWSER_LEGACY_SKILL_NAMES}; do
+    if [ "${name}" = job-profile-root ]; then
+      case " ${UNINSTALL_TARGETS} " in
+        *" agents "*) continue ;;
+      esac
+    fi
+    names="${names} ${name}"
+  done
+  printf '%s\n' "${names# }"
 }
 
 # clear_pointer_if_matches FILE PATH…
@@ -836,7 +852,8 @@ plan_rows_browser_use() {
   (
     # shellcheck source=agents/lib.sh
     . "${repo}/scripts/agents/lib.sh"
-    local override target root parent label name dest bin agents_owned n
+    local override target root parent label name dest bin agents_owned n legacy_names
+    legacy_names="$(browser_legacy_skill_names_for_uninstall)"
     override="$(resolve_override_skills)" || exit 1
     plan_browser_shared_deps() {
       local plan_root="$1" agents_owned=0 pn pname
@@ -868,7 +885,7 @@ plan_rows_browser_use() {
       for name in ${BROWSER_SKILL_NAMES}; do
         plan_row "$(skill_dest "${override}" "${name}")" "${name}" current 1
       done
-      for name in ${BROWSER_LEGACY_SKILL_NAMES}; do
+      for name in ${legacy_names}; do
         plan_row "$(skill_dest "${override}" "${name}")" "${name}" legacy 1
       done
       plan_browser_shared_deps "${override}"
@@ -884,7 +901,7 @@ plan_rows_browser_use() {
         for name in ${BROWSER_SKILL_NAMES}; do
           plan_row "$(skill_dest "${root}" "${name}")" "${name}" current 1
         done
-        for name in ${BROWSER_LEGACY_SKILL_NAMES}; do
+        for name in ${legacy_names}; do
           plan_row "$(skill_dest "${root}" "${name}")" "${name}" legacy 1
         done
         plan_browser_shared_deps "${root}"
@@ -1613,7 +1630,7 @@ unremovable_skill_entries() {
     # will never unlink would block a run that was always going to succeed.
     # shellcheck source=agents/lib.sh
     . "${REPO_ROOT}/scripts/agents/lib.sh"
-    names="${BROWSER_SKILL_NAMES} ${BROWSER_SHARED_DEPS} browser-use"
+    names="${BROWSER_SKILL_NAMES} $(browser_legacy_skill_names_for_uninstall) ${BROWSER_SHARED_DEPS} browser-use"
   elif [ "${target}" = aside ]; then
     # shellcheck source=aside/lib.sh
     . "${REPO_ROOT}/scripts/aside/lib.sh"

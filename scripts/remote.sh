@@ -150,6 +150,8 @@ skill/job-match/SKILL.md
 skill/job-match/references/flows/flow-job-list.md
 skill/job-match/references/formats/format-views.md
 skill/job-apply/references/contracts/contract-application-inputs.md
+skill/job-profile/references/flows/flow-resolve-root.md
+skill/job-profile/references/formats/format-recover.md
 skill/job-match/scripts/score.py
 skill/job-match/scripts/models.py
 skill/job-match/scripts/scaffold_guidance.py
@@ -171,7 +173,6 @@ skill/job-stories/SKILL.md
 skill/job-stories/references/flows/flow-stories.md
 skill/job-inbox/SKILL.md
 skill/job-humanize/SKILL.md
-skill/job-profile-root/SKILL.md
 skill/job-store/SKILL.md
 scripts/remote.sh
 scripts/remote.ps1

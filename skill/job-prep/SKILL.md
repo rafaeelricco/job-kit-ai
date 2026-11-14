@@ -9,7 +9,8 @@ disable-model-invocation: true
 
 Prepares application packages; never posts.
 
-Profile root: load the `job-profile-root` skill now; obey it end-to-end.
+Profile root: load `job-profile/references/flows/flow-resolve-root.md` now;
+obey it end-to-end.
 
 Store law: load the `job-store` skill now; obey it end-to-end.
 

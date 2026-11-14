@@ -16,6 +16,18 @@ from pathlib import Path, PurePosixPath
 REPO = Path(__file__).resolve().parents[1]
 CACHE_DIRS = {"__pycache__", ".cache", ".pytest_cache", ".mypy_cache", ".ruff_cache",
               "node_modules", ".git", ".github"}
+# Retired paths that installed remote.sh/remote.ps1 still require before they
+# accept a bundle. Ship them as inert files; no installer channel lists them.
+RETIRED_REQUIRED_FILES = {
+    "skill/job-profile-root/SKILL.md": (
+        "---\n"
+        "name: job-profile-root\n"
+        "description: \"Retired. Use job-profile to resolve the Profile root.\"\n"
+        "---\n\n"
+        "Retired. Profile-root resolution moved to `job-profile`. Reinstall with the\n"
+        "current installer to remove this link.\n"
+    ).encode("utf-8"),
+}
 
 
 def build_release(version: str, output: Path) -> None:
@@ -57,6 +69,11 @@ def build_release(version: str, output: Path) -> None:
         if source.is_symlink():
             raise ValueError("runtime file must not be a symlink: " + name)
         files.append(("job-kit/" + name, source.read_bytes(), int(mode, 8) & 0o777))
+
+    shipped = {name for name, _, _ in files}
+    for name, data in sorted(RETIRED_REQUIRED_FILES.items()):
+        if "job-kit/" + name not in shipped:
+            files.append(("job-kit/" + name, data, 0o644))
 
     version_bytes = (version + "\n").encode("utf-8")
     files.append(("job-kit/VERSION", version_bytes, 0o644))

@@ -6,7 +6,7 @@ argument-hint: "[all | <company> | <title> | <dossier>…]"
 
 # Job inbox
 
-Load `job-profile-root`. Resolve `scout/` and `data/*` against Profile root
+Profile root: read `job-profile/references/flows/flow-resolve-root.md` now; obey it end-to-end. Resolve `scout/` and `data/*` against Profile root
 (not CWD, not skill dir). Unreadable required file → stop and say so.
 
 Store law: load the `job-store` skill now; obey it end-to-end.

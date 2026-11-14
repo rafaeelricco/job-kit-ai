@@ -71,6 +71,7 @@ plan_rows_agent_home() {
         dest="$(skill_dest "${override}" "${name}")"
         plan_row_agent "${dest}" "${name}" "${source}"
       done
+      plan_rows_legacy_agent_skills "${override}" "${repo}"
       exit 0
     fi
     for target in ${AGENT_TARGETS}; do
@@ -88,6 +89,7 @@ plan_rows_agent_home() {
         dest="$(skill_dest "${root}" "${name}")"
         plan_row_agent "${dest}" "${name}" "${source}"
       done
+      plan_rows_legacy_agent_skills "${root}" "${repo}"
     done
   )
 }

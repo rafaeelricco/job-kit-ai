@@ -31,10 +31,10 @@ Usage: uninstall.ps1                 # interactive menu (console required)
        uninstall.ps1 -h|--help
 
 Targets:
-  aside        Aside skills (job-company-scout, job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-profile-root, job-store)
+  aside        Aside skills (job-company-scout, job-scout, job-apply, job-prep, job-resume-refine, job-resume-review, job-profile, job-list, job-match, job-stories, job-inbox, job-humanize, job-store)
   agents       Coding-agent skills (job-company-scout, job-profile, job-list,
                job-match, job-stories, job-inbox, job-humanize,
-               job-profile-root, job-store, job-resume-refine, job-resume-review)
+               job-store, job-resume-refine, job-resume-review)
   browser-use  Browser skills (job-scout, job-apply, job-prep) in coding-agent homes, plus
                the browser-use driver: its skill, its CLI, its state directory.
                Never a browser app
@@ -366,6 +366,13 @@ function Add-BrowserSharedDepRows {
   }
 }
 
+function Get-BrowserLegacySkillNamesForUninstall {
+  if ($script:UninstallTargets -contains 'agents') {
+    return @($script:BrowserLegacySkillNames | Where-Object { $_ -ne 'job-profile-root' })
+  }
+  return $script:BrowserLegacySkillNames
+}
+
 function Get-PlanRowsBrowserUse {
   $rows = New-Object System.Collections.Generic.List[object]
   $state = Get-BrowserHarnessState
@@ -381,7 +388,7 @@ function Get-PlanRowsBrowserUse {
       $row = New-UninstallSkillRow (Get-SkillDest $override $name) $name 'current'
       if ($row) { $rows.Add($row) | Out-Null }
     }
-    foreach ($name in $script:BrowserLegacySkillNames) {
+    foreach ($name in (Get-BrowserLegacySkillNamesForUninstall)) {
       $row = New-UninstallSkillRow (Get-SkillDest $override $name) $name 'legacy'
       if ($row) { $rows.Add($row) | Out-Null }
     }
@@ -400,7 +407,7 @@ function Get-PlanRowsBrowserUse {
         $row = New-UninstallSkillRow (Get-SkillDest $root $name) $name 'current'
         if ($row) { $rows.Add($row) | Out-Null }
       }
-      foreach ($name in $script:BrowserLegacySkillNames) {
+      foreach ($name in (Get-BrowserLegacySkillNamesForUninstall)) {
         $row = New-UninstallSkillRow (Get-SkillDest $root $name) $name 'legacy'
         if ($row) { $rows.Add($row) | Out-Null }
       }
@@ -564,7 +571,7 @@ function Uninstall-Agents {
 
 function Unlink-BrowserSkillsFrom {
   param([string]$Root)
-  foreach ($n in ($script:BrowserSkillNames + $script:BrowserLegacySkillNames)) {
+  foreach ($n in ($script:BrowserSkillNames + @(Get-BrowserLegacySkillNamesForUninstall))) {
     Unlink-Skill (Get-SkillDest $Root $n) $script:RepoRoot $n
   }
   $agentsOwned = Test-AgentsHomeOwned $Root $script:RepoRoot
@@ -1112,7 +1119,7 @@ function Invoke-UninstallMain {
     Invoke-RunPlan 'aside' 'agents' 'browser-use' 'profile' 'cache'
     return
   }
-  Invoke-RunPlan @($targets.ToArray())
+  Invoke-RunPlan -Targets ($targets.ToArray())
 }
 
 Invoke-UninstallMain @($args)
