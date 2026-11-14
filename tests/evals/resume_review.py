@@ -629,10 +629,13 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
     lexer.whitespace = " \t\r"
     lexer.whitespace_split = True
+    lexer.commenters = ""  # shlex comments start mid-word and would swallow later separators
     try:
         tokens = list(lexer)
     except ValueError:
         return None
+    if any(token.startswith("#") for token in tokens):
+        return None  # a shell comment may hide what follows
     while tokens and tokens[-1].isspace():
         tokens.pop()
     # Compound commands can change cwd or mask the scorer's failure. Do not
