@@ -697,6 +697,29 @@ class RunnerTests(unittest.TestCase):
                 run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
                 self.assertIsNotNone(resume_review.reports_computed_match_score(run))
 
+    def test_redirected_score_is_untrusted_once_another_tool_may_rewrite_the_file(self):
+        command = "python3 /frozen/score.py < input.json > /tmp/scored.json"
+        rewrites = (
+            ("Write", {"file_path": "/tmp/scored.json", "content": '[{"match_score": 79}]'}, False),
+            ("Edit", {"file_path": "/tmp/scored.json", "old_string": "1", "new_string": "9"}, False),
+            ("Bash", {"command": "python3 -c \"open('/tmp/scored.json', 'w')\""}, False),
+            ("Bash", {"command": "mktemp"}, False),
+            ("Write", {"file_path": "/tmp/notes.md", "content": "notes"}, True),
+        )
+        for name, tool_input, passes in rewrites:
+            with self.subTest(name=name, tool_input=tool_input):
+                events = self.redirected_score_events(command)
+                events[3:3] = [
+                    {"type": "assistant", "message": {"content": [{
+                        "type": "tool_use", "name": name, "id": "rewrite-call", "input": tool_input,
+                    }]}},
+                    {"type": "user", "message": {"content": [{
+                        "type": "tool_result", "tool_use_id": "rewrite-call", "content": "",
+                    }]}},
+                ]
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
+
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
             {"type": "system", "subtype": "init"},

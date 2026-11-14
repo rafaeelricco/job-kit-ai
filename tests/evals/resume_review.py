@@ -38,6 +38,7 @@ from report_parse import Report, parse  # noqa: E402
 
 ALLOWED = ("Read", "Glob", "Grep", "Write", "Skill", "Bash(python3:*)", "Bash(pdftotext:*)", "Bash(mktemp:*)")
 JOB_MATCH_ALLOWED = (*ALLOWED, "Task")
+FILE_WRITERS = ("Write", "Edit", "MultiEdit", "NotebookEdit")  # tools that can rewrite a scorer file
 TIMEOUT = 1200
 
 
@@ -662,11 +663,28 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
             if block.get("type") == "tool_use" and block.get("name") == "Bash":
                 command = block["input"].get("command", "")
                 commands.append(command)
+                paths = None
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
                     paths = scorer_output_paths(command, working_dir)
-                    if paths is not None:
-                        scorer_calls[block["id"]] = paths
-                        scorer_files.difference_update(paths)
+                if paths is not None:
+                    scorer_calls[block["id"]] = paths
+                    scorer_files.difference_update(paths)
+                else:
+                    # Any other command may rewrite a scorer file: stop trusting all of them,
+                    # including redirects of scorer calls still awaiting their result.
+                    scorer_files.clear()
+                    scorer_calls = {call: () for call in scorer_calls}
+            if block.get("type") == "tool_use" and block.get("name") in FILE_WRITERS:
+                tool_input = block.get("input", {})
+                target = tool_input.get("file_path") or tool_input.get("notebook_path")
+                target = transcript_path(target, working_dir) if isinstance(target, str) else None
+                if target is None:
+                    scorer_files.clear()
+                    scorer_calls = {call: () for call in scorer_calls}
+                else:
+                    scorer_files.discard(target)
+                    scorer_calls = {call: tuple(p for p in paths if p != target)
+                                    for call, paths in scorer_calls.items()}
             if block.get("type") == "tool_use" and block.get("name") == "Read" and block.get("id"):
                 path = block.get("input", {}).get("file_path")
                 if isinstance(path, str):
