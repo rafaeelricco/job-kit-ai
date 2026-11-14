@@ -37,6 +37,7 @@ WINDOWS = {"24_hours": 1, "week": 7, "month": 31, "all_time": None, "": None}
 EU_LEVER_HOSTS = ("jobs.eu.lever.co", "api.eu.lever.co")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 MISSING = object()
+ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
 
 
 def parse_when(value: object) -> Optional[datetime]:
@@ -200,6 +201,179 @@ def scan_slug(slug: str, route: dict, positions: List[str], since: Optional[date
     return report, kept
 
 
+def ashby_tenant(board_url: object) -> str:
+    """Extract one safe tenant from a verified Ashby board root."""
+    if not isinstance(board_url, str) or not board_url or board_url != board_url.strip():
+        raise ValueError("board url must be a non-empty absolute HTTPS Ashby URL")
+    try:
+        parts = urlsplit(board_url)
+    except ValueError:
+        raise ValueError("invalid Ashby board url")
+    if (parts.scheme.lower() != "https" or parts.netloc.lower() != "jobs.ashbyhq.com"
+            or parts.query or parts.fragment or "?" in board_url or "#" in board_url):
+        raise ValueError("board url must use https://jobs.ashbyhq.com without query or fragment")
+    match = re.fullmatch(r"/([^/]+)/?", parts.path)
+    if not match:
+        raise ValueError("board url must contain exactly one tenant path segment")
+    tenant = unquote(match.group(1))
+    if (tenant in (".", "..") or not re.fullmatch(r"[A-Za-z0-9._~-]+", tenant)
+            or "/" in tenant or "\\" in tenant):
+        raise ValueError("board url has an unsafe tenant segment")
+    return tenant
+
+
+def safe_ashby_posting_url(raw: object, tenant: str) -> bool:
+    """Ashby job links must stay on the same tenant's public posting path."""
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return False
+    try:
+        parts = urlsplit(raw)
+    except ValueError:
+        return False
+    if (parts.scheme.lower() != "https" or parts.netloc.lower() != "jobs.ashbyhq.com"
+            or parts.query or parts.fragment or "?" in raw or "#" in raw):
+        return False
+    if not parts.path.startswith("/"):
+        return False
+    segments = parts.path[1:].split("/")
+    if segments and segments[-1] == "":
+        segments.pop()
+    if len(segments) not in (2, 3):
+        return False
+    decoded = [unquote(segment) for segment in segments]
+    if any(segment in (".", "..") or not re.fullmatch(r"[A-Za-z0-9._~-]+", segment)
+           for segment in decoded):
+        return False
+    if len(decoded) == 3 and decoded[2].casefold() != "application":
+        return False
+    return decoded[0].casefold() == tenant.casefold()
+
+
+def validate_ashby_config(route: dict, boards: object) -> List[dict]:
+    """Validate the Ashby route and every profile board before any network request."""
+    if route.get("ats", "").lower() != "ashby":
+        raise ValueError("boards require route.ats to be ashby")
+    if route.get("kind") not in (None, "board"):
+        raise ValueError("Ashby route.kind must be board")
+    if route.get("url") != ASHBY_API:
+        raise ValueError("Ashby route.url must be the official posting API URL")
+    for key, expected in (("items", "jobs"), ("posting_url", "jobUrl"), ("title", "title")):
+        if route.get(key) != expected:
+            raise ValueError("Ashby route.{0} must be {1!r}".format(key, expected))
+    for key, expected in (("location", "location"), ("date", "publishedAt"), ("listed", "isListed")):
+        if route.get(key) is not None and route.get(key) != expected:
+            raise ValueError("Ashby route.{0} must be {1!r} when configured".format(key, expected))
+    if not isinstance(boards, list):
+        raise ValueError("boards must be an array")
+
+    prepared = []
+    seen = set()
+    for index, board in enumerate(boards):
+        if not isinstance(board, dict):
+            raise ValueError("boards[{0}] must be an object".format(index))
+        if "enabled" in board and not isinstance(board["enabled"], bool):
+            raise ValueError("boards[{0}].enabled must be a boolean".format(index))
+        if not board.get("enabled", True):
+            continue
+        for key in ("company_id", "name", "url"):
+            if not isinstance(board.get(key), str) or not board[key].strip():
+                raise ValueError("boards[{0}].{1} must be a non-empty string".format(index, key))
+        if "managed_by" in board and board["managed_by"] != "job-company-scout":
+            raise ValueError("boards[{0}].managed_by must be 'job-company-scout'".format(index))
+        try:
+            tenant = ashby_tenant(board["url"])
+        except ValueError as error:
+            raise ValueError("boards[{0}].url: {1}".format(index, error))
+        if board.get("enabled", True) and tenant.casefold() not in seen:
+            seen.add(tenant.casefold())
+            prepared.append({
+                "company_id": board["company_id"],
+                "name": board["name"].strip(),
+                "board_url": board["url"],
+                "slug": tenant,
+                "request_url": ASHBY_API.format(slug=quote(tenant, safe="")),
+            })
+    return prepared
+
+
+def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Optional[datetime],
+                     fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[Dict[str, object], List[dict]]:
+    report: Dict[str, object] = {
+        "company_id": board["company_id"], "name": board["name"], "slug": board["slug"],
+        "board_url": board["board_url"], "status": "failed", "error": "", "items": 0,
+        "kept": 0, "http_status": 0,
+    }
+    status, body = get(board["request_url"], fetch, sleep)
+    report["http_status"] = status
+    if status != 200:
+        report["error"] = "HTTP {0}".format(status)
+        return report, []
+    try:
+        data = json.loads(body)
+    except ValueError:
+        report["error"] = "non-JSON response"
+        return report, []
+    items = resolve(data, route["items"])
+    if not isinstance(items, list):
+        report["error"] = "items path {0!r} missing".format(route["items"])
+        return report, []
+    report["items"] = len(items)
+
+    # Ashby's core fields have stable names even when optional route paths are omitted.
+    ashby_route = dict(route, location=route.get("location") or "location",
+                       date=route.get("date") or "publishedAt",
+                       listed=route.get("listed") or "isListed")
+    kept = []
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            report["error"] = "job {0} is not an object".format(index)
+            return report, []
+        title = resolve(item, route["title"])
+        posting_url = resolve(item, route["posting_url"])
+        if not isinstance(title, str) or not title.strip():
+            report["error"] = "job {0} has no title".format(index)
+            return report, []
+        if not safe_ashby_posting_url(posting_url, board["slug"]):
+            report["error"] = "job {0} has an unsafe posting URL".format(index)
+            return report, []
+        if ashby_route.get("listed"):
+            listed = resolve(item, ashby_route["listed"])
+            if listed is not MISSING and not isinstance(listed, bool):
+                report["error"] = "job {0} has an invalid isListed value".format(index)
+                return report, []
+        candidate = keep(item, ashby_route, positions, since)
+        if candidate is not None:
+            candidate.update(slug=board["slug"], company=board["name"])
+            candidate["api_evidence"] = {
+                "request_url": board["request_url"], "board_url": board["board_url"], "job": item,
+            }
+            kept.append(candidate)
+    report.update(status="ok", kept=len(kept))
+    return report, kept
+
+
+def collect_ashby(payload: dict, route: dict, positions: List[str], since: Optional[datetime],
+                  fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[int, Dict[str, object]]:
+    if payload.get("slugs", []) or payload.get("lists", []):
+        return 1, {"collect_error": "boards cannot be combined with non-empty slugs or lists"}
+    try:
+        boards = validate_ashby_config(route, payload.get("boards"))
+    except ValueError as error:
+        return 1, {"collect_error": str(error)}
+
+    def work(board: dict):
+        return scan_ashby_board(board, route, positions, since, fetch, sleep)
+
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        results = list(pool.map(work, boards))
+    candidates = [candidate for _, kept in results for candidate in kept]
+    candidates.sort(key=lambda candidate: candidate["date"], reverse=True)
+    shaped = [{key: candidate[key] for key in
+               ("slug", "company", "title", "url", "date", "location", "matched_query", "api_evidence")}
+              for candidate in candidates]
+    return 0, {"candidates": shaped, "slugs": [report for report, _ in results], "lists": []}
+
+
 def collect(payload: object, fetch: Callable[..., tuple],
             sleep: Callable[[float], None] = time.sleep) -> Tuple[int, Dict[str, object]]:
     def bad(message: str) -> Tuple[int, Dict[str, object]]:
@@ -236,6 +410,9 @@ def collect(payload: object, fetch: Callable[..., tuple],
         return bad("now must be an ISO-8601 timestamp")
     days = WINDOWS[window]
     since = now - timedelta(days=days) if days else None
+
+    if "boards" in payload:
+        return collect_ashby(payload, route, positions, since, fetch, sleep)
 
     ordered: Dict[str, Tuple[str, str]] = {}  # lowercased slug → (slug, name)
     for slug in slugs:

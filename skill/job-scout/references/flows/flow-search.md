@@ -18,17 +18,12 @@ rules apply only to `json` and `board` routes. Validate selected deck pack field
 against `job-profile/references/schemas/schema-search-packs.md`; an ad-hoc URL
 pack is not a deck pack and is exempt. Research memory is not a search input.
 
-A JSON or board route replaces DOM search. A `kind: board` pack first
-runs `site:{entry host} {formulation}` on a search engine for slug
-discovery, then GETs the route. That harvest
-is not a second surface and not a DOM fallback: `entry` already
-declared the host. A bot-wall, captcha, throttle, or empty interrupt on that
-harvest records `defect: surface_interrupted` for the harvest and
-still collects stored slugs (2), list slugs (3), and explicit boards; it does not stop the pack or mark route
-GETs unsubmitted. A `kind: json` pack runs once
-per expanded formulation; a `kind: board` pack runs once per board
-slug. Location remains a keep filter instead of repeating the same
-routed URL for every `search_in` entry.
+A JSON or board route replaces DOM search. A `kind: json` pack runs once per
+expanded formulation. Only a selected profile pack with `route.kind: board`
+and `route.ats: ashby` uses the Ashby board API branch below. Ad-hoc packs and
+other ATS board packs keep the existing slug-discovery flow. Location remains
+a keep filter instead of repeating the same routed URL for every `search_in`
+entry.
 
 - A `kind: json` route opens `entry` to establish its browser origin,
   substitute the percent-encoded formulation and 1-based page into `url`, then
@@ -44,7 +39,73 @@ routed URL for every `search_in` entry.
   incomplete route, records `defect: query_not_submitted` and scans nothing.
   HTTP failure, non-JSON output, or a missing configured response path records
   `defect: route_failed`. Never fall back to DOM after a configured or required
-  route fails.
+  route fails. Ashby board API fallback is only the same-board exception
+  defined below.
+### Ashby board API route
+
+For the selected profile pack only, this branch applies when `route.kind` is
+`board` and `route.ats` is `ashby`. Validate the pack route first. Exclude
+disabled `pack.boards` rows before validating board URLs; an absent `enabled`
+means enabled. A route or enabled-board configuration error records
+`defect: query_not_submitted`, names the error, and makes no API or browser
+request. `entry`, `site:` results, stored dossiers, and `slug_lists` are not
+inputs to this branch.
+
+If no enabled board remains, report `defect: no_boards` and make no request.
+Otherwise invoke `./scripts/collect.py` once with exactly these Ashby inputs:
+`{"route": <pack.route>, "boards": <enabled pack.boards>, "positions": <Constraints.positions>, "date_posted": <Constraints.date_posted>, "now": <current UTC timestamp>}`.
+Do not send `slugs` or `lists`, read the store for tenant seeds, or run a search
+engine. The route requires `items: jobs`, `posting_url: jobUrl`, and `title:
+title`; when optional route paths are omitted, use `location: location`,
+`date: publishedAt`, and `listed: isListed`. The collector GETs the configured
+Ashby posting API once per enabled board, substituting the tenant from that
+board's configured root into `route.url`.
+
+The collector output keeps the shared envelope: `candidates`, per-board
+`slugs` reports, and `lists: []`. A valid API response with `jobs: []` is
+`api_ok` and `valid_empty`, not a failure; zero jobs after title/date filtering
+is also a successful read. Missing or wrongly typed required response data is
+a schema failure. Missing optional date, pay, or geography fields does not
+fail the response.
+
+A transport, HTTP, or response-schema failure permits browser fallback only on
+that same configured Ashby board root. Inspect its complete public listing,
+following pagination until exhausted or a page adds no new posting URL; apply
+the same whole-word `positions[]` title rule, listed check, and `date_posted`
+window. Preserve the board's company, pack source, ATS channel, and matched
+title position on each fallback candidate. Set the run-local
+`ashby_profile_branch: true` flag on every candidate from this selected profile
+branch, including browser-fallback rows; carry it through Match but never
+persist it. It does not apply to ad-hoc packs or refresh rows. Do not search
+for another board or use the generic `site:` flow. After the collector exhausts its 429 retries,
+defer that board with no browser or alternate-route request; report it
+unresolved with the throttle reason. Invalid configuration never falls back.
+A successful same-board listing counts as recovered even when it has no
+matching postings; otherwise the board is unresolved and named under Gaps.
+Preserve the counts `api_ok` (including `valid_empty`), `valid_empty`,
+`fallback_attempted`, `fallback_recovered`, and `unresolved` for the scout
+report. Failed, partial, deferred, or unresolved runs are not zero-result
+runs and never mark a posting closed; a valid empty API response is a zero.
+
+Each API candidate carries run-local `api_evidence` with exactly
+`{"request_url": <actual API GET URL>, "board_url": <configured board root>, "job": <unmodified raw job object>}`.
+Keep it through merge and extraction, outside the persisted dossier schema.
+Set `source` to the pack id, `channel` to `ats`, and `matched_query` to the
+first whole-word `positions[]` title match. Apply `date_posted` to
+`publishedAt`, the job's last publication date; do not substitute creation or
+update timestamps. Map present API facts to the ordinary candidate columns;
+absent optional fields remain `—`.
+
+### Other ATS board routes
+
+For ad-hoc `kind: board` packs and selected profile board packs whose
+`route.ats` is not `ashby`, use the slug-discovery flow below. It first runs `site:{entry host} {formulation}` on a search engine
+for slug discovery, then GETs the route. That harvest is not a second surface
+and not a DOM fallback: `entry` already declared the host. A bot-wall, captcha,
+throttle, or empty interrupt on that harvest records `defect: surface_interrupted`
+for the harvest and still collects stored slugs (2), list slugs (3), and
+explicit boards; it does not stop the pack or mark route GETs unsubmitted.
+
 - `kind: board` needs `ats` (`job-store/references/schemas/schema-dossier.md`
   "ATS family" vocabulary), a `url` containing `{slug}`, and `items`,
   `posting_url`, `title` dot paths; `location`, `date`, and `listed` are
@@ -177,9 +238,18 @@ Every pack prints `### Candidates` then `### Defect log`:
 `source` is the pack `id` (an ad-hoc pack's id is its host), never the surface label or the posting host.
 
 `pack | formulations_run | zero_result_runs | unsubmitted_runs | verdict`
+For selected-profile Ashby board searches, use the outcome rules in **Ashby board API route** instead of the generic zero-result accounting below.
+
 `zero_result_runs` = runs that kept no card. `unsubmitted_runs` = built runs never submitted, counted after the interrupted run; `0` when none. An interrupted page is not a zero_result_run. A routed run is one expanded formulation, or one board slug on a `kind: board` pack, with location applied only as a keep filter. A careers route is one listing run with location applied only as a keep filter; failed or interrupted careers runs do not count as zero results. A DOM run is one expanded formulation, per entry under a `search_in` list, or once under `worldwide` or on a `location: keep-only` pack. Every run zero-keep → `defect: zero_results`. For DOM runs under a `search_in` list, every run for one entry zero-keep also → `defect: zero_results`; a `location: keep-only` pack has no per-location runs.
 `verdict` ∈ `pass` | `auth_gate` | `defect: {name}`. No defect and no auth gate is `pass`. `unsubmitted_runs` above `0` is always `defect: surface_interrupted`; `query_not_submitted` names a pack fault (unknown `location` value, incomplete route, missing echo), never an interrupt.
 
 ## Merge
+
+Preserve `ashby_profile_branch: true` and complete run-local source evidence
+when merging a branch row with another source for the same normalized URL.
+Keep its `api_evidence` through extraction; never replace complete evidence
+with an absent value or persist it in the dossier. If duplicate rows for one normalized
+URL carry different `descriptionPlain` or `descriptionHtml` bodies, retain the
+conflict for posting-page review instead of choosing one body.
 
 One row per normalized URL. Prefer a named author. Channel sort: `direct_email` → `dm_request` → `founder` → `ats`.

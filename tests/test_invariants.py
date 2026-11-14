@@ -665,24 +665,59 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         discovery = instruction_text(harness.SKILL / "job-company-scout" / "references" / "flows" / "flow-discover.md")
         self.assertIn("if no corresponding template pack exists, use a declared careers pack", discovery)
         search = instruction_text(FLOW_SEARCH)
+        other_ats = instruction_section(
+            FLOW_SEARCH, "### Other ATS board routes", "## Declared careers listings"
+        )
+        ashby = instruction_section(
+            FLOW_SEARCH, "### Ashby board API route", "### Other ATS board routes"
+        )
         prep = instruction_text(FLOW_PREP)
         self.assertIn(
             "`site:` cards on a `kind: board` pack are slug sources, not candidates",
-            search,
+            other_ats,
         )
-        self.assertIn("(3) every row of each `slug_lists` entry", search)
-        self.assertIn("no slug is skipped or deferred to a later run", search)
-        self.assertNotIn("the window", search)
-        self.assertIn("disabled explicit tenants are excluded from every seed source", search)
-        self.assertIn('"slugs": <explicit seeds, (1), and (2)>', search)
-        self.assertNotIn("mod seed count", search)
-        self.assertNotIn("`data/boards.yaml` is an optional seed", search)
+        self.assertIn("(3) every row of each `slug_lists` entry", other_ats)
+        self.assertIn("no slug is skipped or deferred to a later run", other_ats)
+        self.assertNotIn("the window", other_ats)
+        self.assertIn("disabled explicit tenants are excluded from every seed source", other_ats)
+        self.assertIn('"slugs": <explicit seeds, (1), and (2)>', other_ats)
+        self.assertNotIn("mod seed count", other_ats)
+        self.assertNotIn("`data/boards.yaml` is an optional seed", other_ats)
         self.assertNotIn(
             "slugs are the `data/boards.yaml` rows whose `ats` equals the pack's; none → `defect: no_boards`",
-            search,
+            other_ats,
         )
+        self.assertIn("selected profile pack only", ashby)
+        self.assertIn("exclude disabled `pack.boards` rows before validating board urls", ashby)
+        self.assertIn("if no enabled board remains, report `defect: no_boards` and make no request", ashby)
+        self.assertIn('"boards": <enabled pack.boards>', ashby)
+        self.assertIn("do not send `slugs` or `lists`", ashby)
+        self.assertIn("valid_empty", ashby)
+        self.assertIn("fallback_attempted", ashby)
+        self.assertIn("fallback_recovered", ashby)
+        self.assertIn("failed, partial, deferred, or unresolved runs are not zero-result runs", ashby)
+        self.assertIn("ashby_profile_branch: true", ashby)
         self.assertIn("then `first_seen` descending", prep)
         self.assertNotIn("then `first_seen` ascending", prep)
+
+    def test_ashby_full_source_and_fallback_scope_survive_to_match(self):
+        search = instruction_text(FLOW_SEARCH)
+        extract = instruction_text(FLOW_EXTRACT)
+        match_gate = instruction_text(FLOW_MATCH_GATE)
+        rank = instruction_text(FLOW_RANK)
+        self.assertIn("ashby_profile_branch: true", search)
+        self.assertIn("it does not apply to ad-hoc packs or refresh rows", search)
+        self.assertIn("carry it through match but never persist it", search)
+        self.assertIn("preserve `ashby_profile_branch: true`", search)
+        self.assertIn("complete api jd", extract)
+        self.assertIn("board-listing browser fallback", extract)
+        self.assertIn("missing optional api date, pay, or geography", extract)
+        self.assertIn("does not trigger browser fallback", extract)
+        self.assertIn("ashby_profile_branch: true", match_gate)
+        self.assertIn("complete run-local jd", match_gate)
+        self.assertIn("browser fallback body", match_gate)
+        self.assertIn("posting-level browser fallbacks attempted, recovered", rank)
+        self.assertIn("successful empty boards and incomplete coverage are distinct", rank)
 
     def test_discovery_markets_qualify_by_territory_headquarters(self):
         discovery = instruction_text(harness.SKILL / "job-company-scout" / "references" / "flows" / "flow-discover.md")
