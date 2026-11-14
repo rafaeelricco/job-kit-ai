@@ -615,6 +615,9 @@ class RunnerTests(unittest.TestCase):
             ("cat in.json | python3 /frozen/score.py | head", False),
             ("false || cat in.json | python3 /frozen/score.py", False),
             ("python3 -c 'print(1)' /frozen/score.py", False),
+            ("python3 - /frozen/score.py <<'EOF'\nprint('[{\"match_score\": 79}]')\nEOF", False),
+            ("echo 'print(1)' | python3 - /frozen/score.py", False),
+            ("python3 -u -- /frozen/score.py < in.json", True),
         ):
             with self.subTest(command=command):
                 events = [
