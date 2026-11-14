@@ -7,11 +7,11 @@ Skills live in **job-kit**, not in this tree.
 
 ## Layout
 
-| Folder          | What's in it                                                                                                                                                              |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/`         | Canonical YAML about you. Edit here first.                                                                                                                                |
-| `data/stories/` | One markdown file per interview story; frontmatter is read by job-apply, job-stories, job-resume-refine, and job-resume-review, the body is not                           |
-| `cv/`           | The base resume PDF plus its LaTeX source                                                                                                                                 |
+| Folder          | What's in it                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/`         | Canonical YAML about you. Edit here first.                                                                                                                                      |
+| `data/stories/` | One markdown file per interview story; frontmatter is read by job-apply, job-stories, job-resume-refine, and job-resume-review, the body is not                                 |
+| `cv/`           | The base resume PDF plus its LaTeX source                                                                                                                                       |
 | `scout/`        | Written by job-scout; `status:` and Application-log records by job-apply and job-inbox; read by job-match list: `jobs/` per-job dossiers (`{first_seen}-{company}--{title}.md`) |
 
 `data/` may mix `.yaml` and `.yml`. `data/stories/` holds markdown files with

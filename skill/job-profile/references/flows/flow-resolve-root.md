@@ -1,4 +1,3 @@
-
 # Job profile root
 
 Read-only: never invent a path (callers resolve their files against it) or scaffold a profile (`job-profile` owns creation).
