@@ -33,7 +33,7 @@ Workers fill the remaining cells; `scripts/score.py` computes `match_score`,
 | Role type         |     15 | Code. JobProfile `title` contains a `candidate.roles[]` string as whole words (case-insensitive, punctuation ignored) → 15; else 0. `roles` empty → —                                                      |
 | Location / remote |     10 | Shared `work_model` and (remote or named-location match) → 10; shared `work_model` only → 5; else 0. Both unknown → —                                                                                      |
 | Domain            |      5 | Printed domain cue holds in `candidate.domains` → 5; cue present, no hold → 0; no cue → —                                                                                                                  |
-| Language          |      5 | Soft extra met → 5; printed extra unmet → 0; none → —                                                                                                                                            |
+| Language          |      5 | Soft extra met → 5; printed extra unmet → 0; none → —                                                                                                                                                      |
 | Preferences       |      5 | `candidate.preferences` agree with JobProfile `work_model` / `location` → 5; conflict → 0; all blank → —                                                                                                   |
 
 ## Decision bands
