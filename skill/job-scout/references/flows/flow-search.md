@@ -58,9 +58,12 @@ If no enabled board remains, report `defect: no_boards` and make no request.
 Otherwise invoke `./scripts/collect.py` once with exactly these Ashby inputs:
 `{"route": <pack.route>, "boards": <enabled pack.boards>, "positions": <Constraints.positions>, "date_posted": <Constraints.date_posted>, "now": <current UTC timestamp>}`.
 Do not send `slugs` or `lists`, read the store for tenant seeds, or run a search
-engine. The route requires `items: jobs`, `posting_url: jobUrl`, and `title:
-title`; when optional route paths are omitted, use `location: location`,
-`date: publishedAt`, and `listed: isListed`. The collector GETs the configured
+engine. The route `url` must be
+`https://api.ashbyhq.com/posting-api/job-board/{slug}`, optionally with
+`?includeCompensation=true` or `?includeCompensation=false`. The route requires `items: jobs`, `posting_url: jobUrl`, and `title:
+title`. The optional `location`, `date`, and `listed` paths must be
+`location`, `publishedAt`, and `isListed` when present, and default to those
+values when omitted. The collector GETs the configured
 Ashby posting API once per enabled board, substituting the tenant from that
 board's configured root into `route.url`.
 

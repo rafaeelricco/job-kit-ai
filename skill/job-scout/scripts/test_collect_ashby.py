@@ -205,6 +205,17 @@ class AshbyCollectTests(unittest.TestCase):
             self.assertEqual((report["status"], report["http_status"]), ("failed", 0))
             self.assertIn("invalid board url", report["error"])
 
+    def test_official_api_url_variants_build_the_request_from_the_route(self):
+        base = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
+        for url in (base, base + "?includeCompensation=false"):
+            with self.subTest(url=url):
+                expected = url.replace("{slug}", "acme")
+                fetch = make_fetch({expected: ok({"jobs": [job()]})})
+                code, out = self.run_collect(self.payload(route=dict(ROUTE, url=url)), fetch)
+                self.assertEqual(code, 0)
+                self.assertEqual(fetch.calls, [expected])
+                self.assertEqual(out["candidates"][0]["api_evidence"]["request_url"], expected)
+
     def test_route_rows_and_legacy_inputs_are_validated_before_fetch(self):
         invalid_payloads = [
             self.payload([board(enabled="false")]),
@@ -216,6 +227,8 @@ class AshbyCollectTests(unittest.TestCase):
             self.payload([board()], route=dict(ROUTE, ats="greenhouse")),
             self.payload([board()], route=dict(ROUTE, items="data.jobs")),
             self.payload([board()], route=dict(ROUTE, url="https://evil.example/{slug}")),
+            self.payload([board()], route=dict(ROUTE, url="https://api.ashbyhq.com/posting-api/job-board/{slug}?x=1")),
+            self.payload([board()], route=dict(ROUTE, url="http://api.ashbyhq.com/posting-api/job-board/{slug}")),
         ]
         for payload in invalid_payloads:
             with self.subTest(payload=payload):

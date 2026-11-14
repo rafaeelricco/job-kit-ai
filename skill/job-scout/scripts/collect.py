@@ -38,6 +38,11 @@ EU_LEVER_HOSTS = ("jobs.eu.lever.co", "api.eu.lever.co")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 MISSING = object()
 ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
+ASHBY_API_URLS = frozenset((
+    "https://api.ashbyhq.com/posting-api/job-board/{slug}",
+    ASHBY_API,
+    "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=false",
+))
 
 
 def parse_when(value: object) -> Optional[datetime]:
@@ -255,8 +260,10 @@ def validate_ashby_config(route: dict, boards: object) -> List[dict]:
         raise ValueError("boards require route.ats to be ashby")
     if route.get("kind") not in (None, "board"):
         raise ValueError("Ashby route.kind must be board")
-    if route.get("url") != ASHBY_API:
-        raise ValueError("Ashby route.url must be the official posting API URL")
+    if route.get("url") not in ASHBY_API_URLS:
+        raise ValueError("Ashby route.url must be the official posting API URL "
+                         "(https://api.ashbyhq.com/posting-api/job-board/{slug}, optionally "
+                         "with ?includeCompensation=true or false)")
     for key, expected in (("items", "jobs"), ("posting_url", "jobUrl"), ("title", "title")):
         if route.get(key) != expected:
             raise ValueError("Ashby route.{0} must be {1!r}".format(key, expected))
@@ -299,7 +306,7 @@ def validate_ashby_config(route: dict, boards: object) -> List[dict]:
                 "name": board["name"].strip(),
                 "board_url": board["url"],
                 "slug": tenant,
-                "request_url": ASHBY_API.format(slug=quote(tenant, safe="")),
+                "request_url": route["url"].replace("{slug}", quote(tenant, safe="")),
             })
     return prepared
 
