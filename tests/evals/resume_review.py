@@ -15,6 +15,8 @@ Exit: 0 every selected case passed; 1 a case failed; 2 claude, python3, or pdfto
 """
 from __future__ import annotations
 import argparse
+import dataclasses
+import hashlib
 import json
 import os
 import posixpath
@@ -834,6 +836,26 @@ def trusted_scorers(root: Path, skills_root: Optional[Path] = None) -> Tuple[str
     return tuple(sorted(str(path) for path in trusted))
 
 
+def scorer_fingerprint(root: Path, skills_root: Optional[Path] = None) -> str:
+    """Digest of the frozen job-match skill's files and of where the workspace link points.
+
+    A session can Write next to score.py (a module that shadows an import, planted
+    bytecode) or swap the workspace link, so its scores count only if this is unchanged.
+    """
+    digest = hashlib.sha256()
+    skill = (skills_root or (REPO / "skill")) / "job-match"
+    for path in sorted(skill.rglob("*")):
+        digest.update(str(path.relative_to(skill)).encode())
+        if path.is_symlink():
+            digest.update(b"link:" + os.readlink(path).encode())
+        elif path.is_file():
+            digest.update(path.read_bytes())
+    link = root / ".claude" / "skills" / "job-match"
+    target = os.readlink(link) if link.is_symlink() else "not a symlink"
+    digest.update(f"workspace:{target}:{link.resolve()}".encode())
+    return digest.hexdigest()
+
+
 def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional[Path] = None,
              isolated: bool = False, prepared_prompt: Optional[str] = None) -> Tuple[Run, str]:
     scratch = root / "tmp"  # TMPDIR: the skill's temp files stay inside the workspace
@@ -847,12 +869,14 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
     command += ["--allowedTools", *allowed]  # variadic; put prompt before it so it cannot consume the prompt
     if model:
         command += ["--model", model]
+    fingerprint = scorer_fingerprint(root, skills_root)
     try:
-        env = {**os.environ, "TMPDIR": str(scratch)}
+        # No bytecode writes, so running score.py leaves the fingerprinted tree unchanged.
+        env = {**os.environ, "TMPDIR": str(scratch), "PYTHONDONTWRITEBYTECODE": "1"}
         if case.profile:
             env["PROFILE_ROOT"] = str(root / "profile")
         if isolated:
-            env.update({"PROFILE_ROOT": str(root / "profile"), "PYTHONDONTWRITEBYTECODE": "1"})
+            env["PROFILE_ROOT"] = str(root / "profile")
         proc = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=TIMEOUT, env=env)
     except subprocess.TimeoutExpired as error:
         partial = error.stdout or b""  # always bytes on timeout, whatever text= says
@@ -860,8 +884,12 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
         partial_stderr = error.stderr or b""
         stderr = partial_stderr.decode("utf-8", "replace") if isinstance(partial_stderr, bytes) else partial_stderr
         return Run(parse(""), [], f"timed out after {TIMEOUT} s", stderr, None), stdout
-    return read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root,
-                       scorers=trusted_scorers(root, skills_root)), proc.stdout
+    run = read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root,
+                      scorers=trusted_scorers(root, skills_root))
+    if scorer_fingerprint(root, skills_root) != fingerprint:
+        run = dataclasses.replace(run, match_scores=(), scorer_rejections=(
+            *run.scorer_rejections, "the frozen scorer's files or workspace link changed during the session"))
+    return run, proc.stdout
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

@@ -1011,6 +1011,44 @@ class EvidenceBenchmarkTests(unittest.TestCase):
             self.assertEqual(kwargs["env"]["TMPDIR"], str(root / "tmp"))
             self.assertEqual(kwargs["env"]["PYTHONDONTWRITEBYTECODE"], "1")
 
+    def test_runner_drops_scores_when_the_session_changes_the_frozen_scorer(self):
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        def tamper_none(root, snapshot):
+            pass
+        def shadow_import(root, snapshot):
+            (snapshot / "job-match" / "scripts" / "json.py").write_text("x = 1\n", encoding="utf-8")
+        def swap_link(root, snapshot):
+            link = root / ".claude" / "skills" / "job-match"
+            link.unlink()
+            (link / "scripts").mkdir(parents=True)
+        for tamper, credited in ((tamper_none, True), (shadow_import, False), (swap_link, False)):
+            with self.subTest(tamper=tamper.__name__), tempfile.TemporaryDirectory() as tmp:
+                root, snapshot = Path(tmp) / "work", Path(tmp) / "snapshot"
+                for name in ("job-match", case.skill):
+                    (snapshot / name).mkdir(parents=True, exist_ok=True)
+                    (snapshot / name / "SKILL.md").write_text("frozen", encoding="utf-8")
+                (snapshot / "job-match" / "scripts").mkdir()
+                (snapshot / "job-match" / "scripts" / "score.py").write_text("", encoding="utf-8")
+                scorer = root / ".claude" / "skills" / "job-match" / "scripts" / "score.py"
+                stdout = "\n".join(json.dumps(event) for event in (
+                    {"type": "system", "subtype": "init", "cwd": str(root)},
+                    {"type": "assistant", "message": {"content": [{
+                        "type": "tool_use", "name": "Bash", "id": "score-call",
+                        "input": {"command": f"python3 '{scorer}' < in.json"}}]}},
+                    {"type": "user", "message": {"content": [{
+                        "type": "tool_result", "tool_use_id": "score-call",
+                        "content": '[{"match_score": 79}]'}]}},
+                    {"type": "result", "result": "**Match score: 79.**"},
+                ))
+                def session(*args, **kwargs):
+                    tamper(root, snapshot)
+                    return mock.Mock(returncode=0, stdout=stdout, stderr="")
+                with mock.patch.object(resume_review.subprocess, "run", side_effect=session):
+                    run, _ = resume_review.run_case(case, root, None, snapshot)
+                self.assertEqual(run.match_scores, (79,) if credited else ())
+                self.assertEqual(any("changed during the session" in reason
+                                     for reason in run.scorer_rejections), not credited)
+
     def test_prompt_hash_normalizes_symlinked_run_and_skill_paths(self):
         bench = self.benchmark()
         case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
