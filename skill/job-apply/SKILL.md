@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Applies to queued postings one at a time, from reading the ad to a recorded submission, with no operator in the loop.
 
-Profile root: load the `job-profile-root` skill now; obey it end-to-end.
+Profile root: read `job-profile/references/flows/flow-resolve-root.md` now; obey it end-to-end.
 
 Store law: load the `job-store` skill now; obey it end-to-end.
 

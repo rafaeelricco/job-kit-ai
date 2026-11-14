@@ -76,6 +76,16 @@ function New-PlanRowAgent {
   return (New-PlanRow 'I' 'link' $Dest)
 }
 
+function Add-PlanRowsLegacyAgentSkills {
+  param([object]$Rows, [string]$Root)
+  foreach ($name in $script:LegacySkillNames) {
+    $dest = Get-SkillDest $Root $name
+    if (Test-KitSkillLink $dest $script:RepoRoot $name) {
+      $Rows.Add((New-PlanRow 'I' 'remove legacy link' $dest)) | Out-Null
+    }
+  }
+}
+
 # Get-PlanCount ROWS KINDS
 function Get-PlanCount {
   param([object[]]$Rows, [string[]]$Kinds)
@@ -195,7 +205,7 @@ function Write-Plan {
           Write-Host ("  {0,-16} {1} ({2})" -f $action, $leaf, $tag)
           continue
         }
-      } elseif (@('link', 'relink', 'install driver') -contains $row.Label) {
+      } elseif (@('link', 'relink', 'install driver', 'remove legacy link') -contains $row.Label) {
         Write-Host ("  {0,-16} {1}" -f $row.Label, $leaf)
         continue
       }

@@ -8,7 +8,7 @@ argument-hint: "[all | <dossier>] [--exclude <status>[,…]] [--top <n>] [--type
 
 Main is the orchestrator.
 
-Profile root: load the `job-profile-root` skill now; obey it end-to-end.
+Profile root: read `job-profile/references/flows/flow-resolve-root.md` now; obey it end-to-end.
 
 Store law: load the `job-store` skill now; obey it end-to-end.
 

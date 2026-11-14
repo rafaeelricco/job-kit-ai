@@ -21,7 +21,7 @@ Targets:
   aside        Aside skills - full copy into the Aside skills root
   agents       Coding-agent skills (job-company-scout, job-profile, job-list,
                job-match, job-stories, job-inbox, job-humanize,
-               job-profile-root, job-store, job-resume-refine, job-resume-review)
+               job-store, job-resume-refine, job-resume-review)
   browser-use  Browser skills (job-company-scout, job-scout, job-apply, job-prep) plus the browser-use
                driver skill into coding-agent homes; driven by the local
                browser-use CLI

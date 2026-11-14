@@ -2,7 +2,6 @@
 # Source only — do not execute. Windows PowerShell 5.1 and PowerShell 7.
 
 $script:CoreSkillNames = @(
-  'job-profile-root',
   'job-store'
 )
 $script:SkillNames = @(
@@ -26,8 +25,8 @@ $script:BrowserSharedDeps = @(
   'job-humanize',
   'captcha-solver'
 ) + $script:CoreSkillNames
-$script:BrowserLegacySkillNames = @('job-resume')
-$script:LegacySkillNames = @('profile-init', 'job-profile-config', 'job-tracker', 'job-resume', 'job-profile-init', 'job-profile-me', 'job-pitch', 'job-captcha-solver')
+$script:BrowserLegacySkillNames = @('job-resume', 'job-profile-root')
+$script:LegacySkillNames = @('profile-init', 'job-profile-config', 'job-tracker', 'job-resume', 'job-profile-init', 'job-profile-me', 'job-pitch', 'job-captcha-solver', 'job-profile-root')
 $script:AllSkillNames = $script:SkillNames + $script:BrowserSkillNames + $script:BrowserSharedDeps
 $script:AgentTargets = @('claude', 'codex', 'grok', 'hermes')
 $script:AgentsOnlyNames = @('job-stories', 'job-inbox')

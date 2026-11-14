@@ -3,11 +3,11 @@
 # Compatible with macOS Bash 3.2. Source only — do not execute.
 
 # Skill folder names under skill/ that Aside may load (Aside channel only).
-CORE_SKILL_NAMES="job-profile-root job-store"
+CORE_SKILL_NAMES="job-store"
 SKILL_NAMES="job-company-scout job-scout job-apply job-prep job-resume-refine job-resume-review job-profile job-list job-match job-stories job-inbox job-humanize ${CORE_SKILL_NAMES}"
 # Prior Aside basenames from this kit; install/uninstall may remove orphans.
 # Predicates: kit symlink OR kit copy (.job-kit marker). Source dir need not exist for legacy links.
-LEGACY_SKILL_NAMES="job-discovery job-application profile-scaffold application-stage profile-init job-profile-config job-tracker job-resume job-profile-me job-pitch"
+LEGACY_SKILL_NAMES="job-discovery job-application profile-scaffold application-stage profile-init job-profile-config job-tracker job-resume job-profile-me job-pitch job-profile-root"
 
 # Marker written at DEST/.job-kit so uninstall can tell kit copies from foreign dirs.
 KIT_MARKER=".job-kit"

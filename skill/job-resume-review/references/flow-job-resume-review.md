@@ -15,7 +15,7 @@ When explaining source rationale or resolving a contextual exception, read
 
 Use the supplied CV. When a folder above it contains `data/job_search.yaml`,
 that folder is Profile root. With no CV supplied, or when the user asks to
-use their profile: Profile root: load the `job-profile-root` skill now; obey
+use their profile: Profile root: read `job-profile/references/flows/flow-resolve-root.md` now; obey
 it end-to-end. Then select `data/cvs.yaml` `base` under `cv/`, falling back
 to `cv/en-us-resume.pdf`. Ask if selection remains ambiguous. Otherwise
 review without a profile.

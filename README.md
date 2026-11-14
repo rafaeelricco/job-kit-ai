@@ -13,7 +13,7 @@ Runs in Claude Code, Codex, Grok, Hermes Agent, and
 [Aside Browser](https://aside.com).
 
 The [web platform](https://r1cco.com/jobs/) is only useful today to consume
-the created profile derived from `/job-profile-init`. When you open it,
+the created profile derived from `/job-profile`. When you open it,
 select the folder you chose to be the source of truth. You can then manage
 everything from the web app.
 
@@ -117,8 +117,9 @@ Each skill contains its usage and detailed workflow:
 | [job-inbox](skill/job-inbox/SKILL.md)                 | Track Gmail replies.                                                           |
 | [job-stories](skill/job-stories/SKILL.md)             | Build interview stories, scripts, and experience bullets.                      |
 
-Shared skills handle [profile lookup](skill/job-profile-root/SKILL.md) and
-[job records](skill/job-store/SKILL.md).
+Run `/job-profile root` to print the active profile directory. See the
+[profile resolver](skill/job-profile/references/flows/flow-resolve-root.md) and
+the shared [job record rules](skill/job-store/SKILL.md).
 
 ## Uninstall
 

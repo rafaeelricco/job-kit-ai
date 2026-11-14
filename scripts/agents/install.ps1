@@ -51,6 +51,7 @@ function Get-PlanRowsAgentHome {
       $dest = Get-SkillDest $override $name
       $rows.Add((New-PlanRowAgent $dest $name $source)) | Out-Null
     }
+    Add-PlanRowsLegacyAgentSkills $rows $override
     return $rows
   }
 
@@ -69,6 +70,7 @@ function Get-PlanRowsAgentHome {
       $dest = Get-SkillDest $root $name
       $rows.Add((New-PlanRowAgent $dest $name $source)) | Out-Null
     }
+    Add-PlanRowsLegacyAgentSkills $rows $root
   }
   return $rows
 }

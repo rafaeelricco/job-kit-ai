@@ -9,8 +9,8 @@ disable-model-invocation: true
 
 Find, rank, and persist live openings from search packs or ad-hoc site URLs.
 
-Profile: load `job-profile`'s edit path; a `job-profile-root` stop means no
-profile, so stop here. It owns the read set and card derivation
+Profile: load `job-profile`'s edit path; a resolver stop means no
+profile, so stop here. The profile skill owns the read set and card derivation
 (`job-profile/references/flows/flow-show.md`,
 `job-profile/references/schemas/schema-profile-card.md`). Never enter its
 mutation flow. Resolve `data/*` against Profile root.

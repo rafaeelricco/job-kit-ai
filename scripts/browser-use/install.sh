@@ -265,6 +265,7 @@ plan_rows_browser() {
         dest="$(skill_dest "${override}" "${name}")"
         plan_row_agent "${dest}" "${name}" "${source}"
       done
+      plan_rows_legacy_agent_skills "${override}" "${repo}"
       plan_row_driver "${override}"
       exit 0
     fi
@@ -283,6 +284,7 @@ plan_rows_browser() {
         dest="$(skill_dest "${root}" "${name}")"
         plan_row_agent "${dest}" "${name}" "${source}"
       done
+      plan_rows_legacy_agent_skills "${root}" "${repo}"
       plan_row_driver "${root}"
     done
   )
