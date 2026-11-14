@@ -582,11 +582,13 @@ def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
 
     None when the path is relative and the shell's cwd is unknown.
     """
-    path = path.replace("\\", "/")
+    def drive(value: str) -> str:  # Git Bash spells C:/x as /c/x
+        return re.sub(r"^/([A-Za-z])(?=/)", r"\1:", value.replace("\\", "/"))
+    path = drive(path)
     if not (posixpath.isabs(path) or re.match(r"^[A-Za-z]:/", path)):
         if not cwd:
             return None
-        path = posixpath.join(cwd.replace("\\", "/"), path)
+        path = posixpath.join(drive(cwd), path)
     path = posixpath.normpath(path)
     return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
 

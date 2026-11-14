@@ -761,6 +761,19 @@ class RunnerTests(unittest.TestCase):
                     run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
                     self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
 
+    def test_redirected_score_matches_git_bash_and_native_windows_paths(self):
+        for output, read_path in (
+            ("/c/Users/me/ws/tmp/out.json", r"C:\Users\me\ws\tmp\out.json"),
+            (r"C:/Users/me/ws/tmp/out.json", "/c/Users/me/ws/tmp/out.json"),
+            ("tmp/out.json", r"C:\Users\me\ws\tmp\out.json"),
+        ):
+            with self.subTest(output=output, read_path=read_path):
+                events = self.redirected_score_events(
+                    f"py -3 C:/s/score.py < in.json > {output}", read_path=read_path)
+                events[0]["cwd"] = "/c/Users/me/ws"
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertIsNone(resume_review.reports_computed_match_score(run))
+
     def test_redirected_score_is_untrusted_after_a_pipe_feeder_may_rewrite_it(self):
         events = self.redirected_score_events("python3 /frozen/score.py < in.json > /tmp/scored.json")
         events[3:3] = [
