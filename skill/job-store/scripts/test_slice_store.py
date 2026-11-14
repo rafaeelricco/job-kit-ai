@@ -5,7 +5,9 @@ import sys
 import tempfile
 import unittest
 from typing import Dict, List, Optional
+from unittest.mock import patch
 
+import slice_store
 from slice_store import slice_payload
 
 MARKER = "<!-- scout never writes below this line -->"
@@ -57,9 +59,6 @@ class SliceStore(unittest.TestCase):
         self.root = os.path.realpath(self._tmp.name)
         self.jobs = os.path.join(self.root, "scout", "jobs")
         os.makedirs(self.jobs)
-        self._out = tempfile.TemporaryDirectory()
-        self.addCleanup(self._out.cleanup)
-        self.outside = os.path.realpath(self._out.name)
 
     def write(self, name: str, text: str) -> None:
         with open(os.path.join(self.jobs, name), "w", encoding="utf-8") as handle:
@@ -153,26 +152,46 @@ class SliceStore(unittest.TestCase):
         result = self.run_slice(select="new", exclude=["new"])
         self.assertEqual(self.files(result), [])
 
-    def test_skip_and_batches(self) -> None:
-        for name in ("a", "b", "c", "d", "e"):
-            self.write("{0}.md".format(name), dossier(name.upper()))
-        out = os.path.join(self.outside, "run")
-        result = self.run_slice(select="new", skip=["b.md"], out=out, batch=2)
-        self.assertEqual(result["count"], 4)
-        expected = [os.path.join(out, "extract-01.json"), os.path.join(out, "extract-02.json")]
-        self.assertEqual(result["batches"], expected)
-        self.assertEqual(sorted(os.listdir(out)), ["extract-01.json", "extract-02.json"])
-        with open(expected[0], encoding="utf-8") as handle:
-            first = json.load(handle)["excerpts"]
-        with open(expected[1], encoding="utf-8") as handle:
-            second = json.load(handle)["excerpts"]
-        self.assertEqual([e["file"] for e in first], ["a.md", "c.md"])
-        self.assertEqual([e["file"] for e in second], ["d.md", "e.md"])
-        one = first[0]
+    def test_snapshot_projections_parse_once_and_omit_compensation(self) -> None:
+        self.write(
+            "a.md",
+            dossier("A", facts={"salary": "$120,000", "equity": "RSUs", "pay_usd_year": "120000"}),
+        )
+        with (
+            patch("slice_store.read_dossier", wraps=slice_store.read_dossier) as read_dossier,
+            patch("slice_store.posting_facts", wraps=slice_store.posting_facts) as posting_facts,
+        ):
+            result = self.run_slice(select="new")
+
+        read_dossier.assert_called_once()
+        posting_facts.assert_called_once()
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["gaps"], [])
+        self.assertEqual(
+            result["filter"],
+            [{
+                "file": "a.md",
+                "company": "A",
+                "title": "Engineer A",
+                "location": "Portugal",
+                "work_model": "Remote",
+                "work_auth": "—",
+                "hiring_route": "—",
+                "eligibility": "unknown",
+                "eligibility_evidence": "—",
+            }],
+        )
+        one = result["excerpts"][0]  # type: ignore
+        self.assertEqual(one["file"], "a.md")
         self.assertEqual(one["url"], "https://example.com/jobs/A")
         self.assertEqual(one["score"], 8)
         self.assertEqual(one["status"], "new")
         self.assertEqual(one["facts"]["location"], "Portugal")
+        self.assertNotIn("salary", one["facts"])
+        self.assertNotIn("equity", one["facts"])
+        self.assertNotIn("pay_usd_year", one["facts"])
+        self.assertNotIn("salary", one["job"])
+        self.assertNotIn("pay_usd_year", one["job"])
         self.assertEqual(
             one["job"],
             {
@@ -183,7 +202,6 @@ class SliceStore(unittest.TestCase):
                 "seniority": None,
                 "work_model": "Remote",
                 "location": "Portugal",
-                "salary": None,
                 "years_experience": None,
                 "work_auth": None,
                 "hiring_route": None,
@@ -201,13 +219,6 @@ class SliceStore(unittest.TestCase):
             {"snapshot": "Build things.", "do": ["Ship code", "Review PRs"], "must": ["TypeScript"]},
         )
 
-    def test_default_batch_is_ten(self) -> None:
-        for index in range(11):
-            self.write("j{0:02d}.md".format(index), dossier("J{0}".format(index)))
-        out = os.path.join(self.outside, "run")
-        result = self.run_slice(select="new", out=out)
-        self.assertEqual(len(result["batches"]), 2)  # type: ignore
-
     def test_filter_fields_and_unescape(self) -> None:
         self.write(
             "p.md",
@@ -224,17 +235,15 @@ class SliceStore(unittest.TestCase):
         self.assertEqual(row["work_auth"], "EU | UK")
         self.assertEqual(row["eligibility"], "confirmed")
         self.assertEqual(row["eligibility_evidence"], "Remote, anywhere in the UK")
-        self.assertEqual(row["salary"], "—")
-        self.assertEqual(row["pay_usd_year"], "—")
+        self.assertNotIn("salary", row)
+        self.assertNotIn("pay_usd_year", row)
         self.assertEqual(row["hiring_route"], "—")
         self.assertEqual(row["company"], "P")
 
     def test_missing_role_sections(self) -> None:
         self.write("q.md", dossier("Q", role=False, score="—"))
-        out = os.path.join(self.outside, "run")
-        result = self.run_slice(select="new", out=out)
-        with open(result["batches"][0], encoding="utf-8") as handle:  # type: ignore
-            item = json.load(handle)["excerpts"][0]
+        result = self.run_slice(select="new")
+        item = result["excerpts"][0]  # type: ignore
         self.assertEqual(item["role"], {"snapshot": None, "do": [], "must": []})
         self.assertIsNone(item["score"])
         self.assertIsNone(item["job"]["scout_score"])
@@ -242,10 +251,8 @@ class SliceStore(unittest.TestCase):
     def test_job_splits_required_skills(self) -> None:
         facts = {"required_skills": "TypeScript, Python ,, Go", "eligibility": "confirmed"}
         self.write("r.md", dossier("R", facts=facts))
-        out = os.path.join(self.outside, "run")
-        result = self.run_slice(select="new", out=out)
-        with open(result["batches"][0], encoding="utf-8") as handle:  # type: ignore
-            job = json.load(handle)["excerpts"][0]["job"]
+        result = self.run_slice(select="new")
+        job = result["excerpts"][0]["job"]  # type: ignore
         self.assertEqual(job["required_skills"], ["TypeScript", "Python", "Go"])
         self.assertEqual(job["eligibility"], "confirmed")
 
@@ -254,10 +261,8 @@ class SliceStore(unittest.TestCase):
             "## Provenance", "## The role\n\n**Must have**\n\n- Go\n\n## Provenance"
         )
         self.write("r.md", text)
-        out = os.path.join(self.outside, "run")
-        result = self.run_slice(select="new", out=out)
-        with open(result["batches"][0], encoding="utf-8") as handle:  # type: ignore
-            item = json.load(handle)["excerpts"][0]
+        result = self.run_slice(select="new")
+        item = result["excerpts"][0]  # type: ignore
         self.assertEqual(item["role"], {"snapshot": None, "do": [], "must": ["Go"]})
 
     def test_unparseable_goes_to_gaps(self) -> None:
@@ -284,10 +289,8 @@ class SliceStore(unittest.TestCase):
             {"root": self.root, "select": "new", "exclude": ["dead"]},
             {"root": self.root, "select": "new", "skip": "a.md"},
             {"root": self.root, "select": "new", "out": "rel"},
-            {"root": self.root, "select": "new", "out": self.root},
-            {"root": self.root, "select": "new", "out": os.path.join(self.root, "run")},
             {"root": self.root, "select": "new", "batch": 0},
-            {"root": self.root, "select": "new", "batch": True},
+            {"root": self.root, "select": "new", "legacy": True},
         ]
         for payload in bad:
             code, result = slice_payload(payload)
@@ -308,7 +311,10 @@ class SliceStore(unittest.TestCase):
             cwd=os.path.dirname(SCRIPT),
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertEqual(json.loads(proc.stdout)["count"], 1)
+        cli_result = json.loads(proc.stdout)
+        self.assertEqual(cli_result["count"], 1)
+        self.assertEqual(len(cli_result["filter"]), 1)
+        self.assertEqual(len(cli_result["excerpts"]), 1)
         proc = subprocess.run(
             [sys.executable, SCRIPT], input=b"{", stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )

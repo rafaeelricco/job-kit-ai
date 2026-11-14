@@ -1,17 +1,9 @@
-"""Read scout/jobs/ per flow-read.md and emit job-match candidate slices.
-
-Never writes under ``root``; the only write is the batch files under ``out``.
+"""Read scout/jobs/ per flow-read.md and emit job-match candidate snapshots.
 
 stdin: ``{"root": abs Profile root, "select": "new" | "all" | "<file>.md",
-"exclude": [frontmatter status], "skip": [dossier filename], "out": abs dir,
-"batch": positive int (default 10)}``.
-
-Without ``out``: ``{"count", "filter": [{file, company, title, location,
-work_model, work_auth, hiring_route, eligibility, eligibility_evidence,
-salary, pay_usd_year}], "gaps": [{path, reason}]}``. With ``out``: writes
-``out/extract-NN.json`` = ``{"excerpts": [<= batch rows]}`` for the selected rows
-minus ``skip`` and prints ``{"count", "batches": [paths], "gaps"}``. A bad
-payload prints ``{"slice_error": "..."}`` with exit 1.
+"exclude": [frontmatter status]}``. Output contains ``count``, ``filter``,
+``excerpts``, and ``gaps``. A bad payload prints ``{"slice_error": "..."}``
+with exit 1.
 """
 
 import json
@@ -33,14 +25,11 @@ FILTER_KEYS = (
     "hiring_route",
     "eligibility",
     "eligibility_evidence",
-    "salary",
-    "pay_usd_year",
 )
 JOB_FACT_KEYS = (
     "seniority",
     "work_model",
     "location",
-    "salary",
     "years_experience",
     "work_auth",
     "hiring_route",
@@ -154,13 +143,14 @@ def select_rows(
                 continue
             if select == "all" and status == "dropped":
                 continue
+        dossier["facts"] = posting_facts(dossier["lines"])
         dossier["file"] = name
         rows.append(dossier)
     return rows, gaps
 
 
 def filter_row(dossier: Dict[str, Any]) -> Dict[str, str]:
-    facts = posting_facts(dossier["lines"])
+    facts = dossier["facts"]
     row = {
         "file": dossier["file"],
         "company": dossier["fields"]["company"],
@@ -198,7 +188,11 @@ def excerpt(dossier: Dict[str, Any]) -> Dict[str, Any]:
     fields = dossier["fields"]
     raw = fields.get("score", UNKNOWN)
     score = int(raw) if raw.isdigit() else None
-    facts = posting_facts(dossier["lines"])
+    all_facts = dossier["facts"]
+    facts = {
+        key: value for key, value in all_facts.items()
+        if key not in ("salary", "equity", "pay_usd_year")
+    }
     return {
         "file": dossier["file"],
         "url": fields["url"],
@@ -236,37 +230,19 @@ def slice_payload(payload: object) -> Tuple[int, Dict[str, object]]:
         return fail("exclude must be an array of frontmatter statuses")
     if select.endswith(".md") and exclude:
         return fail("exclude does not apply to a dossier filename")
-    skip = payload.get("skip", [])
-    if not string_list(skip):
-        return fail("skip must be an array of dossier filenames")
-    out = payload.get("out")
-    if out is not None and (not isinstance(out, str) or not os.path.isabs(out)):
-        return fail("out must be an absolute path")
-    if out is not None and (os.path.realpath(out) + os.sep).startswith(os.path.realpath(root) + os.sep):
-        return fail("out must be outside root")
-    batch = payload.get("batch", 10)
-    if isinstance(batch, bool) or not isinstance(batch, int) or batch < 1:
-        return fail("batch must be a positive integer")
+    unsupported = sorted(str(key) for key in payload if key not in ("root", "select", "exclude"))
+    if unsupported:
+        return fail("unsupported input keys: {0}".format(", ".join(unsupported)))
 
     rows, gaps = select_rows(root, select, list(exclude))
     if select.endswith(".md") and not rows and not gaps:
         return fail("no such dossier: {0}".format(select))
-    if out is None:
-        return 0, {"count": len(rows), "filter": [filter_row(r) for r in rows], "gaps": gaps}
-
-    kept = [r for r in rows if r["file"] not in skip]
-    os.makedirs(out, exist_ok=True)
-    batches: List[str] = []
-    for start in range(0, len(kept), batch):
-        path = os.path.join(out, "extract-{0:02d}.json".format(len(batches) + 1))
-        with open(path, "w", encoding="utf-8") as handle:
-            json.dump(
-                {"excerpts": [excerpt(r) for r in kept[start:start + batch]]},
-                handle, indent=2, ensure_ascii=False,
-            )
-            handle.write("\n")
-        batches.append(path)
-    return 0, {"count": len(kept), "batches": batches, "gaps": gaps}
+    return 0, {
+        "count": len(rows),
+        "filter": [filter_row(row) for row in rows],
+        "excerpts": [excerpt(row) for row in rows],
+        "gaps": gaps,
+    }
 
 
 def main() -> int:
@@ -276,8 +252,8 @@ def main() -> int:
         code, result = 1, {"slice_error": "invalid JSON: {0}".format(error)}
     else:
         code, result = slice_payload(payload)
-    json.dump(result, sys.stdout, indent=2, ensure_ascii=False)
-    sys.stdout.write("\n")
+    output = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+    sys.stdout.buffer.write(output.encode("utf-8"))
     return code
 
 

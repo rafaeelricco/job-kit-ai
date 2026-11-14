@@ -93,7 +93,11 @@ validate worker. Set `TYPESAFE_API_KEY` (from
 https://console.typesafe.ai/settings/keys) first. It sends each job and your
 full match profile to `api.typesafe.ai`: roles, skills, domains, languages,
 work history, preferences, work authorization, and search constraints. Your
-name and contact details are not included.
+name, contact details, and compensation fields are not included.
+
+Scout and Match evaluate roles independently of pay. Scout saves the posted
+salary as an application fact. The application queue checks that amount
+against your current minimum.
 
 ## Documentation
 

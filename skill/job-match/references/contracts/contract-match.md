@@ -6,14 +6,13 @@ Workers do not invent criteria.
 
 First match wins → blocked.
 
-1–7. Drop when the posting cannot hire this seeker: Posting facts `eligibility` reads `incompatible`; onsite or hybrid-without-remote place that matches no `location.search_in` entry (never under `worldwide` or an empty `search_in`); printed work_model that does not intersect kit-true flags (unknown → not a drop; no kit-true flag → not a drop), or named onsite place with no shared work_model flag (no kit-true flag → not a drop); remote permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per `job-profile/references/contracts/contract-geography.md`; hire-from only in `location.exclude_hire_from`; Posting facts `pay_usd_year` whose highest figure is below `constraints.pay_min_usd_year`; company slug in `exclude_companies`. Blank or `—` pay is not a drop, and currency is never one. Never infer authorization or pay from a company or country name. Hire-from is printed location, `work_auth`, `hiring_route`, `eligibility_evidence`, or a title country tag — never the company's country. Against `state.candidate.constraints` + JobProfile / Posting facts.
+**Eligibility filters.** Block on any of these conditions: Posting facts `eligibility` reads `incompatible`; onsite or hybrid-without-remote place that matches no `location.search_in` entry (never under `worldwide` or an empty `search_in`); printed work_model that does not intersect kit-true flags (unknown → not a drop; no kit-true flag → not a drop), or named onsite place with no shared work_model flag (no kit-true flag → not a drop); remote permitted candidate locations incompatible with residence, or a known unmet explicit authorization requirement per `job-profile/references/contracts/contract-geography.md`; hire-from only in `location.exclude_hire_from`; company slug in `exclude_companies`. Never infer authorization from a company or country name. Hire-from is printed location, `work_auth`, `hiring_route`, `eligibility_evidence`, or a title country tag — never the company's country. Against `state.candidate.constraints` + JobProfile / Posting facts.
 
 Evaluate pasted-posting geography against `constraints.residence` through the contract-geography helper; keep missing or unresolved geography and authorization unknown. Existing dossier `eligibility` is read as stored; this read-only flow does not rewrite dossiers or reinterpret stored incompatibility from a new residence fact.
 
-8. Explicit language requirement `state.candidate.languages` cannot meet
-   (printed must-have only; blank → not a block). Compare levels only when
-   posting and profile print the same scheme; cross-scheme or incomparable
-   tokens → unknown, not a block.
+**Required language filter.** Block when `state.candidate.languages` cannot
+meet an explicit must-have language. A blank requirement passes. Compare levels
+only when the posting and profile use the same scheme. Incomparable levels are unknown.
 
 ## Soft weights (sum = 100)
 
@@ -34,7 +33,7 @@ Workers fill the remaining cells; `scripts/score.py` computes `match_score`,
 | Role type         |     15 | Code. JobProfile `title` contains a `candidate.roles[]` string as whole words (case-insensitive, punctuation ignored) → 15; else 0. `roles` empty → —                                                      |
 | Location / remote |     10 | Shared `work_model` and (remote or named-location match) → 10; shared `work_model` only → 5; else 0. Both unknown → —                                                                                      |
 | Domain            |      5 | Printed domain cue holds in `candidate.domains` → 5; cue present, no hold → 0; no cue → —                                                                                                                  |
-| Language          |      5 | Soft extra (not HF8) met → 5; printed extra unmet → 0; none → —                                                                                                                                            |
+| Language          |      5 | Soft extra met → 5; printed extra unmet → 0; none → —                                                                                                                                            |
 | Preferences       |      5 | `candidate.preferences` agree with JobProfile `work_model` / `location` → 5; conflict → 0; all blank → —                                                                                                   |
 
 ## Decision bands

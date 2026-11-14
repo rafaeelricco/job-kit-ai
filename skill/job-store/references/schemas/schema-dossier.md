@@ -70,7 +70,7 @@ Factor with no evidence stays `—`. Never write `0` for unknown, never omit the
 
 ## Posting facts
 
-Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`); `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
+Keys below, plus Main-derived `ats`, `match_score`, `match_decision`, and `match_confidence`. `role_*` → `## The role`; `status_reason` is the closure log line. `—` = page did not print it. `eligibility` is gate-derived once (`job-scout/references/flows/flow-gate.md`); `eligibility_evidence` is the printed hire-from sentence it was derived from, collapsed to one line. `apply_url` is the normalized href of the posting's apply control, `—` when none is printed.
 
 | key                  | value                      |
 | -------------------- | -------------------------- |
@@ -79,7 +79,6 @@ Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decis
 | work_model           | Remote                     |
 | location             | United Kingdom             |
 | salary               | —                          |
-| pay_usd_year         | —                          |
 | equity               | —                          |
 | years_experience     | 6+                         |
 | work_auth            | —                          |
@@ -94,7 +93,9 @@ Keys below, plus main-derived `pay_usd_year`, `ats`, `match_score`, `match_decis
 | match_decision       | possible_match             |
 | match_confidence     | 0.95                       |
 
-`pay_usd_year` is main-derived by `job-store/scripts/pay.py` from `salary` at the scout gate: yearly USD, `{low}-{high}` or one figure, `—` when unprinted or unparseable. `ats` is main-derived from the frontmatter `url` host per "ATS family" below, rewritten on every scout write. `match_score` (integer 0–100), `match_decision` (a `job-match/references/contracts/contract-match.md` decision band), and `match_confidence` (`0.00`–`1.00`, the share of the rubric that carried believable evidence) are main-derived from the persist-set row `job-scout/references/flows/flow-match-gate.md` carries; a dossier `job-apply` created, or one written before these rows, prints none of them — a consumer reads an absent row as unscored and never recomputes it. None of the five is an extract key.
+Keep printed `salary` as an application fact. Accept legacy `pay_usd_year` rows when reading dossiers and omit them when writing.
+
+`ats` is main-derived from the frontmatter `url` host per "ATS family" below, rewritten on every scout write. `match_score` (integer 0–100), `match_decision` (a `job-match/references/contracts/contract-match.md` decision band), and `match_confidence` (`0.00`–`1.00`, the share of the rubric that carried believable evidence) are main-derived from the persist-set row `job-scout/references/flows/flow-match-gate.md` carries; a dossier `job-apply` created, or one written before these rows, prints none of them — a consumer reads an absent row as unscored and never recomputes it. None of these four fields is an extract key.
 
 `eligibility` ∈ `confirmed` | `incompatible` | `unknown`; a dossier with no such row reads as `unknown`. `eligibility_evidence` is `—` when the page printed no hire-from sentence. Both are gated columns: every consumer reads them off the row, never recomputes.
 
@@ -168,7 +169,6 @@ Opening `---` through the ownership marker = scout-owned, rewritten each run. Be
 | Row's URL folded at extract from `A` to `B` (`job-scout/references/flows/flow-extract.md`) | Dossier for `A` and none for `B` → rewrite that dossier with `url: B`; keep filename, `first_seen`, `status:`, and log. Both exist → update `B` only; name the pair under Gaps |
 | No file yet                                                                                | Create with `status: new`                                                                                                                                                      |
 | File exists with no `## Verdict` (a `job-apply` stub)                                      | Treat as existing: fill scout-owned body first time; keep `status:`, `first_seen`, filename, and log                                                                           |
-| Row dropped at the gate for pay below min                                                  | Existing file: rewrite the scout-owned body so `pay_usd_year` is current; set no status. No file: create nothing                                                               |
 
 Closure is a log event, not a field. Append reopen whenever a URL whose latest
 posting-state line from any permitted writer (`job-scout` | `job-prep` |

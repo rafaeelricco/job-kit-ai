@@ -278,9 +278,129 @@ class Failure:
 Post = Callable[[Request], Union[Reply, Failure]]
 
 
+_MISSING = object()
+_OPTIONAL_STRING = (str, type(None))
+_OPTIONAL_INT = (int, type(None))
+
+
+def _array(item: object) -> Tuple[str, object]:
+    return ("array", item)
+
+
+def _dynamic_map(value: object) -> Tuple[str, object]:
+    return ("map", value)
+
+
+def _project(value: object, shape: object) -> object:
+    """Recursively project JSON to a small schema description."""
+    if isinstance(shape, dict):
+        if not isinstance(value, dict):
+            return _MISSING
+        schema = cast(Dict[str, object], shape)
+        source = cast(Dict[str, object], value)
+        return {
+            key: projected
+            for key, child_shape in schema.items()
+            if key in source
+            for projected in [_project(source[key], child_shape)]
+            if projected is not _MISSING
+        }
+    if isinstance(shape, tuple):
+        parts = cast(Tuple[object, ...], shape)
+        if parts and isinstance(parts[0], str):
+            if parts[0] == "array":
+                if not isinstance(value, list):
+                    return _MISSING
+                item_shape = parts[1]
+                projected_items: List[object] = []
+                for item in cast(List[object], value):
+                    projected = _project(item, item_shape)
+                    if projected is not _MISSING:
+                        projected_items.append(projected)
+                return projected_items
+            if parts[0] == "map":
+                if not isinstance(value, dict):
+                    return _MISSING
+                item_shape = parts[1]
+                source = cast(Dict[str, object], value)
+                output: Dict[str, object] = {}
+                for key, item in source.items():
+                    projected = _project(item, item_shape)
+                    if projected is not _MISSING:
+                        output[key] = projected
+                return output
+            if parts[0] == "union":
+                for option in parts[1:]:
+                    projected = _project(value, option)
+                    if projected is not _MISSING:
+                        return projected
+                return _MISSING
+            if parts[0] == "literal":
+                literal = parts[1]
+                return (
+                    value
+                    if value == literal and type(value) is type(literal)
+                    else _MISSING
+                )
+        allowed_types = cast(Tuple[type, ...], parts)
+        return value if type(value) in allowed_types else _MISSING
+    if isinstance(shape, type):
+        return value if type(value) is shape else _MISSING
+    return _MISSING
+
+
+_STRINGS = _array(str)
+_LANGUAGE = {"name": str, "level": _OPTIONAL_STRING}
+_CANDIDATE_SCHEMA = {
+    "roles": _STRINGS,
+    "skills": _STRINGS,
+    "domains": _STRINGS,
+    "languages": _dynamic_map(_OPTIONAL_STRING),
+    "experience": _array({"date": str, "position": str, "company": str}),
+    "years_experience": _OPTIONAL_INT,
+    "preferences": {"remote": str, "in_person": str, "relocation": str},
+    "constraints": {
+        "work_model": {"remote": bool, "hybrid": bool, "onsite": bool},
+        "location": {
+            "search_in": (
+                "union",
+                _STRINGS,
+                ("literal", "worldwide"),
+            ),
+            "exclude_hire_from": _STRINGS,
+        },
+        "residence": {"country": _OPTIONAL_STRING, "regions": _STRINGS},
+        "exclude_companies": _STRINGS,
+        "work_authorization": {
+            "citizenships": _STRINGS,
+            "permits": _STRINGS,
+        },
+    },
+}
+_JOB_SCHEMA = {
+    "url": str,
+    "company": str,
+    "title": str,
+    "scout_score": _OPTIONAL_INT,
+    "seniority": _OPTIONAL_STRING,
+    "work_model": _OPTIONAL_STRING,
+    "location": _OPTIONAL_STRING,
+    "years_experience": _OPTIONAL_STRING,
+    "work_auth": _OPTIONAL_STRING,
+    "hiring_route": _OPTIONAL_STRING,
+    "eligibility": _OPTIONAL_STRING,
+    "eligibility_evidence": _OPTIONAL_STRING,
+    "required_skills": _STRINGS,
+    "preferred_skills": _STRINGS,
+    "languages_required": _array(_LANGUAGE),
+    "languages_preferred": _array(_LANGUAGE),
+    "domain": _OPTIONAL_STRING,
+}
+
+
 @dataclass(frozen=True)
 class Payload:
-    """Stdin, parsed once. Raw sources are what Jev reads as state."""
+    """Stdin, parsed once; TypeSafe receives a schema projection at request time."""
 
     candidate_source: Mapping[str, object]
     candidate: CandidateProfile
@@ -310,7 +430,12 @@ class Payload:
 def request(candidate: Mapping[str, object], job: Mapping[str, object]) -> Request:
     return {
         "model": MODEL,
-        "state": {"candidate": candidate, "job": job},
+        "state": {
+            "candidate": cast(
+                Dict[str, object], _project(dict(candidate), _CANDIDATE_SCHEMA)
+            ),
+            "job": cast(Dict[str, object], _project(dict(job), _JOB_SCHEMA)),
+        },
         "questions": {
             question.cell: {
                 "type": "choice",

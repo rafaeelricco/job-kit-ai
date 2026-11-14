@@ -421,7 +421,7 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
     def test_gate_reapplies_date_after_extract(self):
         gate = instruction_text(FLOW_GATE)
         self.assertIn("drop a `jd_date` older than the kit `date_posted` window", gate)
-        self.assertIn("blank is not a drop", gate)
+        self.assertIn("a blank date is not a drop", gate)
         self.assertIn(
             "printed work_model that does not intersect kit-true flags (unknown → not a drop; no kit-true flag → not a drop)",
             gate,
@@ -600,8 +600,6 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("`applied`, `interview`, or `offer`", queue)
         self.assertIn("`pay below min per scout/jobs/{filename}: {pay_usd_year}`", queue)
         self.assertIn("clauses 1, 2, 4, 6, and 7 have none", queue)
-        gate = instruction_text(FLOW_GATE)
-        self.assertIn("a row dropped for `below_min` leaves the persist set the same way", gate)
 
     def test_zero_keep_runs_are_a_named_defect(self):
         search = instruction_text(FLOW_SEARCH)
@@ -712,7 +710,9 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         self.assertIn("rank `score` is diagnostic only; it never filters a row", match_gate)
         self.assertIn("(`match_score` ≥ 70)", match_gate)
         self.assertIn("confidence` is below `0.9`", match_gate)
-        self.assertIn("re-score it before the bar below", match_gate)
+        shared = instruction_text(harness.MATCH.parent / "references" / "flows" / "flow-score.md")
+        self.assertIn("`job-match/references/flows/flow-score.md`", match_gate)
+        self.assertIn("then **score**, once for that row", shared)
         self.assertIn("low or unknown `score` does not prevent a new dossier", reader)
 
         obsolete = (
@@ -747,15 +747,34 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         rule = FLOW_READ.read_text(encoding="utf-8").partition("Required keys:")[2].partition(".")[0]
         self.assertEqual(tuple(re.findall(r"`([^`]+)`", rule)), validate_dossier.KEYS)
 
-    def test_pay_floor_replaces_currency(self):
+    def test_discovery_and_matching_are_pay_neutral(self):
         gate = instruction_text(FLOW_GATE)
-        self.assertIn("`pay.py` `below_min`", gate)
-        self.assertIn("currency is never one", gate)
-        self.assertNotIn("market_currencies", gate)
+        rank = instruction_text(FLOW_RANK)
+        for text in (gate, rank, instruction_text(FLOW_JOB_MATCH), instruction_text(CONTRACT_MATCH)):
+            for token in ("pay_usd_year", "below_min", "pay.py"):
+                self.assertNotIn(token, text)
+        self.assertIn("`match_score` desc, then `eligibility` `confirmed` before `unknown`", rank)
+        self.assertIn("stable input order for ties", rank)
         preflight = instruction_text(FLOW_PREFLIGHT)
+        self.assertNotIn("plus pay min and target", preflight)
         self.assertIn("`exclude_hire_from`), `exclude_companies`, `prune_score_max`", preflight)
-        self.assertIn("`market_currencies`, `salary_expectations.salary_range_usd`, or a `min` / `target` with `amount` or `period`, or any other valued key", preflight)
+        self.assertIn("ignore the contents of the salary fields", preflight)
+        self.assertNotIn("salary_expectations.salary_range_usd", preflight)
         self.assertNotIn("capped at 40", preflight)
+
+    def test_application_queue_uses_current_minimum_and_raw_salary(self):
+        queue = instruction_text(
+            harness.SKILL / "job-store" / "references" / "flows" / "flow-queue.md"
+        )
+        self.assertIn("current `job_search.yaml` `salary_expectations.min` and this row's raw `salary`", queue)
+        self.assertIn("fail only when the result's `below_min` is true", queue)
+        self.assertIn("ignore any legacy dossier `pay_usd_year` row", queue)
+        self.assertIn("a `pay.py` exit 1 stops the queue", queue)
+        self.assertIn("`salary_expectations.salary_range_usd`, a `min` / `target` with `amount` or `period`", queue)
+        self.assertIn("migrate via `/job-profile`. no row passes clause 7 on a stop", queue)
+        schema = instruction_text(SCHEMA_DOSSIER)
+        self.assertIn("keep printed `salary` as an application fact", schema)
+        self.assertIn("accept legacy `pay_usd_year` rows when reading dossiers and omit them when writing", schema)
 
 
 class EvidenceIsolationTests(unittest.TestCase):
