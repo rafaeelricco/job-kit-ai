@@ -61,7 +61,7 @@ Run these skills in your agent:
    existing one, or edit search preferences, packs, and CV settings. Profile
    setup requires a coding agent.
 2. `/job-scout` — find openings from selected search packs or a site URL.
-3. `/job-list` — review saved jobs and application statuses.
+3. `/job-match list` — review saved jobs and application statuses (`/job-list` remains an alias).
 4. `/job-apply` — fill, submit, and record applications.
 5. `/job-inbox` — check replies from a session with Gmail access.
 
@@ -104,8 +104,8 @@ Each skill contains its usage and detailed workflow:
 | [job-profile](skill/job-profile/SKILL.md)             | Create, register, or edit a profile.                                           |
 | [job-company-scout](skill/job-company-scout/SKILL.md) | Discover employers and save verified careers pages in search packs.            |
 | [job-scout](skill/job-scout/SKILL.md)                 | Find and rank live openings.                                                   |
-| [job-list](skill/job-list/SKILL.md)                   | Read saved jobs and statuses.                                                  |
-| [job-match](skill/job-match/SKILL.md)                 | Assess fit and get resume guidance.                                            |
+| [job-list](skill/job-list/SKILL.md)                   | Compatibility alias for `/job-match list`.                                                  |
+| [job-match](skill/job-match/SKILL.md)                 | List saved dossiers, assess fit, and get resume guidance.                                            |
 | [job-prep](skill/job-prep/SKILL.md)                   | Prepare applications without submitting.                                       |
 | [job-apply](skill/job-apply/SKILL.md)                 | Submit and record applications.                                                |
 | [job-resume-refine](skill/job-resume-refine/SKILL.md) | Refine a base resume for a posting.                                            |

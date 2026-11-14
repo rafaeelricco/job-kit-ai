@@ -2,7 +2,7 @@
 
 Canonical facts for **job-scout** (list-only scout; passes login gates to list)
 and **job-apply** (queue → package → clear walls → submit → record),
-read back by **job-list** (read-only). Later lifecycle status from mail is **job-inbox**.
+read back with **job-match list** (read-only); **job-list** remains an alias. Later lifecycle status from mail is **job-inbox**.
 Skills live in **job-kit**, not in this tree.
 
 ## Layout
@@ -12,7 +12,7 @@ Skills live in **job-kit**, not in this tree.
 | `data/`         | Canonical YAML about you. Edit here first.                                                                                                                                |
 | `data/stories/` | One markdown file per interview story; frontmatter is read by job-apply, job-stories, job-resume-refine, and job-resume-review, the body is not                           |
 | `cv/`           | The base resume PDF plus its LaTeX source                                                                                                                                 |
-| `scout/`        | Written by job-scout; `status:` and Application-log records by job-apply and job-inbox; read by job-list: `jobs/` per-job dossiers (`{first_seen}-{company}--{title}.md`) |
+| `scout/`        | Written by job-scout; `status:` and Application-log records by job-apply and job-inbox; read by job-match list: `jobs/` per-job dossiers (`{first_seen}-{company}--{title}.md`) |
 
 `data/` may mix `.yaml` and `.yml`. `data/stories/` holds markdown files with
 YAML frontmatter.

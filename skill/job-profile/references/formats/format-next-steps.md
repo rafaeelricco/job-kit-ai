@@ -22,7 +22,7 @@ Omit an empty optional placeholder's line (GAPS_LINE / CV_LINE).
   `data/observations.yaml`; scout and application ignore this file.
 - Story stubs live in `data/stories/`, empty until you fill them. `/job-stories add`
   writes one from evidence; `/job-stories audit` says which still need numbers.
-- After a scout run persists, `/job-list` reads `scout/jobs/` back — dossiers
+- After a scout run persists, `/job-match list` (also available as `/job-list`) reads `scout/jobs/` back — dossiers
   and application status — without writing to it.
 - After apply, `/job-inbox` checks Gmail for replies and writes later `status:`
   when the mail strongly matches a tracked application.
