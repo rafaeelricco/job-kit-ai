@@ -618,6 +618,9 @@ class RunnerTests(unittest.TestCase):
             ("python3 - /frozen/score.py <<'EOF'\nprint('[{\"match_score\": 79}]')\nEOF", False),
             ("echo 'print(1)' | python3 - /frozen/score.py", False),
             ("python3 -u -- /frozen/score.py < in.json", True),
+            ("python3 -uc 'print(1)#/score.py'", False),
+            ("python3 -Im json.tool /frozen/score.py", False),
+            ("python3 -Xutf8 /frozen/score.py < in.json", True),
             ("python3 /missing/score.py < in#.json; echo '[{\"match_score\": 79}]'", False),
             ("python3 /frozen/score.py < in.json # run scorer", False),
         ):

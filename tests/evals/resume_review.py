@@ -654,12 +654,20 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
     executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
     script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
     while script_index < len(tokens) and tokens[script_index].startswith("-"):
-        if tokens[script_index] == "-" or tokens[script_index].startswith(("-c", "-m")):
-            return None  # stdin, inline code or a module runs instead of the script
-        if tokens[script_index] == "--":
+        option = tokens[script_index]
+        if option == "--":
             script_index += 1  # end of options: the script comes next
             break
-        script_index += 2 if tokens[script_index] in ("-X", "-W") else 1
+        if option == "-":
+            return None  # the program is read from stdin instead of the script
+        takes_argument = False
+        for index, flag in enumerate(option[1:] if not option.startswith("--") else ""):
+            if flag in "cm":
+                return None  # inline code or a module runs instead, even grouped as `-uc`
+            if flag in "XW":
+                takes_argument = index == len(option) - 2  # `-X utf8`, unlike `-Xutf8`
+                break
+        script_index += 2 if takes_argument else 1
     if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
             or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
         return None
