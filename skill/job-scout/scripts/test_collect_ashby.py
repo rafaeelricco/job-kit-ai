@@ -168,12 +168,10 @@ class AshbyCollectTests(unittest.TestCase):
 
     def test_invalid_board_urls_fail_only_their_board_without_a_get(self):
         invalid_urls = [
-            "http://jobs.ashbyhq.com/acme",
+            "ftp://jobs.ashbyhq.com/acme",
             "https://evil.example/acme",
             "https://user@jobs.ashbyhq.com/acme",
             "https://jobs.ashbyhq.com:443/acme",
-            "https://jobs.ashbyhq.com/acme?x=1",
-            "https://jobs.ashbyhq.com/acme#jobs",
             "https://jobs.ashbyhq.com/acme/jobs/123",
             "https://jobs.ashbyhq.com/acme%2fother",
             "https://jobs.ashbyhq.com/../other",
@@ -191,11 +189,26 @@ class AshbyCollectTests(unittest.TestCase):
                 self.assertTrue(report["error"].startswith("invalid board url: "))
                 self.assertEqual(fetch.calls, [])
 
+    def test_http_query_and_fragment_board_roots_request_only_the_tenant(self):
+        rows = [
+            board("beta", "Beta", "https://jobs.ashbyhq.com/beta?utm_source=careers"),
+            board("gamma", "Gamma", "http://jobs.ashbyhq.com/gamma/#jobs"),
+        ]
+        fetch = make_fetch({api_url("beta"): ok({"jobs": [job("beta")]}),
+                            api_url("gamma"): ok({"jobs": [job("gamma")]})})
+        code, out = self.run_collect(self.payload(rows), fetch)
+
+        self.assertEqual(code, 0)
+        self.assertCountEqual(fetch.calls, [api_url("beta"), api_url("gamma")])
+        self.assertEqual([(row["slug"], row["status"]) for row in out["slugs"]],
+                         [("beta", "ok"), ("gamma", "ok")])
+        self.assertEqual(out["slugs"][0]["board_url"], "https://jobs.ashbyhq.com/beta?utm_source=careers")
+
     def test_one_invalid_board_url_does_not_stop_valid_boards_in_the_pack(self):
         rows = [
             board(),
-            board("beta", "Beta", "https://jobs.ashbyhq.com/beta?utm_source=careers"),
-            board("gamma", "Gamma", "http://jobs.ashbyhq.com/gamma"),
+            board("beta", "Beta", "https://evil.example/beta"),
+            board("gamma", "Gamma", "https://jobs.ashbyhq.com/gamma/jobs/1"),
         ]
         fetch = make_fetch({api_url("acme"): ok({"jobs": [job()]})})
         code, out = self.run_collect(self.payload(rows), fetch)

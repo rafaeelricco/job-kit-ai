@@ -214,9 +214,9 @@ def ashby_tenant(board_url: object) -> str:
         parts = urlsplit(board_url)
     except ValueError:
         raise ValueError("invalid Ashby board url")
-    if (parts.scheme.lower() != "https" or parts.netloc.lower() != "jobs.ashbyhq.com"
-            or parts.query or parts.fragment or "?" in board_url or "#" in board_url):
-        raise ValueError("board url must use https://jobs.ashbyhq.com without query or fragment")
+    # The request is rebuilt from the tenant alone, so scheme, query and fragment are ignored.
+    if parts.scheme.lower() not in ("http", "https") or parts.netloc.lower() != "jobs.ashbyhq.com":
+        raise ValueError("board url must be on http(s)://jobs.ashbyhq.com")
     match = re.fullmatch(r"/([^/]+)/?", parts.path)
     if not match:
         raise ValueError("board url must contain exactly one tenant path segment")
