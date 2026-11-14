@@ -12,3 +12,6 @@ suffix unchanged and in the same order. Do not pass the literal `/job-list`
 command token. Do not score, re-score, refresh postings, or write to dossiers.
 The `job-match` list route uses the shared read-only profile-root and store
 setup, then follows its list flow.
+
+`./references/flows/flow-job-list.md` is a stub kept for older installers; it
+only points to the job-match list flow, so do not load it.

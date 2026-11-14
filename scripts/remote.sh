@@ -145,6 +145,7 @@ skill/job-resume-review/references/flow-job-resume-review.md
 skill/job-resume-review/scripts/review_score.py
 skill/job-resume-review/scripts/scan_cv.py
 skill/job-list/SKILL.md
+skill/job-list/references/flows/flow-job-list.md
 skill/job-match/SKILL.md
 skill/job-match/references/flows/flow-job-list.md
 skill/job-match/references/formats/format-views.md
