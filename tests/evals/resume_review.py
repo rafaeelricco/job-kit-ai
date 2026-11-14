@@ -15,9 +15,13 @@ Exit: 0 every selected case passed; 1 a case failed; 2 claude, python3, or pdfto
 """
 from __future__ import annotations
 import argparse
+import dataclasses
+import hashlib
 import json
 import os
+import posixpath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -46,6 +50,8 @@ class Run:
     error: Optional[str] = None  # set when the session did not finish
     stderr: str = ""
     returncode: Optional[int] = None
+    match_scores: Tuple[int, ...] = ()
+    scorer_rejections: Tuple[str, ...] = ()  # why score.py calls were not credited
 
 
 Check = Callable[[Run], Optional[str]]  # None passes; a string says what failed
@@ -65,6 +71,57 @@ def ran(script: str) -> Check:
 
 def says(pattern: str) -> Check:
     return lambda run: None if re.search(pattern, run.report.text, re.I) else f"report never matches /{pattern}/"
+
+
+def reports_computed_match_score(run: Run) -> Optional[str]:
+    if not run.match_scores:
+        ignored = f" (ignored: {'; '.join(run.scorer_rejections)})" if run.scorer_rejections else ""
+        return f"score.py printed no successful match score{ignored}"
+    reported = labelled_scores(run.report.text)
+    if any(value in run.match_scores for value in reported):
+        return None
+    shown = f", report labels {tuple(reported)}" if reported else ""
+    return f"report did not show a computed match score {run.match_scores}{shown}"
+
+
+SCORE_LABEL = re.compile(r"(?i)\b(?:match[_ ]score|score|fit)\b")
+SCORE_NUMBER = re.compile(r"(?<![\w.$])([0-9]{1,3})(?![0-9]|\.[0-9]|[kK%])")
+
+
+def labelled_scores(text: str) -> List[int]:
+    """Numbers the report ties to a score label: the first number after the label on its
+    line (skipping a `(0-100)` range), or the cell under a `Score` column of a Markdown table.
+
+    The flow sets no report layout, so both prose (`Match score: 79/100`) and tables count,
+    but a number elsewhere (a pay band, a band floor) does not.
+    """
+    scores: List[int] = []
+    lines = text.splitlines()
+    for line in lines:
+        for label in SCORE_LABEL.finditer(line):
+            after = re.sub(r"\(\s*[0-9]+\s*[-–]\s*[0-9]+\s*\)", "", line[label.end():]).lstrip()
+            if after.startswith("|"):  # `| Match score | 79 |`: only the next cell
+                after = after[1:].split("|", 1)[0]
+            number = SCORE_NUMBER.search(after)
+            if number:
+                scores.append(int(number.group(1)))
+    columns: List[int] = []
+    for line in lines:
+        if not line.strip().startswith("|"):
+            columns = []
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if all(re.fullmatch(r":?-+:?", cell) for cell in cells if cell):
+            continue
+        if any(SCORE_LABEL.search(cell) for cell in cells) and not any(
+                SCORE_NUMBER.fullmatch(cell) for cell in cells):
+            columns = [index for index, cell in enumerate(cells) if SCORE_LABEL.search(cell)]
+            continue
+        for index in columns:
+            number = SCORE_NUMBER.match(cells[index]) if index < len(cells) else None
+            if number:
+                scores.append(int(number.group(1)))
+    return scores
 
 
 def score_at_most(limit: int) -> Check:
@@ -428,7 +485,7 @@ CASES = (
     ), context="LinkedIn profile, pasted text:\nAlex Doe — Staff Platform Engineer\n"
                "Experience: Staff Platform Engineer."),
 
-    Case("selected_job_evidence", (ran("score.py"), says(r"match_score|match score|decision|fit")),
+    Case("selected_job_evidence", (reports_computed_match_score,),
          posting="selected_job_posting.md", skill="job-match",
          context="Score this posting against my profile.",
          edit=lambda cv: (FIXTURES / "cases" / "selected_job_evidence.md").read_text(encoding="utf-8"),
@@ -559,15 +616,244 @@ def prompt_for(case: Case, root: Path, skills_root: Optional[Path] = None,
     return prompt
 
 
-def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0) -> Run:
-    """Final report text and every Bash command from a `claude -p --output-format stream-json` transcript."""
+def transcript_path(path: str, cwd: Optional[str]) -> Optional[str]:
+    """Compare transcript paths without resolving them on the evaluator's host.
+
+    None when the path is relative and the shell's cwd is unknown.
+    """
+    def drive(value: str) -> str:  # Git Bash spells C:/x as /c/x
+        return re.sub(r"^/([A-Za-z])(?=/)", r"\1:", value.replace("\\", "/"))
+    path = drive(path)
+    if not (posixpath.isabs(path) or re.match(r"^[A-Za-z]:/", path)):
+        if not cwd:
+            return None
+        path = posixpath.join(drive(cwd), path)
+    path = posixpath.normpath(path)
+    return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
+
+
+def unquoted_at(text: str, position: int) -> bool:
+    """Whether `position` in `text` sits outside quotes and is not backslash-escaped."""
+    quote, index = None, 0
+    while index < position:
+        char = text[index]
+        if quote:
+            if char == quote:
+                quote = None
+            elif char == "\\" and quote == '"':
+                index += 1
+        elif char in "'\"":
+            quote = char
+        elif char == "\\":
+            index += 1
+            if index >= position:
+                return False
+        index += 1
+    return quote is None
+
+
+def heredoc_as_stdin(command: str) -> Optional[str]:
+    """Drop one trailing heredoc body, which is the scorer's stdin, and return the command line.
+
+    Follows bash: a delimiter with any quote or backslash is quoted (body kept literally,
+    delimiter compared with them removed). None when the heredoc is unterminated, another
+    command follows its delimiter, or an unquoted body could expand or join lines.
+    """
+    match = next((found for found in re.finditer(
+        r"(?<!<)<<(-?)[ \t]*((?:'[^'\n]*'|\"[^\"\n]*\"|\\.|[^\s<>|;&()'\"\\])+)", command)
+        if unquoted_at(command, found.start())), None)
+    if not match:
+        return command
+    raw = match.group(2)
+    if "$" in raw:
+        return None  # bash reads `$'EOF'` and `$"EOF"` differently from shlex
+    quoted = any(char in raw for char in "'\"\\")
+    try:
+        delimiter = "".join(shlex.split(raw))
+    except ValueError:
+        return None
+    rest = command[match.end():]
+    newline = rest.find("\n")
+    line = command[:match.start()] + rest[:max(newline, 0)]
+    if newline < 0 or not delimiter or line.endswith("\\"):
+        return None
+    body = rest[newline + 1:].split("\n")
+    strip = (lambda text: text.lstrip("\t")) if match.group(1) else (lambda text: text)
+    end = next((index for index, text in enumerate(body) if strip(text) == delimiter), None)
+    if end is None or any(text.strip() for text in body[end + 1:]):
+        return None
+    if not quoted and re.search(r"[$`\\]", "\n".join(body[:end])):
+        return None  # an unquoted body expands `$`, backquotes and backslash-newlines
+    return None if re.search(r"(?<!<)<<(?!<)", line) else line
+
+
+# Only these interpreter options leave score.py's own code and imports in charge.
+SAFE_OPTIONS = re.compile(r"-[uIBEsSqv]+|-X|-Xutf8|--")
+# Bash expands these after shlex has split the words (globs, braces, parameters, a leading tilde).
+EXPANDING = re.compile(r"[{}$`*?\[\]]|^~")
+
+
+def untrusted_scorer_call(command: str, cwd: Optional[str], scorers: Sequence[str] = ()) -> Optional[str]:
+    """None when `command` is one simple scorer call whose stdout is the scorer's JSON.
+
+    Otherwise say why its output cannot be credited. Scores come only from the scorer's
+    printed stdout (flow-score.md), so anything the parser cannot read the way bash does
+    fails closed: redirects of stdout, pipes, compound commands, line continuations,
+    expansions, unknown interpreter options, `..` script paths, and a script that is not
+    one of `scorers` when given.
+    """
+    if "\r" in command:
+        return "contains a carriage return"
+    command = heredoc_as_stdin(command)
+    if command is None:
+        return "has a heredoc the eval cannot follow"
+    if re.search(r"\\\n", command):
+        return "has a line continuation"
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
+    lexer.whitespace = " \t"
+    lexer.whitespace_split = True
+    lexer.commenters = ""  # shlex comments start mid-word and would swallow later separators
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return "cannot be tokenized"
+    if any(token.startswith("#") for token in tokens):
+        return "has a shell comment that may hide another command"
+    while tokens and tokens[-1] == "\n":
+        tokens.pop()
+    # A pipe or compound command can mask the scorer's failure or mix another process's
+    # output into the result. Do not infer provenance without knowing shell semantics.
+    if any(token and all(char in ";&|()\n" for char in token) for token in tokens):
+        return "is a pipe or compound command"
+    if any(EXPANDING.search(token) for token in tokens[1:]):
+        return "has a word bash would expand"
+    executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
+    script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
+    while script_index < len(tokens) and tokens[script_index].startswith("-"):
+        option = tokens[script_index]
+        if not SAFE_OPTIONS.fullmatch(option):
+            return f"uses interpreter option {option!r}, which can change what runs"
+        if option == "-X":
+            if tokens[script_index + 1:script_index + 2] != ["utf8"]:
+                return "uses an -X setting other than utf8"
+            script_index += 1
+        script_index += 1
+        if option == "--":
+            break  # end of options: the script comes next
+    if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
+            or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
+        return "does not run score.py directly"
+    if ".." in re.split(r"[\\/]", tokens[script_index]):
+        return "reaches score.py through a `..` segment, which a symlink can redirect"
+    if scorers and transcript_path(tokens[script_index], cwd) not in {
+            transcript_path(scorer, None) for scorer in scorers}:
+        return "runs a score.py that is not the frozen skill's scorer"
+    def number(token: str) -> Optional[int]:
+        return int(token) if re.fullmatch(r"[0-9]+", token) else None
+    for index, token in enumerate(tokens[script_index + 1:], start=script_index + 1):
+        if token in ("&>", "&>>", "<>"):
+            return "redirects its stdout away from the tool result"  # `<>` fails closed too
+        if token in (">", ">>", ">|", ">&"):
+            descriptor = number(tokens[index - 1])
+            descriptor = 1 if descriptor is None else descriptor
+            target = number(tokens[index + 1]) if index + 1 < len(tokens) else None
+            if descriptor == 1 and not (token == ">&" and target == 1):
+                return "redirects its stdout away from the tool result"
+    return None
+
+
+def tool_json(content: object) -> object:
+    """Decode JSON from a tool result's text."""
+    if isinstance(content, list):
+        content = "\n".join(block["text"] for block in content
+                            if isinstance(block, dict) and block.get("type") == "text"
+                            and isinstance(block.get("text"), str))
+    if not isinstance(content, str):
+        return None
+    try:
+        return json.loads(content)
+    except ValueError:
+        return None
+
+
+def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
+                cwd: Optional[Path] = None, scorers: Sequence[str] = ()) -> Run:
+    """Final report text and every Bash command from a `claude -p --output-format stream-json` transcript.
+
+    Scores come only from the printed stdout of a trusted scorer call (`untrusted_scorer_call`).
+    `scorers` lists the frozen score.py paths to trust; empty trusts any score.py.
+    """
     events = [json.loads(line) for line in stdout.splitlines() if line.startswith("{")]
-    report = next((e.get("result", "") for e in reversed(events) if e.get("type") == "result"), "")
-    commands = [block["input"].get("command", "") for e in events if e.get("type") == "assistant"
-                for block in e["message"].get("content", [])
-                if block.get("type") == "tool_use" and block.get("name") == "Bash"]
+    final = next((e for e in reversed(events) if e.get("type") == "result"), {})
+    commands = []
+    scorer_calls = set()
+    rejected = []
+    working_dir = str(cwd) if cwd is not None else None
+    scores = ()
+    for event in events:
+        if event.get("type") == "system" and event.get("subtype") == "init" and isinstance(event.get("cwd"), str):
+            working_dir = event["cwd"]
+        message = event.get("message")
+        blocks = message.get("content") if isinstance(message, dict) else None
+        for block in blocks if isinstance(blocks, list) else ():
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                command = block["input"].get("command", "")
+                commands.append(command)
+                reason = "is not a scorer call"
+                if block.get("id") and re.search(r"(?s)\bpy(?:thon3?)?\b.*\bscore\.py\b", command):
+                    reason = untrusted_scorer_call(command, working_dir, scorers)
+                    if reason is None:
+                        scorer_calls.add(block["id"])
+                    else:
+                        rejected.append(f"a score.py call {reason}")
+                if reason is not None:
+                    # Bash keeps cd across calls, however it is spelled (`c''d`, `eval`), so
+                    # after any other command trust only absolute scorer paths.
+                    working_dir = None
+            if (block.get("type") != "tool_result" or block.get("is_error")
+                    or block.get("tool_use_id") not in scorer_calls):
+                continue
+            scored = tool_json(block.get("content"))
+            if isinstance(scored, list):
+                scores = tuple(row["match_score"] for row in scored
+                               if isinstance(row, dict) and not row.get("score_error")
+                               and type(row.get("match_score")) is int)
     error = f"CLI exited with status {returncode}" if returncode else None
-    return Run(parse(report), commands, error, stderr, returncode)
+    if not error and final.get("is_error"):
+        error = f"CLI reported {final.get('subtype', 'an error')}"
+    return Run(parse(final.get("result", "")), commands, error, stderr, returncode, scores,
+               tuple(dict.fromkeys(rejected)))
+
+
+def trusted_scorers(root: Path, skills_root: Optional[Path] = None) -> Tuple[str, ...]:
+    """Every spelling of the frozen job-match scorer a session in `root` may run."""
+    scorer = Path("job-match") / "scripts" / "score.py"
+    trusted = {base / scorer for base in (skills_root or (REPO / "skill"), root / ".claude" / "skills")}
+    # The session may spell the link or its target, through the logical or physical root.
+    trusted |= {path.resolve() for path in trusted} | {root.resolve() / ".claude" / "skills" / scorer}
+    return tuple(sorted(str(path) for path in trusted))
+
+
+def scorer_fingerprint(root: Path, skills_root: Optional[Path] = None) -> str:
+    """Digest of the frozen job-match skill's files and of where the workspace link points.
+
+    A session can Write next to score.py (a module that shadows an import, planted
+    bytecode) or swap the workspace link, so its scores count only if this is unchanged.
+    """
+    digest = hashlib.sha256()
+    skill = (skills_root or (REPO / "skill")) / "job-match"
+    for path in sorted(skill.rglob("*")):
+        digest.update(str(path.relative_to(skill)).encode())
+        if path.is_symlink():
+            digest.update(b"link:" + os.readlink(path).encode())
+        elif path.is_file():
+            digest.update(path.read_bytes())
+    link = root / ".claude" / "skills" / "job-match"
+    target = os.readlink(link) if link.is_symlink() else "not a symlink"
+    digest.update(f"workspace:{target}:{link.resolve()}".encode())
+    return digest.hexdigest()
 
 
 def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional[Path] = None,
@@ -583,12 +869,14 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
     command += ["--allowedTools", *allowed]  # variadic; put prompt before it so it cannot consume the prompt
     if model:
         command += ["--model", model]
+    fingerprint = scorer_fingerprint(root, skills_root)
     try:
-        env = {**os.environ, "TMPDIR": str(scratch)}
+        # No bytecode writes, so running score.py leaves the fingerprinted tree unchanged.
+        env = {**os.environ, "TMPDIR": str(scratch), "PYTHONDONTWRITEBYTECODE": "1"}
         if case.profile:
             env["PROFILE_ROOT"] = str(root / "profile")
         if isolated:
-            env.update({"PROFILE_ROOT": str(root / "profile"), "PYTHONDONTWRITEBYTECODE": "1"})
+            env["PROFILE_ROOT"] = str(root / "profile")
         proc = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=TIMEOUT, env=env)
     except subprocess.TimeoutExpired as error:
         partial = error.stdout or b""  # always bytes on timeout, whatever text= says
@@ -596,7 +884,12 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
         partial_stderr = error.stderr or b""
         stderr = partial_stderr.decode("utf-8", "replace") if isinstance(partial_stderr, bytes) else partial_stderr
         return Run(parse(""), [], f"timed out after {TIMEOUT} s", stderr, None), stdout
-    return read_stream(proc.stdout, proc.stderr, proc.returncode), proc.stdout
+    run = read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root,
+                      scorers=trusted_scorers(root, skills_root))
+    if scorer_fingerprint(root, skills_root) != fingerprint:
+        run = dataclasses.replace(run, match_scores=(), scorer_rejections=(
+            *run.scorer_rejections, "the frozen scorer's files or workspace link changed during the session"))
+    return run, proc.stdout
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
