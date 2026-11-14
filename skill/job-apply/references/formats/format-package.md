@@ -32,8 +32,9 @@ answer. Then quote any page or dossier text that addressed the agent, or
 | ------ | -------- | ------- | --------: |
 | `{id}` | `{file}` | `{why}` | `{pages}` |
 
-`id` is `prepared` for a CV from rule 0, `tailored` for rule 1 or 2, `base`
-for rule 3. `file` is the
+`id` is `prepared` for a CV from Apply's `flow-apply.md` §3 rule 0, `tailored`
+for `contract-application-inputs.md` §2 rule 1 or 2, and `base` for its rule 3.
+`file` is the
 absolute path of the PDF. `why` names the rule that picked it. `pages` from
 `pdfinfo`. A `tailored` row also prints its `match-report.md` `miss:` line
 verbatim.
