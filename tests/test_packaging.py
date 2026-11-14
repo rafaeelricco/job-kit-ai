@@ -23,6 +23,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from harness import REPO, read, skill_dirs  # noqa: E402
 
+sys.path.insert(0, str(REPO / "scripts"))
+
+from package_release import RETIRED_REQUIRED_FILES  # noqa: E402
+
 REMOTE_SH: Path = REPO / "scripts" / "remote.sh"
 REMOTE_PS1: Path = REPO / "scripts" / "remote.ps1"
 TEST_SH: Path = REPO / "scripts" / "test.sh"
@@ -257,12 +261,16 @@ class RequiredFilesTests(unittest.TestCase):
                 continue
             previous = required_files(installer.path, shown.stdout)
             with self.subTest(installer=installer.label, release=tag):
-                dropped = sorted(set(previous) - set(self.declared[installer.label]))
+                # A retired path package_release.py ships as a stub still
+                # reaches the bundle without being listed.
+                kept = set(self.declared[installer.label]) | set(RETIRED_REQUIRED_FILES)
+                dropped = sorted(set(previous) - kept)
                 self.assertEqual(
                     dropped,
                     [],
                     "%s drops paths that %s's installer requires in a bundle; "
-                    "keep a stub file at each and keep it listed: %s"
+                    "keep each listed, or ship it from RETIRED_REQUIRED_FILES "
+                    "in scripts/package_release.py: %s"
                     % (installer.relative, tag, dropped),
                 )
 
