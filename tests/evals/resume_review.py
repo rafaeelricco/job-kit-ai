@@ -617,11 +617,13 @@ def heredoc_as_stdin(command: str) -> Optional[str]:
     return None if re.search(r"(?<!<)<<(?!<)", line) else line
 
 
-def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str, ...]]:
+def scorer_output_paths(command: str, cwd: Optional[str],
+                        scorers: Sequence[str] = ()) -> Optional[Tuple[str, ...]]:
     """Find literal stdout targets of simple Python scorer commands.
 
     None means the command is not a scorer invocation we can trust (compound, not
-    score.py, or an unresolvable redirect); () means the scorer writes JSON to stdout.
+    score.py or not one of `scorers` when given, an appending or unresolvable redirect);
+    () means the scorer writes JSON to stdout.
     """
     command = heredoc_as_stdin(command)
     if command is None:
@@ -671,7 +673,10 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
     if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
             or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
         return None
-    output = None
+    if scorers and transcript_path(tokens[script_index], cwd) not in {
+            transcript_path(scorer, None) for scorer in scorers}:
+        return None  # a score.py the session wrote itself is not the frozen scorer
+    output, appended = None, False
     for index in range(script_index + 1, len(tokens) - 1):
         if tokens[index] not in (">", ">>", "&>", "&>>", ">&"):
             continue
@@ -679,9 +684,11 @@ def scorer_output_paths(command: str, cwd: Optional[str]) -> Optional[Tuple[str,
             continue  # stderr and other descriptors are not scorer JSON
         if tokens[index] == ">&" and (tokens[index + 1].isdigit() or tokens[index + 1] == "-"):
             continue  # descriptor duplication or close, not a file
-        output = tokens[index + 1]
+        output, appended = tokens[index + 1], tokens[index] in (">>", "&>>")
     if output is None:
         return ()
+    if appended:
+        return None  # an append keeps whatever was in the file before the scorer ran
     path = None if any(char in output for char in "$`~") else transcript_path(output, cwd)
     return None if path is None else (path,)
 
@@ -706,12 +713,15 @@ def tool_json(content: object, file_read: bool = False) -> object:
 
 
 def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
-                cwd: Optional[Path] = None) -> Run:
-    """Final report text and every Bash command from a `claude -p --output-format stream-json` transcript."""
+                cwd: Optional[Path] = None, scorers: Sequence[str] = ()) -> Run:
+    """Final report text and every Bash command from a `claude -p --output-format stream-json` transcript.
+
+    `scorers` lists the frozen score.py paths to trust; empty trusts any score.py.
+    """
     events = [json.loads(line) for line in stdout.splitlines() if line.startswith("{")]
     final = next((e for e in reversed(events) if e.get("type") == "result"), {})
     commands = []
-    scorer_calls = {}
+    scorer_calls = {}  # call id -> () stdout scorer, (path,) redirected, None untrusted redirect
     scorer_files = set()
     read_calls = {}
     working_dir = str(cwd) if cwd is not None else None
@@ -731,28 +741,28 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
                     working_dir = None  # Bash keeps cd across calls: credit only absolute paths
                 paths = None
                 if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
-                    paths = scorer_output_paths(command, working_dir)
+                    paths = scorer_output_paths(command, working_dir, scorers)
                 if paths is not None:
                     if "|" in command:  # the command feeding the pipe may rewrite them
                         scorer_files.clear()
-                        scorer_calls = {call: () for call in scorer_calls}
+                        scorer_calls = {call: paths and None for call, paths in scorer_calls.items()}
                     scorer_calls[block["id"]] = paths
                     scorer_files.difference_update(paths)
                 else:
                     # Any other command may rewrite a scorer file: stop trusting all of them,
                     # including redirects of scorer calls still awaiting their result.
                     scorer_files.clear()
-                    scorer_calls = {call: () for call in scorer_calls}
+                    scorer_calls = {call: paths and None for call, paths in scorer_calls.items()}
             if block.get("type") == "tool_use" and block.get("name") in FILE_WRITERS:
                 tool_input = block.get("input", {})
                 target = tool_input.get("file_path") or tool_input.get("notebook_path")
                 target = transcript_path(target, working_dir) if isinstance(target, str) else None
                 if target is None:
                     scorer_files.clear()
-                    scorer_calls = {call: () for call in scorer_calls}
+                    scorer_calls = {call: paths and None for call, paths in scorer_calls.items()}
                 else:
                     scorer_files.discard(target)
-                    scorer_calls = {call: tuple(p for p in paths if p != target)
+                    scorer_calls = {call: None if paths and target in paths else paths
                                     for call, paths in scorer_calls.items()}
             if block.get("type") == "tool_use" and block.get("name") == "Read" and block.get("id"):
                 path = block.get("input", {}).get("file_path")
@@ -765,7 +775,11 @@ def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
             call_id = block.get("tool_use_id")
             file_read = call_id in read_calls and read_calls[call_id] in scorer_files
             if call_id in scorer_calls:
-                scorer_files.update(scorer_calls[call_id])
+                # A redirected scorer's own result holds only stderr: credit its file via a Read.
+                # None marks a redirect that lost trust before its result arrived.
+                if scorer_calls[call_id] != ():
+                    scorer_files.update(scorer_calls[call_id] or ())
+                    continue
             elif not file_read:
                 continue
             scored = tool_json(block.get("content"), file_read=file_read)
@@ -805,7 +819,11 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
         partial_stderr = error.stderr or b""
         stderr = partial_stderr.decode("utf-8", "replace") if isinstance(partial_stderr, bytes) else partial_stderr
         return Run(parse(""), [], f"timed out after {TIMEOUT} s", stderr, None), stdout
-    return read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root), proc.stdout
+    scorer = Path("job-match") / "scripts" / "score.py"
+    trusted = {base / scorer for base in (skills_root or (REPO / "skill"), root / ".claude" / "skills")}
+    trusted |= {path.resolve() for path in trusted}  # the session may spell either form
+    return read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root,
+                       scorers=tuple(sorted(str(path) for path in trusted))), proc.stdout
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

@@ -691,7 +691,9 @@ class RunnerTests(unittest.TestCase):
             ("stdout and stderr redirect", command.replace(" > ", " &> "), "/tmp/scored.json",
              '[{"match_score": 79}]', False, False, 79, True),
             ("appended stdout and stderr", command.replace(" > ", " &>> "), "/tmp/scored.json",
-             '[{"match_score": 79}]', False, False, 79, True),
+             '[{"match_score": 79}]', False, False, 79, False),
+            ("appended stdout", command.replace(" > ", " >> "), "/tmp/scored.json",
+             '[{"match_score": 79}]', False, False, 79, False),
             ("csh-style redirect", command.replace(" > ", " >& "), "/tmp/scored.json",
              '[{"match_score": 79}]', False, False, 79, True),
             ("stderr duplicated to a file", command.replace(" > ", " 2>& "), "/tmp/scored.json",
@@ -813,6 +815,43 @@ class RunnerTests(unittest.TestCase):
             {"type": "tool_result", "tool_use_id": "piped-call", "content": ""})
         run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
         self.assertIsNotNone(resume_review.reports_computed_match_score(run))
+
+    def test_redirected_scorer_result_is_never_decoded_as_scorer_json(self):
+        feeder = "python3 -c \"import sys; sys.stderr.write('[{\\\"match_score\\\": 79}]')\""
+        events = [
+            {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Bash", "id": "score-call",
+                "input": {"command": feeder + " | python3 /frozen/score.py > /tmp/o.json"},
+            }]}},
+            {"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": "score-call", "content": '[{"match_score": 79}]',
+            }]}},
+            {"type": "result", "result": "**Match score: 79.**"},
+        ]
+        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+        self.assertEqual(run.match_scores, ())
+
+    def test_only_the_frozen_scorer_is_trusted_when_scorer_paths_are_given(self):
+        for script, passes in (("/ws/.claude/skills/job-match/scripts/score.py", True),
+                               ("/snap/job-match/scripts/score.py", True),
+                               ("/ws/tmp/score.py", False),
+                               ("tmp/score.py", False)):
+            with self.subTest(script=script):
+                events = [
+                    {"type": "system", "subtype": "init", "cwd": "/ws"},
+                    {"type": "assistant", "message": {"content": [{
+                        "type": "tool_use", "name": "Bash", "id": "score-call",
+                        "input": {"command": f"python3 {script} < in.json"},
+                    }]}},
+                    {"type": "user", "message": {"content": [{
+                        "type": "tool_result", "tool_use_id": "score-call", "content": '[{"match_score": 79}]',
+                    }]}},
+                    {"type": "result", "result": "**Match score: 79.**"},
+                ]
+                run = resume_review.read_stream(
+                    "\n".join(json.dumps(event) for event in events), scorers=(
+                        "/ws/.claude/skills/job-match/scripts/score.py", "/snap/job-match/scripts/score.py"))
+                self.assertEqual(resume_review.reports_computed_match_score(run) is None, passes)
 
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
