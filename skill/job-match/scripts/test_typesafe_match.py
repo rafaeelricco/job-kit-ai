@@ -305,6 +305,18 @@ class MatchTests(unittest.TestCase):
             projected_job["languages_required"], [{"name": "English"}]
         )
 
+    def test_request_keeps_candidate_languages_with_null_level(self):
+        candidate = dict(
+            CANDIDATE,
+            languages={"English": None, "Spanish": "", "Portuguese": "native"},
+        )
+        body = typesafe_match.request(candidate, JOB)
+        projected_candidate = cast(Dict[str, object], body["state"]["candidate"])
+        self.assertEqual(
+            projected_candidate["languages"],
+            {"English": None, "Spanish": "", "Portuguese": "native"},
+        )
+
     def test_choices_map_to_contract_points(self):
         _, post = replying(ANSWERS)
         [row] = run([JOB], post)

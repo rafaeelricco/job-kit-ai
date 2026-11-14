@@ -355,7 +355,7 @@ _CANDIDATE_SCHEMA = {
     "roles": _STRINGS,
     "skills": _STRINGS,
     "domains": _STRINGS,
-    "languages": _dynamic_map(str),
+    "languages": _dynamic_map(_OPTIONAL_STRING),
     "experience": _array({"date": str, "position": str, "company": str}),
     "years_experience": _OPTIONAL_INT,
     "preferences": {"remote": str, "in_person": str, "relocation": str},
