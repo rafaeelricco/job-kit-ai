@@ -9,7 +9,7 @@ import sys
 import threading
 import unittest
 from pathlib import Path
-from typing import get_args
+from typing import Dict, cast, get_args
 from unittest import mock
 
 import typesafe_match
@@ -119,6 +119,203 @@ class MatchTests(unittest.TestCase):
                 list(sent_question["criteria"]),
                 [option.name for option in question.options],
             )
+
+    def test_request_projects_profile_schema_and_drops_legacy_pay_and_extras(self):
+        candidate = {
+            "roles": ["Backend Engineer"],
+            "skills": ["Python"],
+            "domains": ["fintech", {"legacy": "candidate-secret-domain"}],
+            "languages": {
+                "English": "fluent",
+                "Mandarin": "native",
+                "Legacy": {"salary": "candidate-secret-language"},
+            },
+            "experience": [
+                {
+                    "company": "Acme",
+                    "position": "Senior Backend Engineer",
+                    "date": "2019 - 2025",
+                    "summary": "candidate-secret-compensation",
+                }
+            ],
+            "years_experience": 6,
+            "preferences": {
+                "remote": "Yes",
+                "in_person": "No",
+                "relocation": "No",
+                "legacy": "candidate-secret-preference",
+            },
+            "constraints": {
+                "work_model": {
+                    "remote": True,
+                    "hybrid": False,
+                    "onsite": False,
+                    "future_model": True,
+                },
+                "location": {
+                    "search_in": [
+                        "United States",
+                        {"legacy": "candidate-secret-search-scope"},
+                    ],
+                    "exclude_hire_from": ["Canada"],
+                    "legacy": "candidate-secret-location",
+                },
+                "residence": {
+                    "country": "United States",
+                    "regions": ["New York"],
+                    "legacy": "candidate-secret-residence",
+                },
+                "exclude_companies": ["Bad Corp", {"legacy": "secret"}],
+                "pay_min_usd_year": 250000,
+                "work_authorization": {
+                    "citizenships": ["United States"],
+                    "permits": ["H-1B"],
+                    "legacy": "candidate-secret-authorization",
+                },
+                "legacy": "candidate-secret-constraint",
+            },
+            "salary": "candidate-secret-top-level-pay",
+            "legacy": "candidate-secret-top-level-extra",
+        }
+        job = {
+            "url": "u",
+            "company": "Example",
+            "title": "Senior Backend Engineer",
+            "scout_score": 4,
+            "seniority": "Senior",
+            "work_model": "Remote",
+            "location": "New York",
+            "salary": "job-secret-compensation",
+            "years_experience": "5+ years",
+            "work_auth": "US work authorization",
+            "hiring_route": "Direct",
+            "eligibility": "Compatible",
+            "eligibility_evidence": "US only",
+            "required_skills": ["Python"],
+            "preferred_skills": ["Go"],
+            "languages_required": [
+                {"name": "English", "level": "C1", "legacy": "job-secret-language"}
+            ],
+            "languages_preferred": [
+                {"name": "German", "level": None},
+                {"name": "French", "level": {"salary": "job-secret-language"}},
+            ],
+            "domain": "fintech",
+            "legacy": "job-secret-top-level-extra",
+        }
+        payload = Payload.from_json({"candidate": candidate, "jobs": [job]})
+        sent, post = replying(ANSWERS)
+        match_all(payload, post)
+
+        self.assertEqual(
+            sent[0]["state"],
+            {
+                "candidate": {
+                    "roles": ["Backend Engineer"],
+                    "skills": ["Python"],
+                    "domains": ["fintech"],
+                        "languages": {"English": "fluent", "Mandarin": "native"},
+                    "experience": [
+                        {
+                            "company": "Acme",
+                            "position": "Senior Backend Engineer",
+                            "date": "2019 - 2025",
+                        }
+                    ],
+                    "years_experience": 6,
+                    "preferences": {
+                        "remote": "Yes",
+                        "in_person": "No",
+                        "relocation": "No",
+                    },
+                    "constraints": {
+                        "work_model": {
+                            "remote": True,
+                            "hybrid": False,
+                            "onsite": False,
+                        },
+                        "location": {
+                            "search_in": ["United States"],
+                            "exclude_hire_from": ["Canada"],
+                        },
+                        "residence": {
+                            "country": "United States",
+                            "regions": ["New York"],
+                        },
+                        "exclude_companies": ["Bad Corp"],
+                        "work_authorization": {
+                            "citizenships": ["United States"],
+                            "permits": ["H-1B"],
+                        },
+                    },
+                },
+                "job": {
+                    "url": "u",
+                    "company": "Example",
+                    "title": "Senior Backend Engineer",
+                    "scout_score": 4,
+                    "seniority": "Senior",
+                    "work_model": "Remote",
+                    "location": "New York",
+                    "years_experience": "5+ years",
+                    "work_auth": "US work authorization",
+                    "hiring_route": "Direct",
+                    "eligibility": "Compatible",
+                    "eligibility_evidence": "US only",
+                    "required_skills": ["Python"],
+                    "preferred_skills": ["Go"],
+                    "languages_required": [{"name": "English", "level": "C1"}],
+                    "languages_preferred": [
+                        {"name": "German", "level": None},
+                        {"name": "French"},
+                    ],
+                    "domain": "fintech",
+                },
+            },
+        )
+    def test_request_keeps_worldwide_scope_and_drops_nested_scalar_values(self):
+        candidate = dict(
+            CANDIDATE,
+            languages={"English": {"pay": "secret"}},
+            constraints={"location": {"search_in": "worldwide"}},
+        )
+        job = dict(
+            JOB,
+            work_auth={"pay": "secret"},
+            languages_required=[
+                {"name": "English", "level": {"pay": "secret"}}
+            ],
+        )
+        body = typesafe_match.request(candidate, job)
+        state = body["state"]
+        projected_candidate = cast(Dict[str, object], state["candidate"])
+        projected_constraints = cast(
+            Dict[str, object], projected_candidate["constraints"]
+        )
+        projected_location = cast(
+            Dict[str, object], projected_constraints["location"]
+        )
+        projected_job = cast(Dict[str, object], state["job"])
+        self.assertEqual(
+            projected_location["search_in"], "worldwide"
+        )
+        self.assertEqual(projected_candidate["languages"], {})
+        self.assertNotIn("work_auth", projected_job)
+        self.assertEqual(
+            projected_job["languages_required"], [{"name": "English"}]
+        )
+
+    def test_request_keeps_candidate_languages_with_null_level(self):
+        candidate = dict(
+            CANDIDATE,
+            languages={"English": None, "Spanish": "", "Portuguese": "native"},
+        )
+        body = typesafe_match.request(candidate, JOB)
+        projected_candidate = cast(Dict[str, object], body["state"]["candidate"])
+        self.assertEqual(
+            projected_candidate["languages"],
+            {"English": None, "Spanish": "", "Portuguese": "native"},
+        )
 
     def test_choices_map_to_contract_points(self):
         _, post = replying(ANSWERS)
