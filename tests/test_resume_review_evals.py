@@ -535,6 +535,115 @@ class ReviewOpportunityChecks(unittest.TestCase):
 
 
 class RunnerTests(unittest.TestCase):
+    def test_selected_job_evidence_checks_successful_scorer_output_against_report(self):
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        call = {"type": "assistant", "message": {"content": [{
+            "type": "tool_use", "name": "Bash", "id": "score-call",
+            "input": {"command": "py -3 D:/frozen/skill/job-match/scripts/score.py < score_in.json"},
+        }]}}
+        for failed, report, passes in (
+            (False, "**Score: 79, `possible_match`, confidence 0.90.**", True),
+            (False, "**Match score: 78.**", False),
+            (True, "**Score: 79.**", False),
+        ):
+            with self.subTest(failed=failed, report=report):
+                events = [
+                    call,
+                    {"type": "user", "message": {"content": [{
+                        "type": "tool_result", "tool_use_id": "score-call", "is_error": failed,
+                        "content": '[{"match_score": 79}]',
+                    }]}},
+                    {"type": "result", "result": report, "is_error": failed},
+                ]
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertEqual(all(check(run) is None for check in case.checks), passes)
+                self.assertEqual(bool(run.error), failed)
+
+    @staticmethod
+    def redirected_score_events(command, read_path="/tmp/scored.json", content='[{"match_score": 79}]',
+                                score_failed=False, read_failed=False, reported=79):
+        return [
+            {"type": "system", "subtype": "init", "cwd": "/tmp/scorer-run"},
+            {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Bash", "id": "score-call",
+                "input": {"command": command},
+            }]}},
+            {"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": "score-call",
+                "is_error": score_failed, "content": "",
+            }]}},
+            {"type": "assistant", "message": {"content": [{
+                "type": "tool_use", "name": "Read", "id": "read-call",
+                "input": {"file_path": read_path},
+            }]}},
+            {"type": "user", "message": {"content": [{
+                "type": "tool_result", "tool_use_id": "read-call",
+                "is_error": read_failed, "content": content,
+            }]}},
+            {"type": "result", "result": f"**Match score: {reported}.**"},
+        ]
+
+    def test_selected_job_evidence_accepts_only_the_successful_scorers_redirected_file(self):
+        case = next(c for c in resume_review.CASES if c.name == "selected_job_evidence")
+        command = "python3 /frozen/skill/job-match/scripts/score.py < input.json > /tmp/scored.json"
+        numbered = '     1\u2192[\n     2\u2192  {"match_score": 79}\n     3\u2192]'
+        scenarios = (
+            ("absolute output", command, "/tmp/scored.json", '[{"match_score": 79}]',
+             False, False, 79, True),
+            ("quoted relative output", command.replace("/tmp/scored.json", '"scored result.json"'),
+             "/tmp/scorer-run/scored result.json", [{"type": "text", "text": numbered}],
+             False, False, 79, True),
+            ("numbered read with reminder", command, "/tmp/scored.json",
+             numbered + "\n\n<system-reminder>Read-only source file.</system-reminder>",
+             False, False, 79, True),
+            ("wrong reported score", command, "/tmp/scored.json", '[{"match_score": 79}]',
+             False, False, 78, False),
+            ("unrelated file", command, "/tmp/unrelated.json", '[{"match_score": 79}]',
+             False, False, 79, False),
+            ("failed scorer", command, "/tmp/scored.json", '[{"match_score": 79}]',
+             True, False, 79, False),
+            ("failed read", command, "/tmp/scored.json", '[{"match_score": 79}]',
+             False, True, 79, False),
+            ("stderr file", command.replace(" > ", " 2> "), "/tmp/scored.json",
+             '[{"match_score": 79}]', False, False, 79, False),
+            ("explicit stdout descriptor", command.replace(" > ", " 1> "), "/tmp/scored.json",
+             '[{"match_score": 79}]', False, False, 79, True),
+            ("compound cwd change", "cd /tmp/other && " + command.replace("/tmp/scored.json", "scored.json"),
+             "/tmp/scorer-run/scored.json", '[{"match_score": 79}]', False, False, 79, False),
+            ("masked scorer failure", command + " || true", "/tmp/scored.json",
+             '[{"match_score": 79}]', False, False, 79, False),
+        )
+        for name, score_command, read_path, content, score_failed, read_failed, reported, passes in scenarios:
+            with self.subTest(name=name):
+                events = self.redirected_score_events(score_command, read_path, content,
+                                                      score_failed, read_failed, reported)
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertIsNone(run.error)
+                self.assertEqual(all(check(run) is None for check in case.checks), passes)
+
+    def test_redirected_score_uses_supplied_cwd_without_a_stream_init_event(self):
+        events = self.redirected_score_events(
+            'python3 /frozen/score.py < input.json > "scored result.json"',
+            read_path="/tmp/scorer-run/scored result.json")
+        run = resume_review.read_stream("\n".join(json.dumps(event) for event in events[1:]),
+                                        cwd=Path("/tmp/scorer-run"))
+        self.assertIsNone(resume_review.reports_computed_match_score(run))
+
+    def test_redirected_score_requires_the_latest_write_to_finish_successfully_before_read(self):
+        command = "python3 /frozen/score.py < input.json > /tmp/scored.json"
+        for name in ("failed rerun", "read before completion"):
+            with self.subTest(name=name):
+                events = self.redirected_score_events(command)
+                if name == "failed rerun":
+                    retry = self.redirected_score_events(command, score_failed=True)[1:3]
+                    retry[0]["message"]["content"][0]["id"] = "retry-call"
+                    retry[1]["message"]["content"][0]["tool_use_id"] = "retry-call"
+                    events[3:3] = retry
+                else:
+                    events[2], events[3] = events[3], events[2]
+                run = resume_review.read_stream("\n".join(json.dumps(event) for event in events))
+                self.assertIsNotNone(resume_review.reports_computed_match_score(run))
+
     def test_read_stream_takes_final_result_and_bash_commands(self):
         events = [
             {"type": "system", "subtype": "init"},

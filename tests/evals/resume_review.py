@@ -17,7 +17,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import posixpath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -46,6 +48,7 @@ class Run:
     error: Optional[str] = None  # set when the session did not finish
     stderr: str = ""
     returncode: Optional[int] = None
+    match_scores: Tuple[int, ...] = ()
 
 
 Check = Callable[[Run], Optional[str]]  # None passes; a string says what failed
@@ -65,6 +68,16 @@ def ran(script: str) -> Check:
 
 def says(pattern: str) -> Check:
     return lambda run: None if re.search(pattern, run.report.text, re.I) else f"report never matches /{pattern}/"
+
+
+def reports_computed_match_score(run: Run) -> Optional[str]:
+    if not run.match_scores:
+        return "score.py returned no successful match score"
+    label = r"(?:match[_ ]score|score|fit(?: score)?)"
+    reported = re.findall(rf"(?im)^\s*[-*# ]*{label}\b[\s:*]*([0-9]{{1,3}})\b", run.report.text)
+    if any(int(value) in run.match_scores for value in reported):
+        return None
+    return f"report did not show a computed match score {run.match_scores}"
 
 
 def score_at_most(limit: int) -> Check:
@@ -428,7 +441,7 @@ CASES = (
     ), context="LinkedIn profile, pasted text:\nAlex Doe — Staff Platform Engineer\n"
                "Experience: Staff Platform Engineer."),
 
-    Case("selected_job_evidence", (ran("score.py"), says(r"match_score|match score|decision|fit")),
+    Case("selected_job_evidence", (reports_computed_match_score,),
          posting="selected_job_posting.md", skill="job-match",
          context="Score this posting against my profile.",
          edit=lambda cv: (FIXTURES / "cases" / "selected_job_evidence.md").read_text(encoding="utf-8"),
@@ -559,15 +572,115 @@ def prompt_for(case: Case, root: Path, skills_root: Optional[Path] = None,
     return prompt
 
 
-def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0) -> Run:
+def transcript_path(path: str, cwd: Optional[str]) -> str:
+    """Compare transcript paths without resolving them on the evaluator's host."""
+    path = path.replace("\\", "/")
+    if cwd and not (posixpath.isabs(path) or re.match(r"^[A-Za-z]:/", path)):
+        path = posixpath.join(cwd.replace("\\", "/"), path)
+    path = posixpath.normpath(path)
+    return path.casefold() if re.match(r"^[A-Za-z]:/", path) else path
+
+
+def scorer_output_paths(command: str, cwd: Optional[str]) -> Tuple[str, ...]:
+    """Find literal stdout targets of simple Python scorer commands."""
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>()\n")
+    lexer.whitespace = " \t\r"
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return ()
+    while tokens and tokens[-1].isspace():
+        tokens.pop()
+    # Compound commands can change cwd or mask the scorer's failure. Do not
+    # infer an artifact's provenance without knowing shell execution semantics.
+    if any(token and all(char in ";&|()\n" for char in token) for token in tokens):
+        return ()
+    executable = posixpath.basename(tokens[0].replace("\\", "/")) if tokens else ""
+    script_index = 2 if executable == "py" and tokens[1:2] == ["-3"] else 1
+    if (executable not in ("python", "python3", "py") or len(tokens) <= script_index
+            or posixpath.basename(tokens[script_index].replace("\\", "/")) != "score.py"):
+        return ()
+    output = None
+    for index in range(script_index + 1, len(tokens) - 1):
+        if tokens[index] not in (">", ">>"):
+            continue
+        if tokens[index - 1].isdigit() and tokens[index - 1] != "1":
+            continue  # stderr and other descriptors are not scorer JSON
+        output = tokens[index + 1]
+    if output and not any(char in output for char in "$`~"):
+        return (transcript_path(output, cwd),)
+    return ()
+
+
+def tool_json(content: object, file_read: bool = False) -> object:
+    """Decode JSON from tool text, removing Read's line numbers and reminder."""
+    if isinstance(content, list):
+        content = "\n".join(block["text"] for block in content
+                            if isinstance(block, dict) and block.get("type") == "text"
+                            and isinstance(block.get("text"), str))
+    if not isinstance(content, str):
+        return None
+    if file_read:
+        numbered = [re.sub(r"^\s*\d+(?:→|\t)", "", line) for line in content.splitlines()
+                    if re.match(r"^\s*\d+(?:→|\t)", line)]
+        content = "\n".join(numbered) if numbered else content
+        content = re.split(r"(?:^|\n)<system-reminder>", content, maxsplit=1)[0]
+    try:
+        return json.loads(content)
+    except ValueError:
+        return None
+
+
+def read_stream(stdout: str, stderr: str = "", returncode: Optional[int] = 0,
+                cwd: Optional[Path] = None) -> Run:
     """Final report text and every Bash command from a `claude -p --output-format stream-json` transcript."""
     events = [json.loads(line) for line in stdout.splitlines() if line.startswith("{")]
-    report = next((e.get("result", "") for e in reversed(events) if e.get("type") == "result"), "")
-    commands = [block["input"].get("command", "") for e in events if e.get("type") == "assistant"
-                for block in e["message"].get("content", [])
-                if block.get("type") == "tool_use" and block.get("name") == "Bash"]
+    final = next((e for e in reversed(events) if e.get("type") == "result"), {})
+    commands = []
+    scorer_calls = {}
+    scorer_files = set()
+    read_calls = {}
+    working_dir = str(cwd) if cwd is not None else None
+    scores = ()
+    for event in events:
+        if event.get("type") == "system" and event.get("subtype") == "init" and isinstance(event.get("cwd"), str):
+            working_dir = event["cwd"]
+        message = event.get("message")
+        blocks = message.get("content") if isinstance(message, dict) else None
+        for block in blocks if isinstance(blocks, list) else ():
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                command = block["input"].get("command", "")
+                commands.append(command)
+                if block.get("id") and re.search(r"\b(?:python3?|py -3)\s+[^<|;&]*\bscore\.py\b", command):
+                    paths = scorer_output_paths(command, working_dir)
+                    scorer_calls[block["id"]] = paths
+                    scorer_files.difference_update(paths)
+            if block.get("type") == "tool_use" and block.get("name") == "Read" and block.get("id"):
+                path = block.get("input", {}).get("file_path")
+                if isinstance(path, str):
+                    path = transcript_path(path, working_dir)
+                    if path in scorer_files:
+                        read_calls[block["id"]] = path
+            if block.get("type") != "tool_result" or block.get("is_error"):
+                continue
+            call_id = block.get("tool_use_id")
+            file_read = call_id in read_calls and read_calls[call_id] in scorer_files
+            if call_id in scorer_calls:
+                scorer_files.update(scorer_calls[call_id])
+            elif not file_read:
+                continue
+            scored = tool_json(block.get("content"), file_read=file_read)
+            if isinstance(scored, list):
+                scores = tuple(row["match_score"] for row in scored
+                               if isinstance(row, dict) and not row.get("score_error")
+                               and type(row.get("match_score")) is int)
     error = f"CLI exited with status {returncode}" if returncode else None
-    return Run(parse(report), commands, error, stderr, returncode)
+    if not error and final.get("is_error"):
+        error = f"CLI reported {final.get('subtype', 'an error')}"
+    return Run(parse(final.get("result", "")), commands, error, stderr, returncode, scores)
 
 
 def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional[Path] = None,
@@ -596,7 +709,7 @@ def run_case(case: Case, root: Path, model: Optional[str], skills_root: Optional
         partial_stderr = error.stderr or b""
         stderr = partial_stderr.decode("utf-8", "replace") if isinstance(partial_stderr, bytes) else partial_stderr
         return Run(parse(""), [], f"timed out after {TIMEOUT} s", stderr, None), stdout
-    return read_stream(proc.stdout, proc.stderr, proc.returncode), proc.stdout
+    return read_stream(proc.stdout, proc.stderr, proc.returncode, cwd=root), proc.stdout
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
