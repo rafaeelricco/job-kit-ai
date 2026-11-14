@@ -41,6 +41,7 @@ entry.
   `defect: route_failed`. Never fall back to DOM after a configured or required
   route fails. Ashby board API fallback is only the same-board exception
   defined below.
+
 ### Ashby board API route
 
 For the selected profile pack only, this branch applies when `route.kind` is
