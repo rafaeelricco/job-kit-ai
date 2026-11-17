@@ -19,8 +19,8 @@ Then each persist-set row:
 
 Then `{n} dossiers → {abs Profile root}/scout/jobs/`
 
-For selected-profile Ashby searches, print the board coverage counts defined
-in **Ashby board API route** in `./references/flows/flow-search.md`.
+For selected-profile board API searches, print the board coverage counts
+defined in **Board API route** in `./references/flows/flow-search.md`.
 Separately report posting-level browser fallbacks attempted, recovered, and
 unresolved from extraction. Name failure reasons under Gaps; successful empty
 boards and incomplete coverage are distinct outcomes.

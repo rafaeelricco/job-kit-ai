@@ -50,7 +50,7 @@ roots stay active until the tree is deleted.
    job-apply attaches `cv/en-us-resume.pdf`.
 4. Search packs live in this profile at `data/search_packs.yaml`; tune formulations
    there or via `/job-profile packs`.
-   `*-boards` packs discover slugs each run from `site:` and the store.
+   `*-boards` packs read their `boards` rows and `slug_lists` files through each ATS's API.
 5. Free-form details are stored in `data/observations.yaml`.
 6. Story stubs are created empty under `data/stories/`; fill them with
    `/job-stories add`.

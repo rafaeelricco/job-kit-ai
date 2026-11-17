@@ -668,8 +668,8 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
         other_ats = instruction_section(
             FLOW_SEARCH, "### Other ATS board routes", "## Declared careers listings"
         )
-        ashby = instruction_section(
-            FLOW_SEARCH, "### Ashby board API route", "### Other ATS board routes"
+        board_api = instruction_section(
+            FLOW_SEARCH, "### Board API route", "### Other ATS board routes"
         )
         prep = instruction_text(FLOW_PREP)
         self.assertIn(
@@ -687,33 +687,40 @@ class JobScoutStoreInstructionTests(unittest.TestCase):
             "slugs are the `data/boards.yaml` rows whose `ats` equals the pack's; none → `defect: no_boards`",
             other_ats,
         )
-        self.assertIn("selected profile pack only", ashby)
-        self.assertIn("exclude disabled `pack.boards` rows before validating board urls", ashby)
-        self.assertIn("if no enabled board remains, report `defect: no_boards` and make no request", ashby)
-        self.assertIn('"boards": <enabled pack.boards>', ashby)
-        self.assertIn("do not send `slugs` or `lists`", ashby)
-        self.assertIn("valid_empty", ashby)
-        self.assertIn("fallback_attempted", ashby)
-        self.assertIn("fallback_recovered", ashby)
-        self.assertIn("failed, partial, deferred, or unresolved runs are not zero-result runs", ashby)
-        self.assertIn("ashby_profile_branch: true", ashby)
+        self.assertIn("selected profile pack only", board_api)
+        self.assertIn("`route.ats` is `ashby`, `greenhouse`, or `lever`", board_api)
+        self.assertIn("skips disabled `pack.boards` rows before validating board urls", board_api)
+        self.assertIn("every row of each `route.slug_lists` entry whose tenant is not already a `pack.boards` row", board_api)
+        self.assertIn(
+            "if the pack has no enabled board and no `slug_lists` entry, report `defect: no_boards` and make no request",
+            board_api,
+        )
+        self.assertIn('"boards": <pack.boards>, "lists": <slug_lists>', board_api)
+        self.assertIn("do not send `slugs`, read the store for tenant seeds, or run a search engine", board_api)
+        self.assertIn("valid_empty", board_api)
+        self.assertIn("fallback_attempted", board_api)
+        self.assertIn("fallback_recovered", board_api)
+        self.assertIn("failed, partial, deferred, or unresolved runs are not zero-result runs", board_api)
+        self.assertIn("board_api_branch: true", board_api)
         self.assertIn("then `first_seen` descending", prep)
         self.assertNotIn("then `first_seen` ascending", prep)
 
-    def test_ashby_full_source_and_fallback_scope_survive_to_match(self):
+    def test_board_api_full_source_and_fallback_scope_survive_to_match(self):
         search = instruction_text(FLOW_SEARCH)
         extract = instruction_text(FLOW_EXTRACT)
         match_gate = instruction_text(FLOW_MATCH_GATE)
         rank = instruction_text(FLOW_RANK)
-        self.assertIn("ashby_profile_branch: true", search)
+        self.assertIn("board_api_branch: true", search)
         self.assertIn("it does not apply to ad-hoc packs or refresh rows", search)
         self.assertIn("carry it through match but never persist it", search)
-        self.assertIn("preserve `ashby_profile_branch: true`", search)
+        self.assertIn("preserve `board_api_branch: true`", search)
         self.assertIn("complete api jd", extract)
+        self.assertIn("greenhouse: `content`, after decoding its html entities", extract)
+        self.assertIn("then each `lists[]` entry", extract)
         self.assertIn("board-listing browser fallback", extract)
         self.assertIn("missing optional api date, pay, or geography", extract)
         self.assertIn("does not trigger browser fallback", extract)
-        self.assertIn("ashby_profile_branch: true", match_gate)
+        self.assertIn("board_api_branch: true", match_gate)
         self.assertIn("complete run-local jd", match_gate)
         self.assertIn("browser fallback body", match_gate)
         self.assertIn("posting-level browser fallbacks attempted, recovered", rank)
