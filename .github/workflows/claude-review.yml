@@ -20,20 +20,65 @@ permissions:
   id-token: write
 
 jobs:
-  review:
+  preflight:
     if: >-
       (github.event_name == 'pull_request' &&
         !github.event.pull_request.draft &&
-        github.event.pull_request.head.repo.full_name == github.repository) ||
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
         startsWith(github.event.comment.body, '/pr-review') &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: r1cco-ci
+    permissions:
+      pull-requests: read
+      issues: read
+    outputs:
+      eligible: ${{ steps.origin.outputs.eligible }}
+    steps:
+      - name: Resolve PR source repository (metadata only)
+        id: origin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            head_repository="$EVENT_HEAD_REPOSITORY"
+          else
+            head_repository=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" --jq '.head.repo.full_name')
+          fi
+
+          if [ "$head_repository" = "$REPOSITORY" ]; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    needs: preflight
+    if: >-
+      needs.preflight.outputs.eligible == 'true' &&
+      ((github.event_name == 'pull_request' &&
+        !github.event.pull_request.draft &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/pr-review') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
     # Job-level, so a comment whose job is skipped never cancels a running review.
     concurrency:
       group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
       cancel-in-progress: true
-    runs-on: ubuntu-latest
+    runs-on: r1cco-ci
     name: Claude review
     timeout-minutes: 45
     env:
@@ -47,8 +92,7 @@ jobs:
       # PR #152 posted a summary before its finders returned. Foreground only.
       CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
     steps:
-      # issue_comment runs with secrets even on fork PRs; refuse them before any
-      # PR code is checked out.
+      # Defense in depth: metadata-only preflight rejects fork PRs before this job.
       - name: Refuse fork pull requests
         if: github.event_name == 'issue_comment'
         env:
@@ -69,22 +113,24 @@ jobs:
       # Provers run the repo's checks and throwaway tests with pnpm, on the Node
       # version in .node-version. pr-review installs
       # dependencies into its own review tree, so none are installed here.
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
 
-      # The subprocess secret scrub needs bubblewrap, which the action installs
-      # only for allowed_non_write_users. Same setup as its own step.
-      - name: Install bubblewrap for the subprocess scrub
+      # These host prerequisites must be provisioned before the runner is enabled.
+      - name: Check runner prerequisites
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends bubblewrap socat
-          # Ubuntu 24.04+ restricts unprivileged user namespaces via AppArmor.
-          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
-            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          command -v bwrap >/dev/null
+          command -v socat >/dev/null
+          command -v gh >/dev/null
+          command -v python3 >/dev/null
+          python3 -m venv --help >/dev/null
+          if ! bwrap --unshare-user --ro-bind / / /bin/true; then
+            echo "::error::Bubblewrap user namespace is unavailable; provision the runner before enabling this job"
+            exit 1
           fi
 
       # claude-code-action@v1 pins Claude Code 2.1.278, which predates Opus 5.5
@@ -107,12 +153,13 @@ jobs:
             echo "::error::Claude Code ${current:-unknown} is older than $min, which Opus 5.5 needs"
             exit 1
           fi
+          echo "CLAUDE_BIN=$claude" >> "$GITHUB_ENV"
           echo "Using Claude Code $current"
 
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          path_to_claude_code_executable: /home/runner/.local/bin/claude
+          path_to_claude_code_executable: ${{ env.CLAUDE_BIN }}
           show_full_output: true
           # Claude's app token can comment but not push, since PR code runs here.
           additional_permissions: |
