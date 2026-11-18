@@ -7,9 +7,11 @@ ordered text while retaining headings, lists, links, and section order:
 
 - Ashby: non-empty `descriptionPlain`, else `descriptionHtml`.
 - Greenhouse: `content`, after decoding its HTML entities.
-- Lever: non-empty `descriptionPlain`, else `description`; then each `lists[]`
-  entry as its `text` heading and `content`; then non-empty `additionalPlain`,
-  else `additional`.
+- Lever: non-empty `description`, else `descriptionPlain`; then each `lists[]`
+  entry as its `text` heading and `content`; then non-empty `additional`,
+  else `additionalPlain`. Read the HTML first: on some postings
+  `descriptionPlain` holds only the opening paragraph, while `description`
+  holds the complete body.
 
 If those fields are absent or empty, the API marks the body
 truncated, or the supplied body is visibly clipped, open only that candidate's
