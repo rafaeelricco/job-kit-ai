@@ -16,7 +16,7 @@ filter, matching, scoring, and review. The scout gate already applied the
 eligibility filters.
 
 Use the Verified extract as the posting body. For a row marked
-`ashby_profile_branch: true`, also supply its complete run-local JD from the
+`board_api_branch: true`, also supply its complete run-local JD from the
 extract step, including the same-posting browser fallback body when used.
 Keep that full body run-local, outside the dossier schema. Prepare the
 structured facts for matching without compensation fields. Workers receive only supplied

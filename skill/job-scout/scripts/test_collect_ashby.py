@@ -257,7 +257,6 @@ class AshbyCollectTests(unittest.TestCase):
             self.payload([{"name": "Acme", "url": "https://jobs.ashbyhq.com/acme"}]),
             self.payload([{"enabled": False, "url": "https://jobs.ashbyhq.com/%2e%2e"}], slugs=["extra"]),
             self.payload([board()], slugs=["extra"]),
-            self.payload([board()], lists=["https://example.test/slugs.csv"]),
             self.payload([board()], route=dict(ROUTE, ats="greenhouse")),
             self.payload([board()], route=dict(ROUTE, items="data.jobs")),
             self.payload([board()], route=dict(ROUTE, url="https://evil.example/{slug}")),
@@ -297,7 +296,6 @@ class AshbyCollectTests(unittest.TestCase):
     def test_bad_rows_and_unsafe_posting_urls_fail_only_their_board(self):
         bad_jobs = [
             ["not an object"],
-            [{"jobUrl": "https://jobs.ashbyhq.com/acme/1"}],
             [job(jobUrl="https://evil.example/acme/1")],
             [job(jobUrl="http://jobs.ashbyhq.com/acme/1")],
             [job(jobUrl="https://jobs.ashbyhq.com/other/1")],
@@ -321,11 +319,27 @@ class AshbyCollectTests(unittest.TestCase):
                 self.assertEqual([row["slug"] for row in out["candidates"]], ["good"])
                 bad, good = out["slugs"]
                 self.assertEqual((bad["status"], bad["kept"]), ("failed", 0))
-                expected = ("not an object" if index == 0 else "no title" if index == 1
+                expected = ("not an object" if index == 0
                             else "invalid isListed" if index == len(bad_jobs) - 1
                             else "unsafe posting URL")
                 self.assertIn(expected, bad["error"])
                 self.assertEqual((good["status"], good["kept"]), ("ok", 1))
+
+    def test_untitled_jobs_are_skipped_without_failing_the_board(self):
+        jobs = [
+            job(job_id="kept"),
+            job(job_id="blank", title=""),
+            job(job_id="spaces", title="  "),
+            job(job_id="null", title=None),
+            {"jobUrl": "https://evil.example/acme/missing"},
+        ]
+        fetch = make_fetch({api_url("acme"): ok({"jobs": jobs})})
+        code, out = self.run_collect(self.payload(), fetch)
+
+        self.assertEqual(code, 0)
+        self.assertEqual([item["url"] for item in out["candidates"]], ["https://jobs.ashbyhq.com/acme/kept"])
+        [report] = out["slugs"]
+        self.assertEqual((report["status"], report["error"], report["items"], report["kept"]), ("ok", "", 5, 1))
 
     def test_board_http_failures_retry_and_partial_success_are_reported(self):
         rows = [
@@ -347,6 +361,24 @@ class AshbyCollectTests(unittest.TestCase):
         self.assertEqual(fetch.calls.count(api_url("down")), 5)
         self.assertIn(3.0, self.sleeps)
         self.assertEqual(len(out["candidates"]), 1)
+
+    def test_slug_lists_follow_pack_rows_and_skip_disabled_tenants(self):
+        source = "https://example.test/ashby.csv"
+        rows = [board(), board("off", "Off", "https://jobs.ashbyhq.com/off", enabled=False)]
+        fetch = make_fetch({
+            source: (200, "name,url\nBeta,https://jobs.ashbyhq.com/beta\nOff,https://jobs.ashbyhq.com/off\n"),
+            api_url("acme"): ok({"jobs": [job()]}),
+            api_url("beta"): ok({"jobs": [job("beta")]}),
+        })
+        code, out = self.run_collect(self.payload(rows, lists=[source]), fetch)
+
+        self.assertEqual(code, 0)
+        self.assertCountEqual(fetch.calls, [source, api_url("acme"), api_url("beta")])
+        self.assertEqual([(row["company_id"], row["name"], row["slug"], row["board_url"]) for row in out["slugs"]], [
+            ("acme", "Acme", "acme", "https://jobs.ashbyhq.com/acme"),
+            ("", "Beta", "beta", "https://jobs.ashbyhq.com/beta"),
+        ])
+        self.assertEqual(out["lists"], [{"source": source, "status": "ok", "slugs": 2, "skipped": 0}])
 
     def test_legacy_route_shape_is_unchanged_when_boards_key_is_absent(self):
         legacy_route = {

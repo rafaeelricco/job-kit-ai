@@ -13,6 +13,13 @@ stdout: {"candidates": [{"slug", "company", "title", "url", "date", "location", 
          "lists": [{"source", "status": "ok" | "failed", "slugs", "skipped"}, ...]}
          (`skipped`: list rows read but not turned into slugs, e.g. a Lever EU or other-ATS url)
 or {"collect_error": "..."} with exit 1. A failed slug or list is reported, never a zero.
+
+Boards branch (`boards` key present; ashby, greenhouse, lever): stdin swaps `slugs` for
+"boards": [{"company_id", "name", "url", "enabled"?}, ...]. `lists` rows follow the pack rows unless
+their tenant is already a pack row, enabled or disabled. Each candidate adds
+"api_evidence": {"request_url", "board_url", "job": <raw item>}; each `slugs` report adds
+"company_id", "name", "board_url", "http_status". A bad board root or a malformed job fails that board alone;
+an untitled job is skipped.
 """
 
 import csv
@@ -37,12 +44,41 @@ WINDOWS = {"24_hours": 1, "week": 7, "month": 31, "all_time": None, "": None}
 EU_LEVER_HOSTS = ("jobs.eu.lever.co", "api.eu.lever.co")
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 MISSING = object()
-ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
-ASHBY_API_URLS = frozenset((
-    "https://api.ashbyhq.com/posting-api/job-board/{slug}",
-    ASHBY_API,
-    "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=false",
-))
+ASHBY_API = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
+GREENHOUSE_API = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+# Per ATS the boards branch reads: accepted route urls, board-root hosts, the root a list slug expands to,
+# the route paths the API fixes, and the host every posting link must stay on (None when the API may link
+# to the employer's own careers site) with its optional apply-step segment.
+BOARD_APIS: Dict[str, dict] = {
+    "ashby": {
+        "urls": (ASHBY_API, ASHBY_API + "?includeCompensation=true", ASHBY_API + "?includeCompensation=false"),
+        "hosts": ("jobs.ashbyhq.com",),
+        "root": "https://jobs.ashbyhq.com/{slug}",
+        "required": (("items", "jobs"), ("posting_url", "jobUrl"), ("title", "title")),
+        "optional": (("location", "location"), ("date", "publishedAt"), ("listed", "isListed")),
+        "posting_host": "jobs.ashbyhq.com",
+        "apply_step": "application",
+    },
+    "greenhouse": {
+        "urls": (GREENHOUSE_API, GREENHOUSE_API + "?content=true"),
+        "hosts": ("job-boards.greenhouse.io", "boards.greenhouse.io",
+                  "job-boards.eu.greenhouse.io", "boards.eu.greenhouse.io"),
+        "root": "https://job-boards.greenhouse.io/{slug}",
+        "required": (("items", "jobs"), ("posting_url", "absolute_url"), ("title", "title")),
+        "optional": (("location", "location.name"), ("date", "first_published")),
+        "posting_host": None,
+        "apply_step": None,
+    },
+    "lever": {
+        "urls": ("https://api.lever.co/v0/postings/{slug}?mode=json",),
+        "hosts": ("jobs.lever.co",),
+        "root": "https://jobs.lever.co/{slug}",
+        "required": (("items", "$"), ("posting_url", "hostedUrl"), ("title", "text")),
+        "optional": (("location", "categories.location"), ("date", "createdAt")),
+        "posting_host": "jobs.lever.co",
+        "apply_step": None,
+    },
+}
 
 
 def parse_when(value: object) -> Optional[datetime]:
@@ -185,6 +221,22 @@ def read_list(source: str, ats: str, fetch: Callable[..., tuple],
     return list_slugs(text, ats)
 
 
+def read_lists(lists: List[str], ats: str, fetch: Callable[..., tuple],
+               sleep: Callable[[float], None]) -> Tuple[List[Tuple[str, str]], List[Dict[str, object]]]:
+    """Every (slug, name) row of every list in order, and one report per list; a failed list is reported."""
+    rows: List[Tuple[str, str]] = []
+    reports: List[Dict[str, object]] = []
+    for source in lists:
+        try:
+            found, skipped = read_list(source, ats, fetch, sleep)
+        except (OSError, ValueError, csv.Error) as error:
+            reports.append({"source": source, "status": "failed", "error": str(error), "slugs": 0, "skipped": 0})
+            continue
+        reports.append({"source": source, "status": "ok", "slugs": len(found), "skipped": skipped})
+        rows.extend(found)
+    return rows, reports
+
+
 def scan_slug(slug: str, route: dict, positions: List[str], since: Optional[datetime],
               fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[Dict[str, object], List[dict]]:
     report: Dict[str, object] = {"slug": slug, "status": "failed", "error": "", "items": 0, "kept": 0}
@@ -206,17 +258,17 @@ def scan_slug(slug: str, route: dict, positions: List[str], since: Optional[date
     return report, kept
 
 
-def ashby_tenant(board_url: object) -> str:
-    """Extract one safe tenant from a verified Ashby board root."""
+def board_tenant(board_url: object, hosts: Tuple[str, ...]) -> str:
+    """Extract one safe tenant from a board root on one of the ATS's board hosts."""
     if not isinstance(board_url, str) or not board_url or board_url != board_url.strip():
-        raise ValueError("board url must be a non-empty absolute HTTPS Ashby URL")
+        raise ValueError("board url must be a non-empty absolute URL")
     try:
         parts = urlsplit(board_url)
     except ValueError:
-        raise ValueError("invalid Ashby board url")
+        raise ValueError("invalid board url")
     # The request is rebuilt from the tenant alone, so scheme, query and fragment are ignored.
-    if parts.scheme.lower() not in ("http", "https") or parts.netloc.lower() != "jobs.ashbyhq.com":
-        raise ValueError("board url must be on http(s)://jobs.ashbyhq.com")
+    if parts.scheme.lower() not in ("http", "https") or parts.netloc.lower() not in hosts:
+        raise ValueError("board url must be on http(s)://{0}".format(" or ".join(hosts)))
     match = re.fullmatch(r"/([^/]+)/?", parts.path)
     if not match:
         raise ValueError("board url must contain exactly one tenant path segment")
@@ -227,15 +279,17 @@ def ashby_tenant(board_url: object) -> str:
     return tenant
 
 
-def safe_ashby_posting_url(raw: object, tenant: str) -> bool:
-    """Ashby job links must stay on the same tenant's public posting path."""
+def safe_posting_url(raw: object, tenant: str, spec: dict) -> bool:
+    """A posting link is an absolute URL; where the ATS hosts every posting it stays on the tenant's path."""
     if not isinstance(raw, str) or not raw or raw != raw.strip():
         return False
     try:
         parts = urlsplit(raw)
     except ValueError:
         return False
-    if (parts.scheme.lower() != "https" or parts.netloc.lower() != "jobs.ashbyhq.com"
+    if spec["posting_host"] is None:
+        return parts.scheme.lower() in ("http", "https") and bool(parts.hostname)
+    if (parts.scheme.lower() != "https" or parts.netloc.lower() != spec["posting_host"]
             or parts.query or parts.fragment or "?" in raw or "#" in raw):
         return False
     if not parts.path.startswith("/"):
@@ -249,70 +303,87 @@ def safe_ashby_posting_url(raw: object, tenant: str) -> bool:
     if any(segment in (".", "..") or not re.fullmatch(r"[A-Za-z0-9._~-]+", segment)
            for segment in decoded):
         return False
-    if len(decoded) == 3 and decoded[2].casefold() != "application":
+    if len(decoded) == 3 and decoded[2].casefold() != spec["apply_step"]:
         return False
     return decoded[0].casefold() == tenant.casefold()
 
 
-def validate_ashby_config(route: dict, boards: object) -> List[dict]:
-    """Validate the Ashby route and every profile board before any network request."""
-    if route.get("ats", "").lower() != "ashby":
-        raise ValueError("boards require route.ats to be ashby")
+def board_api(route: dict) -> dict:
+    """The BOARD_APIS entry for a route, once the route is that API's official shape."""
+    spec = BOARD_APIS.get(route["ats"].lower())
+    if spec is None:
+        raise ValueError("boards require route.ats to be ashby, greenhouse, or lever")
     if route.get("kind") not in (None, "board"):
-        raise ValueError("Ashby route.kind must be board")
-    if route.get("url") not in ASHBY_API_URLS:
-        raise ValueError("Ashby route.url must be the official posting API URL "
-                         "(https://api.ashbyhq.com/posting-api/job-board/{slug}, optionally "
-                         "with ?includeCompensation=true or false)")
-    for key, expected in (("items", "jobs"), ("posting_url", "jobUrl"), ("title", "title")):
-        if route.get(key) != expected:
-            raise ValueError("Ashby route.{0} must be {1!r}".format(key, expected))
-    for key, expected in (("location", "location"), ("date", "publishedAt"), ("listed", "isListed")):
-        if route.get(key) is not None and route.get(key) != expected:
-            raise ValueError("Ashby route.{0} must be {1!r} when configured".format(key, expected))
+        raise ValueError("route.kind must be board")
+    if route["url"] not in spec["urls"]:
+        raise ValueError("route.url must be the official {0} API URL: {1}".format(
+            route["ats"], " or ".join(spec["urls"])))
+    for key, expected in spec["required"]:
+        if route[key] != expected:
+            raise ValueError("route.{0} must be {1!r}".format(key, expected))
+    for key, expected in spec["optional"]:
+        if route.get(key) is not None and route[key] != expected:
+            raise ValueError("route.{0} must be {1!r} when configured".format(key, expected))
+    return spec
+
+
+def enabled_boards(boards: object, hosts: Tuple[str, ...]) -> Tuple[List[Tuple[str, str, str]], set]:
+    """Validate every profile board before any request: the enabled rows as (company_id, name, url)
+    in order, and the casefolded tenants of the disabled rows."""
     if not isinstance(boards, list):
         raise ValueError("boards must be an array")
-
-    prepared = []
-    seen = set()
+    entries: List[Tuple[str, str, str]] = []
+    disabled = set()
     for index, board in enumerate(boards):
         if not isinstance(board, dict):
             raise ValueError("boards[{0}] must be an object".format(index))
         if "enabled" in board and not isinstance(board["enabled"], bool):
             raise ValueError("boards[{0}].enabled must be a boolean".format(index))
         if not board.get("enabled", True):
+            try:
+                disabled.add(board_tenant(board.get("url"), hosts).casefold())
+            except ValueError:
+                pass  # a disabled row is never validated
             continue
         for key in ("company_id", "name", "url"):
             if not isinstance(board.get(key), str) or not board[key].strip():
                 raise ValueError("boards[{0}].{1} must be a non-empty string".format(index, key))
         if "managed_by" in board and board["managed_by"] != "job-company-scout":
             raise ValueError("boards[{0}].managed_by must be 'job-company-scout'".format(index))
+        entries.append((board["company_id"], board["name"].strip(), board["url"]))
+    return entries, disabled
+
+
+def prepare_boards(route: dict, spec: dict, entries: List[Tuple[str, str, str]], disabled: set,
+                   listed: List[Tuple[str, str]]) -> List[dict]:
+    """Boards to scan, in order: pack rows, then list rows whose tenant is new and not disabled."""
+    prepared: List[dict] = []
+    seen: set = set()
+
+    def add(company_id: str, name: str, url: str) -> None:
+        row = {"company_id": company_id, "name": name, "board_url": url, "slug": ""}
         try:
-            tenant = ashby_tenant(board["url"])
+            tenant = board_tenant(url, spec["hosts"])
         except ValueError as error:
             # One bad board root fails only that board; route errors stay pack-wide.
-            prepared.append({
-                "company_id": board["company_id"],
-                "name": board["name"].strip(),
-                "board_url": board["url"],
-                "slug": "",
-                "error": "invalid board url: {0}".format(error),
-            })
-            continue
-        if tenant.casefold() not in seen:
+            row["error"] = "invalid board url: {0}".format(error)
+        else:
+            if tenant.casefold() in seen:
+                return
             seen.add(tenant.casefold())
-            prepared.append({
-                "company_id": board["company_id"],
-                "name": board["name"].strip(),
-                "board_url": board["url"],
-                "slug": tenant,
-                "request_url": route["url"].replace("{slug}", quote(tenant, safe="")),
-            })
+            row.update(slug=tenant, request_url=route["url"].replace("{slug}", quote(tenant, safe="")))
+        prepared.append(row)
+
+    for company_id, name, url in entries:
+        add(company_id, name, url)
+    seen.update(disabled)
+    for slug, name in listed:
+        add("", name, spec["root"].replace("{slug}", quote(slug, safe="")))
     return prepared
 
 
-def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Optional[datetime],
-                     fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[Dict[str, object], List[dict]]:
+def scan_board(board: dict, route: dict, spec: dict, positions: List[str], since: Optional[datetime],
+               fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[Dict[str, object], List[dict]]:
     report: Dict[str, object] = {
         "company_id": board["company_id"], "name": board["name"], "slug": board["slug"],
         "board_url": board["board_url"], "status": "failed", "error": "", "items": 0,
@@ -337,10 +408,10 @@ def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Opti
         return report, []
     report["items"] = len(items)
 
-    # Ashby's core fields have stable names even when optional route paths are omitted.
-    ashby_route = dict(route, location=route.get("location") or "location",
-                       date=route.get("date") or "publishedAt",
-                       listed=route.get("listed") or "isListed")
+    # The API fixes these field names, so they apply even when the route omits the optional paths.
+    paths = dict(route)
+    for key, default in spec["optional"]:
+        paths[key] = route.get(key) or default
     kept = []
     for index, item in enumerate(items):
         if not isinstance(item, dict):
@@ -349,17 +420,16 @@ def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Opti
         title = resolve(item, route["title"])
         posting_url = resolve(item, route["posting_url"])
         if not isinstance(title, str) or not title.strip():
-            report["error"] = "job {0} has no title".format(index)
-            return report, []
-        if not safe_ashby_posting_url(posting_url, board["slug"]):
+            continue  # an untitled job can match no position, so it never fails the board
+        if not safe_posting_url(posting_url, board["slug"], spec):
             report["error"] = "job {0} has an unsafe posting URL".format(index)
             return report, []
-        if ashby_route.get("listed"):
-            listed = resolve(item, ashby_route["listed"])
+        if paths.get("listed"):
+            listed = resolve(item, paths["listed"])
             if listed is not MISSING and not isinstance(listed, bool):
-                report["error"] = "job {0} has an invalid isListed value".format(index)
+                report["error"] = "job {0} has an invalid {1} value".format(index, paths["listed"])
                 return report, []
-        candidate = keep(item, ashby_route, positions, since)
+        candidate = keep(item, paths, positions, since)
         if candidate is not None:
             candidate.update(slug=board["slug"], company=board["name"])
             candidate["api_evidence"] = {
@@ -370,17 +440,21 @@ def scan_ashby_board(board: dict, route: dict, positions: List[str], since: Opti
     return report, kept
 
 
-def collect_ashby(payload: dict, route: dict, positions: List[str], since: Optional[datetime],
-                  fetch: Callable[..., tuple], sleep: Callable[[float], None]) -> Tuple[int, Dict[str, object]]:
-    if payload.get("slugs", []) or payload.get("lists", []):
-        return 1, {"collect_error": "boards cannot be combined with non-empty slugs or lists"}
+def collect_boards(payload: dict, route: dict, positions: List[str], since: Optional[datetime],
+                   lists: List[str], fetch: Callable[..., tuple],
+                   sleep: Callable[[float], None]) -> Tuple[int, Dict[str, object]]:
+    if payload.get("slugs", []):
+        return 1, {"collect_error": "boards cannot be combined with non-empty slugs"}
     try:
-        boards = validate_ashby_config(route, payload.get("boards"))
+        spec = board_api(route)
+        entries, disabled = enabled_boards(payload.get("boards"), spec["hosts"])
     except ValueError as error:
         return 1, {"collect_error": str(error)}
+    listed, list_reports = read_lists(lists, route["ats"], fetch, sleep)
+    boards = prepare_boards(route, spec, entries, disabled, listed)
 
     def work(board: dict):
-        return scan_ashby_board(board, route, positions, since, fetch, sleep)
+        return scan_board(board, route, spec, positions, since, fetch, sleep)
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         results = list(pool.map(work, boards))
@@ -389,7 +463,7 @@ def collect_ashby(payload: dict, route: dict, positions: List[str], since: Optio
     shaped = [{key: candidate[key] for key in
                ("slug", "company", "title", "url", "date", "location", "matched_query", "api_evidence")}
               for candidate in candidates]
-    return 0, {"candidates": shaped, "slugs": [report for report, _ in results], "lists": []}
+    return 0, {"candidates": shaped, "slugs": [report for report, _ in results], "lists": list_reports}
 
 
 def collect(payload: object, fetch: Callable[..., tuple],
@@ -430,23 +504,15 @@ def collect(payload: object, fetch: Callable[..., tuple],
     since = now - timedelta(days=days) if days else None
 
     if "boards" in payload:
-        return collect_ashby(payload, route, positions, since, fetch, sleep)
+        return collect_boards(payload, route, positions, since, lists, fetch, sleep)
 
     ordered: Dict[str, Tuple[str, str]] = {}  # lowercased slug → (slug, name)
     for slug in slugs:
         if slug.strip():
             ordered.setdefault(slug.strip().lower(), (slug.strip(), slug.strip()))
-    list_reports: List[Dict[str, object]] = []
-    for source in lists:
-        try:
-            rows, skipped = read_list(source, route["ats"], fetch, sleep)
-        except (OSError, ValueError, csv.Error) as error:
-            list_reports.append({"source": source, "status": "failed", "error": str(error), "slugs": 0,
-                                 "skipped": 0})
-            continue
-        list_reports.append({"source": source, "status": "ok", "slugs": len(rows), "skipped": skipped})
-        for slug, name in rows:
-            ordered.setdefault(slug.lower(), (slug, name))
+    rows, list_reports = read_lists(lists, route["ats"], fetch, sleep)
+    for slug, name in rows:
+        ordered.setdefault(slug.lower(), (slug, name))
 
     def work(entry: Tuple[str, str]) -> Tuple[Dict[str, object], List[dict]]:
         slug, name = entry

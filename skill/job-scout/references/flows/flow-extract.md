@@ -1,10 +1,19 @@
 # Job scout — extract
 
-For every selected-profile Ashby branch candidate (`ashby_profile_branch: true`),
+For every selected-profile board API candidate (`board_api_branch: true`),
 retain the complete JD in run-local context for Match. When `api_evidence.job`
-is present, use its non-empty `descriptionPlain`; otherwise convert non-empty
-`descriptionHtml` to ordered text while retaining headings, lists, links, and
-section order. If both fields are absent or empty, the API marks the body
+is present, build the body from its description fields, converting HTML to
+ordered text while retaining headings, lists, links, and section order:
+
+- Ashby: non-empty `descriptionPlain`, else `descriptionHtml`.
+- Greenhouse: `content`, after decoding its HTML entities.
+- Lever: non-empty `description`, else `descriptionPlain`; then each `lists[]`
+  entry as its `text` heading and `content`; then non-empty `additional`,
+  else `additionalPlain`. Read the HTML first: on some postings
+  `descriptionPlain` holds only the opening paragraph, while `description`
+  holds the complete body.
+
+If those fields are absent or empty, the API marks the body
 truncated, or the supplied body is visibly clipped, open only that candidate's
 posting URL in the browser and expand/read the complete posting. This is a
 posting-only fallback, not another search. For a candidate found through the
@@ -14,17 +23,20 @@ schema. If the browser body is absent or still truncated, use
 `status=uncertain` and copy no partial facts.
 
 Missing optional API date, pay, or geography fields remains `—` and does not
-trigger browser fallback. For Ashby date, use `publishedAt` as the last
-publication; for workplace type, prefer `workplaceType`, use `isRemote: true`
-only when that field is absent, and never infer onsite from `isRemote: false`.
+trigger browser fallback. The posting date is the route's `date` field: Ashby
+`publishedAt` (the last publication), Greenhouse `first_published`, Lever
+`createdAt`. For workplace type, prefer `workplaceType`; a Lever `unspecified`
+is `—`. On Ashby use `isRemote: true` only when that field is absent, and
+never infer onsite from `isRemote: false`. Greenhouse has no workplace type
+field.
 
-Batches of 5, one URL at a time, same host serialized. Listed URLs only. No browser page means no browser-derived field; complete Ashby API evidence can supply its structured facts.
+Batches of 5, one URL at a time, same host serialized. Listed URLs only. No browser page means no browser-derived field; complete board API evidence can supply its structured facts.
 
-For rows outside the selected-profile Ashby branch, or branch rows without a
+For rows outside the selected-profile board API branch, or branch rows without a
 complete API JD, open the full posting before copying:
 expand every collapsed or truncated block ("read more" / "show more" /
 accordions) and scroll to the end.
-This includes rows discovered through the Ashby board-listing browser fallback.
+This includes rows discovered through the board-listing browser fallback.
 For branch rows, keep the complete browser source body for matching.
 A JD still truncated after expansion → `status=uncertain`, never partial facts.
 
