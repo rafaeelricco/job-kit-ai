@@ -23,7 +23,6 @@ PHRASE_KEYS: Tuple[str, ...] = (
 )
 REQUIRED: Tuple[str, ...] = ("url", "status") + PHRASE_KEYS + ("jd_date", "apply_url")
 UNKNOWN = "—"
-MAX_LEN = 200
 ISO_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 HTTP_URL = re.compile(r"^https?://\S+$")
 BAD_TAIL = re.compile(r"[\(\[\{:;,/-]$|\((?:[a-z]|e\.g\.?)?$")
@@ -37,8 +36,6 @@ def phrase_errors(key: str, value: str) -> List[str]:
         errors.append("{0}: not collapsed to one line".format(key))
     if "|" in value:
         errors.append("{0}: contains a pipe".format(key))
-    if len(value) > MAX_LEN:
-        errors.append("{0}: longer than {1} chars".format(key, MAX_LEN))
     if value[:1] in ":;,.)]}":
         errors.append("{0}: starts mid-sentence".format(key))
     if value.count("(") != value.count(")") or BAD_TAIL.search(value):

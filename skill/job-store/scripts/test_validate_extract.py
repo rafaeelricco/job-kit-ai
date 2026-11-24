@@ -1,9 +1,15 @@
 import unittest
 from typing import Dict, List, Mapping, Tuple
 
-from validate_extract import validate, validate_payload
+from validate_extract import PHRASE_KEYS, validate, validate_payload
 
 UNKNOWN = "—"
+LONG_REQUIRED_SKILLS = (
+    "TypeScript, Python, PostgreSQL, Kubernetes, Elasticsearch, Terraform, "
+    "Amazon Web Services, React, Django, Prometheus, OpenTelemetry, Docker, "
+    "GitHub Actions, Apache Kafka, Redis, GraphQL, Google Cloud Platform, "
+    "RabbitMQ, Microsoft Azure, Apache Spark"
+)
 
 # Every REQUIRED key, each a complete printed phrase.
 CLEAN: Dict[str, object] = {
@@ -33,6 +39,14 @@ CASES: Tuple[Tuple[Mapping[str, object], List[str]], ...] = (
         ["work_auth: starts mid-sentence"],
     ),
     ({"required_skills": "TypeScript | Python"}, ["required_skills: contains a pipe"]),
+    (
+        {"required_skills": LONG_REQUIRED_SKILLS + "\n| Go,"},
+        [
+            "required_skills: not collapsed to one line",
+            "required_skills: contains a pipe",
+            "required_skills: cut mid-phrase",
+        ],
+    ),
     ({key: UNKNOWN for key in CLEAN if key not in ("url", "status", "eligibility")}, []),
     ({"status": "open"}, ["status: not in live|dead|uncertain"]),
     ({"eligibility": "maybe"}, ["eligibility: not in confirmed|incompatible|unknown"]),
@@ -54,6 +68,12 @@ class ValidateTests(unittest.TestCase):
             with self.subTest(override=override):
                 self.assertEqual(validate(row(override)), expected)
 
+    def test_long_phrase_fields_pass(self):
+        long_phrase = ("source phrase " * 512) + "final phrase"
+        for key in PHRASE_KEYS:
+            with self.subTest(key=key):
+                self.assertEqual(validate(row({key: long_phrase})), [])
+
     def test_missing_key_reports_only_shape(self):
         broken = row({"status": "open"})
         del broken["location"]
@@ -73,7 +93,7 @@ class ValidateTests(unittest.TestCase):
 
 class PayloadTests(unittest.TestCase):
     def test_batch_keeps_order(self):
-        first = row({})
+        first = row({"required_skills": LONG_REQUIRED_SKILLS})
         second = row({"url": "https://jobs.lever.co/acme/0f1e2d3c", "work_auth": "based insights (e"})
         code, result = validate_payload({"rows": [first, second]})
         self.assertEqual(
