@@ -66,6 +66,7 @@ def _drip_headers(handler: BaseHTTPRequestHandler) -> None:
 
 ROUTES: Dict[str, Route] = {
     "/drip-headers": _drip_headers,
+    "/curr%C3%ADculo.pdf": lambda h: _send(h, 200, text_pdf()),
     "/resume.pdf": lambda h: _send(h, 200, text_pdf(), {"Content-Type": "application/pdf"}),
     "/download/abc123": lambda h: _send(h, 200, text_pdf(), {"Content-Type": "application/octet-stream"}),
     "/redirect": lambda h: _send(h, 302, headers={"Location": "/resume.pdf"}),

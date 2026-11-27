@@ -13,7 +13,7 @@ import ssl
 import threading
 import time
 from typing import Callable, List, Optional, Tuple
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit
 
 MAX_DOWNLOAD_BYTES = 10_000_000
 DEADLINE_SECONDS = 15.0
@@ -187,11 +187,16 @@ def _check_url(url: str) -> Tuple[str, str]:
     host = (parts.hostname or "").rstrip(".").lower()
     if not host:
         raise FetchError("the URL has no host")
+    try:
+        host = host.encode("idna").decode("ascii")  # IDN hosts go on the wire, and to DNS, as ASCII
+    except UnicodeError:
+        raise FetchError("the URL has an invalid host name") from None
     if host in _METADATA_HOSTS or host == "localhost" or host.endswith(".localhost") or host.endswith(".internal"):
         raise FetchError("the URL points to a private or local address")
-    path = parts.path or "/"
+    # http.client sends the request line as ASCII; encode what is not already percent-encoded
+    path = quote(parts.path or "/", safe="/%:@!$&'()*+,;=-._~")
     if parts.query:
-        path += "?" + parts.query
+        path += "?" + quote(parts.query, safe="/%:@!$&'()*+,;=-._~?")
     return host, path
 
 
@@ -231,7 +236,7 @@ def fetch(url: str, *, resolver: Resolver = system_resolver,
         raise
     except ssl.SSLCertVerificationError:
         raise FetchError("download failed: the server's TLS certificate is not valid") from None
-    except (OSError, http.client.HTTPException, ssl.SSLError) as error:
+    except (OSError, http.client.HTTPException, ssl.SSLError, ValueError) as error:
         if deadline.expired:
             raise FetchError(f"download timed out after {DEADLINE_SECONDS:g} seconds") from None
         raise FetchError(f"download failed: {type(error).__name__}") from None

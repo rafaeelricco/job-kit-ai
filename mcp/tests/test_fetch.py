@@ -63,6 +63,10 @@ class URLCheckTest(unittest.TestCase):
                 with self.assertRaisesRegex(f.FetchError, message):
                     f.fetch(url, resolver=self.never)
 
+    def test_invalid_host_name(self) -> None:
+        with self.assertRaisesRegex(f.FetchError, "invalid host name"):
+            f.fetch("https://" + "a" * 64 + ".test/cv.pdf", resolver=self.never)
+
     def test_private_resolution_rejected(self) -> None:
         with self.assertRaisesRegex(f.FetchError, "private or local"):
             f.fetch("https://evil.test/a.pdf", resolver=resolver)
@@ -90,6 +94,10 @@ class DownloadTest(unittest.TestCase):
 
     def test_url_without_extension(self) -> None:
         self.assertEqual(self.get("/download/abc123"), text_pdf())
+
+    def test_non_ascii_path_is_percent_encoded(self) -> None:
+        self.assertEqual(self.get("/currículo.pdf"), text_pdf())
+        self.assertEqual(self.get("/curr%C3%ADculo.pdf"), text_pdf())
 
     def test_relative_redirect(self) -> None:
         self.assertEqual(self.get("/redirect"), text_pdf())
