@@ -1,7 +1,7 @@
 # Resume Check MCP server: specification
 
-Status: early draft written on 2026-11-27 for a same-day build. Decisions in
-[Proposed decisions](#proposed-decisions) are defaults, not yet confirmed.
+Status: release 1 deployed on 2026-11-27 at the D-1 URL. D-1 was changed to
+a path on the apex at the owner's request; the other decisions remain defaults.
 
 ## Goal
 
@@ -68,92 +68,92 @@ first; requirements below refer to them by ID.
 
 ### FR-1 MCP endpoint
 
-- [ ] FR-1.1 **(R1)** The D-1 URL speaks MCP over Streamable HTTP. From MCP
+- [x] FR-1.1 **(R1)** The D-1 URL speaks MCP over Streamable HTTP. From MCP
       Inspector, `initialize`, `tools/list` and `tools/call` all succeed.
-- [ ] FR-1.2 **(R1)** The server is stateless. A `tools/call` succeeds with no
+- [x] FR-1.2 **(R1)** The server is stateless. A `tools/call` succeeds with no
       earlier request from the same client, and after a service restart.
-- [ ] FR-1.3 **(R1)** Every tool is callable with no credentials (D-4).
-- [ ] FR-1.4 **(R1)** `tools/list` returns exactly the D-3 tools.
-- [ ] FR-1.5 **(R1)** Every tool has a `title`, a description, an
+- [x] FR-1.3 **(R1)** Every tool is callable with no credentials (D-4).
+- [x] FR-1.4 **(R1)** `tools/list` returns exactly the D-3 tools.
+- [x] FR-1.5 **(R1)** Every tool has a `title`, a description, an
       `inputSchema`, an `outputSchema` and `readOnlyHint: true`.
-- [ ] FR-1.6 **(R1)** Every tool name is 64 characters or fewer.
-- [ ] FR-1.7 **(R1)** Each description states what the tool does and when to
+- [x] FR-1.6 **(R1)** Every tool name is 64 characters or fewer.
+- [x] FR-1.7 **(R1)** Each description states what the tool does and when to
       call it. It gives the model no instruction about other tools, other
       sources or its own behavior.
-- [ ] FR-1.8 **(R1)** A successful call returns structured content that
+- [x] FR-1.8 **(R1)** A successful call returns structured content that
       validates against the tool's `outputSchema`, plus a text rendering of
       the same data.
-- [ ] FR-1.9 **(R1)** The server reports a name and a semantic version, and
+- [x] FR-1.9 **(R1)** The server reports a name and a semantic version, and
       the version equals the one in the plugin manifest (FR-9.5).
 
 ### FR-2 `get_review_rubric`
 
-- [ ] FR-2.1 **(R1)** With no arguments, returns rubric version 2: the seven
+- [x] FR-2.1 **(R1)** With no arguments, returns rubric version 2: the seven
       criteria, their weights, the 0 to 4 rating scale, the rule that bullets
       in the two most recent roles weigh double, the blocking cap, and the
       requirement weights used for alignment.
-- [ ] FR-2.2 **(R1)** The version, weights and cap in the response are read
+- [x] FR-2.2 **(R1)** The version, weights and cap in the response are read
       from `review_score.VERSION`, `WEIGHTS` and `CAP`. Changing a weight in
       that module changes the response with no other edit.
-- [ ] FR-2.3 **(R1)** The response is self-contained: it names no repository
+- [x] FR-2.3 **(R1)** The response is self-contained: it names no repository
       path and no file the host cannot read.
-- [ ] FR-2.4 **(R1)** The response is under 20 KB.
+- [x] FR-2.4 **(R1)** The response is under 20 KB.
 
 ### FR-3 `score_resume_review`
 
-- [ ] FR-3.1 **(R1)** The input schema is the `review_score.py` stdin
+- [x] FR-3.1 **(R1)** The input schema is the `review_score.py` stdin
       contract: optional `criteria`, `bullets`, `blocking` and `requirements`.
-- [ ] FR-3.2 **(R1)** For any valid payload, the result equals
+- [x] FR-3.2 **(R1)** For any valid payload, the result equals
       `review_score.score(payload)`.
-- [ ] FR-3.3 **(R1)** An empty payload returns `score: null`, `coverage: 0`
+- [x] FR-3.3 **(R1)** An empty payload returns `score: null`, `coverage: 0`
       and `provisional: true`.
-- [ ] FR-3.4 **(R1)** A non-empty `blocking` list caps `score` at 40 and sets
+- [x] FR-3.4 **(R1)** A non-empty `blocking` list caps `score` at 40 and sets
       `capped: true` when the weighted score is higher.
-- [ ] FR-3.5 **(R1)** An invalid payload returns a tool error carrying the
+- [x] FR-3.5 **(R1)** An invalid payload returns a tool error carrying the
       module's message, for example
       `criteria.skills: rating must be an integer 0-4`, and no partial score.
 
 ### FR-4 `scan_resume_url`
 
-- [ ] FR-4.1 **(R1)** Given `url`, the server downloads the file and returns
+- [x] FR-4.1 **(R1)** Given `url`, the server downloads the file and returns
       the `scan_cv.scan()` report: `format`, `bytes`, `pages` and `issues`,
       each issue with `code`, `severity`, `page` and `detail`.
-- [ ] FR-4.2 **(R1)** PDF and DOCX are accepted. The type is decided from the
+- [x] FR-4.2 **(R1)** PDF and DOCX are accepted. The type is decided from the
       file's content, so a URL with no extension still works.
-- [ ] FR-4.3 **(R1)** The report for a downloaded file equals the report
+- [x] FR-4.3 **(R1)** The report for a downloaded file equals the report
       `scan_cv.py` prints for the same bytes on disk.
-- [ ] FR-4.4 **(R1)** A file with no findings returns `issues: []`.
-- [ ] FR-4.5 **(R1)** Any other file type returns a tool error that names the
+- [x] FR-4.4 **(R1)** A file with no findings returns `issues: []`.
+- [x] FR-4.5 **(R1)** Any other file type returns a tool error that names the
       two supported types.
 
 ### FR-5 `scan_resume_file` (file attached in ChatGPT)
 
-- [ ] FR-5.1 **(R1)** The tool descriptor lists `file` in
+- [x] FR-5.1 **(R1)** The tool descriptor lists `file` in
       `_meta["openai/fileParams"]`. The `file` schema declares `download_url`,
       `file_id`, `mime_type` and `file_name`, and requires only the first two.
 - [ ] FR-5.2 **(R1)** For a resume attached in a ChatGPT conversation, the
       tool returns the same report FR-4 returns for the same bytes.
-- [ ] FR-5.3 **(R1)** The download URL is used only during the call. Neither
+- [x] FR-5.3 **(R1)** The download URL is used only during the call. Neither
       it nor `file_id` is stored or logged.
 
 ### FR-6 Download limits and failures
 
 Applies to FR-4 and FR-5.
 
-- [ ] FR-6.1 **(R1)** Only `https` URLs are fetched. Any other scheme is
+- [x] FR-6.1 **(R1)** Only `https` URLs are fetched. Any other scheme is
       rejected before a connection is made.
-- [ ] FR-6.2 **(R1)** A host that resolves to a loopback, private, link-local
+- [x] FR-6.2 **(R1)** A host that resolves to a loopback, private, link-local
       or cloud-metadata address is rejected. The check runs again on every
       redirect, and at most three redirects are followed.
-- [ ] FR-6.3 **(R1)** A download stops at 10 MB and returns a tool error that
+- [x] FR-6.3 **(R1)** A download stops at 10 MB and returns a tool error that
       states the limit. Files between 2.5 MB and 10 MB are scanned and carry
       the `file_too_large` issue.
-- [ ] FR-6.4 **(R1)** A download that takes longer than 15 seconds returns a
+- [x] FR-6.4 **(R1)** A download that takes longer than 15 seconds returns a
       tool error.
-- [ ] FR-6.5 **(R1)** A corrupt, encrypted or unreadable file returns a tool
+- [x] FR-6.5 **(R1)** A corrupt, encrypted or unreadable file returns a tool
       error that says what failed. No response is a bare
       `Internal Server Error` or `Bad Request`.
-- [ ] FR-6.6 **(R1)** After any failed call, the next valid call succeeds.
+- [x] FR-6.6 **(R1)** After any failed call, the next valid call succeeds.
 
 ### FR-7 Files attached in Claude
 
@@ -168,23 +168,23 @@ Applies to FR-4 and FR-5.
 
 ### FR-8 Deployment on the VPS
 
-- [ ] FR-8.1 **(R1)** The D-1 host resolves to the VPS and serves a valid
+- [x] FR-8.1 **(R1)** The D-1 host resolves to the VPS and serves a valid
       TLS certificate.
-- [ ] FR-8.2 **(R1)** The server process listens on a loopback address only.
+- [x] FR-8.2 **(R1)** The server process listens on a loopback address only.
       nginx is the only public entry.
-- [ ] FR-8.3 **(R1)** The process runs as a dedicated account without root or
+- [x] FR-8.3 **(R1)** The process runs as a dedicated account without root or
       Docker-group rights.
 - [ ] FR-8.4 **(R1)** The service starts at boot and restarts after a crash,
       with no manual step.
-- [ ] FR-8.5 **(R1)** `GET /job-kit-ai/healthz` on the D-1 host returns 200 while the
+- [x] FR-8.5 **(R1)** `GET /job-kit-ai/healthz` on the D-1 host returns 200 while the
       server can answer a tool call.
 - [ ] FR-8.6 **(R1)** nginx passes MCP responses through without buffering,
       so a streamed response arrives as it is produced.
-- [ ] FR-8.7 **(R1)** `pdftotext` (Poppler) is installed and on the service's
+- [x] FR-8.7 **(R1)** `pdftotext` (Poppler) is installed and on the service's
       path. A PDF scan succeeds on the VPS.
 - [ ] FR-8.8 **(R1)** The deployment is repeatable from commands written in
       this repository. A second run on the same host upgrades in place.
-- [ ] FR-8.9 **(R1)** After deployment, `https://r1cco.com/`,
+- [x] FR-8.9 **(R1)** After deployment, `https://r1cco.com/`,
       `https://r1cco.com/jobs/` and the Job Kit API health check answer as
       they did before.
 - [ ] FR-8.10 `https://r1cco.com/.well-known/openai-apps-challenge` returns
@@ -192,20 +192,20 @@ Applies to FR-4 and FR-5.
 
 ### FR-9 Public pages and listing materials
 
-- [ ] FR-9.1 **(R1)** A public documentation page explains what Resume Check
+- [x] FR-9.1 **(R1)** A public documentation page explains what Resume Check
       does, how to add it in Claude and ChatGPT, each tool, and one example
       prompt per tool.
-- [ ] FR-9.2 **(R1)** A public privacy policy states what is collected, how
+- [x] FR-9.2 **(R1)** A public privacy policy states what is collected, how
       it is used and stored, third-party sharing, retention, and a contact.
       Its statements match NFR-1 and NFR-2.
-- [ ] FR-9.3 **(R1)** Public terms of service and support pages exist. The
+- [x] FR-9.3 **(R1)** Public terms of service and support pages exist. The
       support page gives a working contact.
-- [ ] FR-9.4 **(R1)** All four pages are served over HTTPS on a domain that
+- [x] FR-9.4 **(R1)** All four pages are served over HTTPS on a domain that
       identifies the same publisher as the MCP host, with no login.
 - [ ] FR-9.5 A plugin package for OpenAI contains `plugin.json` and
       `mcp.json` in the Agent Plugins format, with the D-1 URL declared as
       `streamable-http`, and passes the portal's package validation.
-- [ ] FR-9.6 Listing text fits the OpenAI limits: display name and short
+- [x] FR-9.6 Listing text fits the OpenAI limits: display name and short
       description 30 characters each, long description 4,000, up to three
       starter prompts of 128 characters.
 - [ ] FR-9.7 A square icon of at least 48 by 48 pixels exists as PNG, in the
@@ -213,14 +213,14 @@ Applies to FR-4 and FR-5.
 - [ ] FR-9.8 Five positive and three negative review cases are written, each
       with prompt, tools triggered and expected behavior. Every positive case
       was run against the deployed server first.
-- [ ] FR-9.9 Sample resumes used by the review cases are synthetic, contain
+- [x] FR-9.9 Sample resumes used by the review cases are synthetic, contain
       no real person's data, and are reachable at public HTTPS URLs.
 - [ ] FR-9.10 A walkthrough video of the review cases is reachable at a URL
       a reviewer can open.
 
 ### FR-10 Verification in each host
 
-- [ ] FR-10.1 **(R1)** Every tool was called through MCP Inspector against
+- [x] FR-10.1 **(R1)** Every tool was called through MCP Inspector against
       the deployed URL and returned a successful result.
 - [ ] FR-10.2 **(R1)** In Claude, added as a custom connector, a
       conversation ran `get_review_rubric`, `scan_resume_url` and
@@ -254,26 +254,26 @@ Applies to FR-4 and FR-5.
 
 ## Non-functional requirements
 
-- [ ] NFR-1 **(R1)** No retention. Resume bytes and extracted text exist only
+- [x] NFR-1 **(R1)** No retention. Resume bytes and extracted text exist only
       in memory or in a per-call temporary directory that is removed before
       the response is sent, on success and on failure. A test asserts the
       directory is gone after both. Supports FR-4, FR-5, FR-7.
-- [ ] NFR-2 **(R1)** Logs hold only time, tool name, outcome, duration and
+- [x] NFR-2 **(R1)** Logs hold only time, tool name, outcome, duration and
       byte count. They hold no resume text, file name, URL or issue detail.
-- [ ] NFR-3 **(R1)** One source of truth. The server imports `scan_cv` and
+- [x] NFR-3 **(R1)** One source of truth. The server imports `scan_cv` and
       `review_score` from `skill/job-resume-review/scripts/`; it copies no
       logic from them, and those two files are unchanged by this work.
 - [ ] NFR-4 **(R1)** `scripts/test.sh --fast` passes, and the archives built
       by `scripts/package_release.py` contain no file from the server.
-- [ ] NFR-5 **(R1)** The server has automated tests, run by one documented
+- [x] NFR-5 **(R1)** The server has automated tests, run by one documented
       command, that cover every tool, every FR-6 rejection, and the FR-4.3
       equality.
-- [ ] NFR-6 **(R1)** Server dependencies are pinned by a lock file, including
+- [x] NFR-6 **(R1)** Server dependencies are pinned by a lock file, including
       the MCP SDK version.
-- [ ] NFR-7 **(R1)** nginx limits each client address to the D-8 rate and
+- [x] NFR-7 **(R1)** nginx limits each client address to the D-8 rate and
       answers 429 above it. Request bodies above 1 MB are refused on the MCP
       path.
-- [ ] NFR-8 **(R1)** The repository, the plugin package and the logs contain
+- [x] NFR-8 **(R1)** The repository, the plugin package and the logs contain
       no secret. Any host configuration with a secret lives on the VPS only.
 - [ ] NFR-9 The published tool schemas stay backward compatible. A change to
       a name or schema is deployed only together with a directory rescan.
