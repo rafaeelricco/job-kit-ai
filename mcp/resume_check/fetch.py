@@ -12,8 +12,6 @@ import socket
 import ssl
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Callable, List, Optional, Tuple
 from urllib.parse import urljoin, urlsplit
 
@@ -131,24 +129,44 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
 
     def connect(self) -> None:
         raw = socket.create_connection((self._ip, self._port), timeout=self._deadline.remaining())
-        self._deadline.watch(raw)
         try:
             raw.settimeout(self._deadline.remaining())
-            self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
+            # wrap_socket detaches raw's descriptor, so the watchdog must hold the TLS socket, and it must
+            # hold it before the handshake so a slow handshake is interrupted too.
+            tls = self._context.wrap_socket(raw, server_hostname=self.host, do_handshake_on_connect=False)
         except BaseException:
             raw.close()
             raise
+        self._deadline.watch(tls)
+        try:
+            tls.do_handshake()
+        except BaseException:
+            tls.close()
+            raise
+        self.sock = tls
 
 
 def _resolve(host: str, resolver: Resolver, deadline: _Deadline) -> List[str]:
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(resolver, host, 443)
+    """Resolve on a daemon thread so the caller returns at the deadline even if the resolver hangs."""
+    outcome: List[object] = []
+    finished = threading.Event()
+
+    def run() -> None:
         try:
-            return future.result(timeout=deadline.remaining())
-        except FutureTimeout:
-            raise FetchError(f"download timed out after {DEADLINE_SECONDS:g} seconds") from None
-        except OSError:
-            raise FetchError("download failed: the host name could not be resolved") from None
+            outcome.append(resolver(host, 443))
+        except BaseException as error:  # noqa: BLE001 - handed back to the caller below
+            outcome.append(error)
+        finished.set()
+
+    threading.Thread(target=run, name="resume-check-dns", daemon=True).start()
+    if not finished.wait(timeout=deadline.remaining()):
+        raise FetchError(f"download timed out after {DEADLINE_SECONDS:g} seconds")
+    result = outcome[0]
+    if isinstance(result, OSError):
+        raise FetchError("download failed: the host name could not be resolved")
+    if isinstance(result, BaseException):
+        raise result
+    return result  # type: ignore[return-value]
 
 
 def _check_url(url: str) -> Tuple[str, str]:

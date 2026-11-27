@@ -53,7 +53,19 @@ def _drip(handler: BaseHTTPRequestHandler) -> None:
         pass
 
 
+def _drip_headers(handler: BaseHTTPRequestHandler) -> None:
+    try:
+        handler.wfile.write(b"HTTP/1.1 200 OK\r\n")
+        for i in range(100):
+            handler.wfile.write(b"X-Slow-%d: 1\r\n" % i)
+            handler.wfile.flush()
+            time.sleep(0.2)
+    except OSError:
+        pass
+
+
 ROUTES: Dict[str, Route] = {
+    "/drip-headers": _drip_headers,
     "/resume.pdf": lambda h: _send(h, 200, text_pdf(), {"Content-Type": "application/pdf"}),
     "/download/abc123": lambda h: _send(h, 200, text_pdf(), {"Content-Type": "application/octet-stream"}),
     "/redirect": lambda h: _send(h, 302, headers={"Location": "/resume.pdf"}),

@@ -120,6 +120,22 @@ class DownloadTest(unittest.TestCase):
             self.get("/drip", deadline_seconds=1.0)
         self.assertLess(time.monotonic() - started, 3.0)
 
+    def test_deadline_covers_slow_headers(self) -> None:
+        started = time.monotonic()
+        with self.assertRaisesRegex(f.FetchError, "timed out"):
+            self.get("/drip-headers", deadline_seconds=1.0)
+        self.assertLess(time.monotonic() - started, 3.0)
+
+    def test_deadline_covers_slow_dns(self) -> None:
+        def slow(host: str, port: int) -> List[str]:
+            time.sleep(3)
+            return ["127.0.0.1"]
+        started = time.monotonic()
+        with self.assertRaisesRegex(f.FetchError, "timed out"):
+            f.fetch("https://resume.test/resume.pdf", resolver=slow, address_check=test_check,
+                    port=self.server.port, deadline_seconds=0.5)
+        self.assertLess(time.monotonic() - started, 1.5)
+
     def test_http_error_status(self) -> None:
         with self.assertRaisesRegex(f.FetchError, "HTTP 404"):
             self.get("/missing")
