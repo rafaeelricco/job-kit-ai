@@ -252,6 +252,36 @@ Applies to FR-4 and FR-5.
       repository topic) comes from a third-party guide; confirm it in the
       Gemini CLI documentation before relying on it.
 
+### FR-12 Review agent on the OpenAI Agents SDK
+
+Added 2026-11-27. A separate program, not part of the MCP server. It exists
+so the repository holds working OpenAI Agents SDK code that uses Resume
+Check the way a client's agent would.
+
+- [ ] FR-12.1 A command-line agent built with the OpenAI Agents SDK takes a
+      resume file URL and prints a scored review.
+- [x] FR-12.2 The agent reaches Resume Check only through the SDK's MCP
+      support at the D-1 URL. It imports no scan or score code.
+- [ ] FR-12.3 A run calls `get_review_rubric`, one scan tool and
+      `score_resume_review`. The score it prints equals the score tool's
+      result; the agent never computes a score itself.
+- [x] FR-12.4 The final answer is a typed structured output: score, capped
+      flag, scan issues, and at most three recommended changes, each tied to
+      a rubric criterion.
+- [x] FR-12.5 An input guardrail stops a request that is not a resume review
+      before any tool call, and the run reports why.
+- [x] FR-12.6 An output guardrail rejects an answer whose score differs from
+      the score tool's result or that names an issue the scan did not
+      return.
+- [ ] FR-12.7 Every run produces a trace that shows each tool call and
+      guardrail result. Resume text is excluded from the trace.
+- [ ] FR-12.8 A golden set of at least three synthetic resumes, including a
+      PDF with no text layer, runs from one documented command. Each case
+      asserts the tools called and the score bounds; the no-text-layer case
+      asserts a score of 40 or less.
+- [x] FR-12.9 The API key is read from the environment only. The agent lives
+      outside `skill/` and `scripts/`, and its dependencies are pinned.
+
 ## Non-functional requirements
 
 - [x] NFR-1 **(R1)** No retention. Resume bytes and extracted text exist only
@@ -303,8 +333,8 @@ Exclusions:
 
 - No model calls from the server. The host assistant reads the resume and
   assigns the ratings; the server only scans files and computes scores.
-- No agent built with the OpenAI Agents SDK in this server. An agent that
-  uses Resume Check as a tool is a separate follow-up.
+- No agent runs inside the MCP server. The agent that uses Resume Check as a
+  tool is a separate program, specified in FR-12.
 - No interactive UI, widget or MCP App in release 1 (D-5).
 - No accounts, sign-in, stored history or user settings.
 - No OCR, and no scan of pasted text. The scan needs the original file.

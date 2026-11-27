@@ -5,12 +5,14 @@ on:
     branches: ["**"]
     paths:
       - "mcp/**"
+      - "review-agent/**"
       - "skill/job-resume-review/**"
       - "scripts/package_release.py"
       - ".github/workflows/mcp.yml"
   pull_request:
     paths:
       - "mcp/**"
+      - "review-agent/**"
       - "skill/job-resume-review/**"
       - "scripts/package_release.py"
       - ".github/workflows/mcp.yml"
@@ -38,3 +40,20 @@ jobs:
 
       - name: Validate deploy scripts
         run: sh -n mcp/deploy/deploy.sh && sh -n mcp/deploy/remote_install.sh
+
+  review_agent:
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: r1cco-ci
+    name: Review agent wiring tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install locked agent dependencies
+        run: python -m pip install --require-hashes --no-deps -r review-agent/requirements.lock
+
+      - name: Run wiring tests against the deployed server
+        run: cd review-agent && python -m unittest discover -s tests -v
