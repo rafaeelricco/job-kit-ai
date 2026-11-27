@@ -279,6 +279,17 @@ class ScanTest(unittest.TestCase):
             self.assertIn(needle, text_of(result))
             self.assertNotIn("Internal Server Error", text_of(result))
 
+    def test_encrypted_docx_is_labelled_docx(self) -> None:  # FR-6.5
+        data = bytearray(fixtures.clean_docx())
+        for signature, flag_offset in ((b"PK", 6), (b"PK", 8)):  # local and central headers
+            start = 0
+            while (start := data.find(signature, start)) != -1:
+                data[start + flag_offset] |= 0x1  # general purpose bit 0: entry is encrypted
+                start += 4
+        result = scan(bytes(data))
+        self.assertTrue(result.is_error)
+        self.assertTrue(text_of(result).startswith("the DOCX could not be read"), text_of(result))
+
     def test_download_errors_are_tool_errors(self) -> None:
         def failing(url: str) -> bytes:
             raise FetchError("download timed out after 15 seconds")
@@ -412,6 +423,12 @@ class IsolationTest(unittest.TestCase):  # NFR-3, NFR-4
     def test_imports_the_skill_scripts(self) -> None:
         self.assertEqual(Path(core.scan_cv.__file__).resolve(), SCAN_CV.resolve())
         self.assertEqual(Path(core.review_score.__file__).resolve(), SCAN_CV.with_name("review_score.py").resolve())
+
+    def test_deploy_scripts_are_executable(self) -> None:
+        listed = subprocess.run(["git", "ls-files", "-s", "mcp/deploy"], cwd=REPO, capture_output=True, text=True)
+        modes = {line.split("	")[1]: line.split()[0] for line in listed.stdout.splitlines()}
+        for name in ("mcp/deploy/deploy.sh", "mcp/deploy/remote_install.sh", "mcp/deploy/bin/pdftotext"):
+            self.assertEqual(modes.get(name), "100755", name)
 
     def test_release_archives_exclude_server(self) -> None:
         sys.path.insert(0, str(REPO / "scripts"))

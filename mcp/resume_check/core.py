@@ -152,8 +152,8 @@ def scan_bytes(data: bytes) -> Dict[str, Any]:
             return scan_cv.scan(path)
         except subprocess.TimeoutExpired:
             raise ToolError("the PDF text extraction timed out") from None
-        except RuntimeError as error:  # pdftotext failure: corrupt or encrypted PDF
-            raise ToolError(f"the PDF could not be read: {error}") from None
+        except RuntimeError as error:  # pdftotext failure, or an encrypted or unsupported DOCX entry
+            raise ToolError(f"the {kind.upper()} could not be read: {error}") from None
         except (zipfile.BadZipFile, ElementTree.ParseError, KeyError, UnicodeDecodeError) as error:
             raise ToolError(f"the DOCX could not be read: {type(error).__name__}: {error}") from None
         except (OSError, ValueError) as error:
