@@ -274,6 +274,11 @@ def _get(host: str, path: str, addresses: List[str], deadline: _Deadline,
                 if total > MAX_DOWNLOAD_BYTES:
                     raise FetchError(_too_large())
                 chunks.append(chunk)
+            # On Linux a socket the watchdog shut down reads as a clean EOF, so a truncated body must
+            # not pass as complete: check the deadline and the declared length after the loop.
+            deadline.remaining()
+            if declared and declared.isdigit() and total != int(declared):
+                raise FetchError(f"download failed: received {total} of {declared} bytes")
             return response.status, None, b"".join(chunks)
         finally:
             deadline.watch(None)
