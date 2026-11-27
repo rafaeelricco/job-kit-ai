@@ -20,6 +20,7 @@ MAX_OUTPUT_BYTES = int(os.environ.get("RESUME_CHECK_PDFTOTEXT_MAX_BYTES", 2_000_
 TIMEOUT_SECONDS = float(os.environ.get("RESUME_CHECK_PDFTOTEXT_TIMEOUT", 20))
 ADDRESS_SPACE_BYTES = 512 * 1024 * 1024
 CHUNK = 65_536
+MAX_STDERR_BYTES = 65_536
 
 
 def limit_memory() -> None:
@@ -48,8 +49,15 @@ def main(args: list) -> int:
     timer = threading.Timer(TIMEOUT_SECONDS, expire)
     timer.daemon = True
     timer.start()
-    errors = []
-    reader = threading.Thread(target=lambda: errors.append(child.stderr.read(65_536)), daemon=True)
+    errors = bytearray()
+
+    def drain_stderr() -> None:
+        # Read to EOF so a chatty extractor never blocks on a full pipe; keep only a bounded prefix.
+        for block in iter(lambda: child.stderr.read(CHUNK), b""):
+            if len(errors) < MAX_STDERR_BYTES:
+                errors.extend(block[:MAX_STDERR_BYTES - len(errors)])
+
+    reader = threading.Thread(target=drain_stderr, daemon=True)
     reader.start()
     out = sys.stdout.buffer
     total = 0
@@ -72,7 +80,7 @@ def main(args: list) -> int:
         return fail(f"text extraction exceeded {TIMEOUT_SECONDS:g} seconds")
     if code != 0:
         reader.join(1)
-        sys.stderr.buffer.write(errors[0] if errors else b"")
+        sys.stderr.buffer.write(bytes(errors))
         return code if code > 0 else 1
     return 0
 

@@ -25,6 +25,8 @@ FAKES = {
     "ok.py": "import sys; sys.stdout.write('Alex Example\\nalex@example.com\\n\\f')",
     "flood.py": "import sys\nwhile True:\n    sys.stdout.write('x' * 65536)",
     "slow.py": "import time; time.sleep(30)",
+    "chatty.py": "import sys; sys.stderr.write('Syntax Warning: noise\\n' * 50000); sys.stderr.flush(); "
+                 "sys.stdout.write('Alex Example\\n\\f')",
     "broken.py": "import sys; sys.stderr.write('Syntax Error: Couldn\\'t read xref table\\n'); sys.exit(1)",
 }
 
@@ -66,6 +68,12 @@ class ShimTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(b"exceeded 1 seconds", result.stderr)
         self.assertLess(time.monotonic() - started, 10)
+
+    def test_chatty_stderr_does_not_block(self) -> None:
+        """About 1 MB of diagnostics must not fill the pipe and stall a good extraction."""
+        result = self.run_shim("chatty.py", RESUME_CHECK_PDFTOTEXT_TIMEOUT="10")
+        self.assertEqual(result.returncode, 0, result.stderr[-200:])
+        self.assertEqual(result.stdout.replace(b"\r\n", b"\n"), b"Alex Example\n\f")
 
     def test_passes_failures_through(self) -> None:
         result = self.run_shim("broken.py")
