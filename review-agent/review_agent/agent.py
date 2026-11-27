@@ -152,7 +152,7 @@ async def resume_request_only(context: RunContextWrapper[ReviewContext], agent: 
         return GuardrailFunctionOutput(output_info=problem, tripwire_triggered=True)
     from agents import Runner  # local import keeps module import cheap
 
-    verdict = await Runner.run(classifier, _user_text(items), context=context.context)
+    verdict = await Runner.run(classifier, _user_text(items), context=context.context, run_config=run_config())
     check = verdict.final_output_as(RequestCheck)
     return GuardrailFunctionOutput(output_info=check.reason, tripwire_triggered=not check.is_resume_review)
 
