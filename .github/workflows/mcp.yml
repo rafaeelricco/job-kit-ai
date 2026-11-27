@@ -1,0 +1,40 @@
+name: Resume Check MCP
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "mcp/**"
+      - "skill/job-resume-review/**"
+      - "scripts/package_release.py"
+      - ".github/workflows/mcp.yml"
+  pull_request:
+    paths:
+      - "mcp/**"
+      - "skill/job-resume-review/**"
+      - "scripts/package_release.py"
+      - ".github/workflows/mcp.yml"
+
+jobs:
+  server:
+    if: github.repository == 'rafaeelricco/job-kit-ai' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: r1cco-ci
+    name: Resume Check server tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install locked server dependencies
+        run: python -m pip install --require-hashes --no-deps -r mcp/requirements.lock
+
+      - name: Check Poppler
+        run: command -v pdftotext || (sudo apt-get install -y -q poppler-utils || apt-get install -y -q poppler-utils)
+
+      - name: Run server tests
+        run: cd mcp && python -m unittest discover -s tests -v
+
+      - name: Validate deploy scripts
+        run: sh -n mcp/deploy/deploy.sh && sh -n mcp/deploy/remote_install.sh

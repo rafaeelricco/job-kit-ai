@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Check support</title>
+<meta name="description" content="How to get help with Resume Check.">
+<link rel="icon" type="image/png" sizes="32x32" href="/job-kit-ai/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/job-kit-ai/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/job-kit-ai/brand/apple-touch-icon.png">
+<meta property="og:title" content="Resume Check support">
+<meta property="og:description" content="How to get help with Resume Check.">
+<meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/job-kit-ai/style.css">
+</head>
+<body>
+<main>
+<a class="brand" href="/job-kit-ai/"><img src="/job-kit-ai/brand/icon-192.png" alt="" width="40" height="40"><span>Resume Check</span></a>
+<nav><a href="/job-kit-ai/">Documentation</a><a href="/job-kit-ai/privacy/">Privacy</a><a href="/job-kit-ai/terms/">Terms</a><a href="/job-kit-ai/support/">Support</a></nav>
+<h1>Support</h1>
+<p class="lead">Report a problem, ask a question, or request a change.</p>
+<h2>Contact</h2>
+<p>Open an issue at <a href="https://github.com/rafaeelricco/job-kit-ai/issues/new">github.com/rafaeelricco/job-kit-ai/issues</a>. Include the tool name, the time of the call and the error message your assistant showed. Do not attach a real resume; describe the file, or share a synthetic example.</p>
+<h2>Service status</h2>
+<p>The health check at <a href="/job-kit-ai/healthz">r1cco.com/job-kit-ai/healthz</a> answers <code>ok</code> while the server can run tools.</p>
+<h2>Common errors</h2>
+<h3>"only https URLs are supported"</h3>
+<p>Use an <code>https://</code> link. Plain http, local files and other schemes are refused.</p>
+<h3>"the URL points to a private or local address"</h3>
+<p>The file must be reachable on the public internet. Links to private networks are refused.</p>
+<h3>"unsupported file type"</h3>
+<p>Only PDF and DOCX resumes are supported. Export other formats to PDF first.</p>
+<h3>"the file exceeds the 10 MB download limit" or "download timed out"</h3>
+<p>Reduce the file size, or host it somewhere that serves it faster.</p>
+<h3>A scanned resume shows <code>no_text_layer</code></h3>
+<p>The file holds an image of text, which most applicant tracking systems cannot read. Export it from the original document instead.</p>
+<footer>Resume Check is published by Rafael Ricco as part of <a href="https://github.com/rafaeelricco/job-kit-ai">Job Kit</a>. Last updated 2026-11-27.</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+[project]
+name = "resume-check"
+version = "1.0.0"
+description = "Remote MCP server exposing Job Kit's deterministic resume checks"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp==2.3.0",
+    "uvicorn==0.54.0",
+]
+
+[tool.uv]
+package = false

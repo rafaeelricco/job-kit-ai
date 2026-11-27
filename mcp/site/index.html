@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Check</title>
+<meta name="description" content="A remote MCP server that scans resume files for parsing risks and scores resume reviews.">
+<link rel="icon" type="image/png" sizes="32x32" href="/job-kit-ai/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/job-kit-ai/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/job-kit-ai/brand/apple-touch-icon.png">
+<meta property="og:title" content="Resume Check">
+<meta property="og:description" content="A remote MCP server that scans resume files for parsing risks and scores resume reviews.">
+<meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/job-kit-ai/style.css">
+</head>
+<body>
+<main>
+<a class="brand" href="/job-kit-ai/"><img src="/job-kit-ai/brand/icon-192.png" alt="" width="40" height="40"><span>Resume Check</span></a>
+<nav><a href="/job-kit-ai/">Documentation</a><a href="/job-kit-ai/privacy/">Privacy</a><a href="/job-kit-ai/terms/">Terms</a><a href="/job-kit-ai/support/">Support</a></nav>
+<h1>Resume Check</h1>
+<p class="lead">A remote MCP server that lets an AI assistant check a resume file before you apply. It finds the parsing risks a page view hides and computes the review score with fixed arithmetic, so the number is the same in every assistant.</p>
+
+<h2>What it does</h2>
+<p>Your assistant sends the resume file to Resume Check and gets back a list of risks: no text layer (a scanned page), hidden text, contact details only in a page header or footer, broken or private-use characters, text boxes, tables, images, and a file over 2.5 MB. The assistant then rates the resume against the Job Kit rubric, and Resume Check turns those ratings into a 0 to 100 score. A blocking defect caps the score at 40.</p>
+<p>Resume Check does not call an AI model, does not read your accounts, and does not store your file. It accepts PDF and DOCX files up to 10 MB.</p>
+
+<h2>Add it to your assistant</h2>
+<p>Server URL: <code>https://r1cco.com/job-kit-ai/mcp</code>. No sign-in is needed.</p>
+<h3>Claude</h3>
+<p>Open <strong>Settings &rarr; Connectors &rarr; Add custom connector</strong>, name it Resume Check, paste the server URL and save. Turn it on in a conversation from the tools menu. Custom connectors need a Claude plan that supports them.</p>
+<h3>ChatGPT</h3>
+<p>Turn on developer mode in <strong>Settings &rarr; Apps &rarr; Advanced settings</strong>, choose <strong>Create app</strong>, name it Resume Check, paste the server URL and choose no authentication. Select it from the tools menu in a conversation, then attach your resume.</p>
+<h3>Other MCP clients</h3>
+<p>Any client that supports Streamable HTTP can connect to the same URL, for example MCP Inspector:</p>
+<pre>npx @modelcontextprotocol/inspector</pre>
+
+<h2>Tools</h2>
+<p>All four tools are read-only.</p>
+<h3><code>get_review_rubric</code></h3>
+<p>Returns the rubric: seven weighted criteria, the 0 to 4 rating scale, the rule that bullets in the two most recent roles weigh double, the blocking defects and their cap, and posting alignment weights.</p>
+<blockquote>What rubric does Resume Check use to rate a resume?</blockquote>
+<h3><code>score_resume_review</code></h3>
+<p>Takes the assistant's ratings and returns the weighted score, whether the blocking cap applied, how much of the rubric was assessed, and posting alignment when a posting was given.</p>
+<blockquote>Score my resume: positioning 3, skills 4, writing 3, parsing 4, and my two recent bullets rate 4 and 3.</blockquote>
+<h3><code>scan_resume_url</code></h3>
+<p>Downloads a PDF or DOCX from a public https link and returns the parsing risks. Only public addresses are fetched, with a 10 MB and 15 second limit.</p>
+<blockquote>Check this resume for parsing problems: https://r1cco.com/job-kit-ai/samples/clean.pdf</blockquote>
+<h3><code>scan_resume_file</code></h3>
+<p>Scans a resume you attached in ChatGPT and returns the same report.</p>
+<blockquote>I attached my resume. Is it safe for applicant tracking systems?</blockquote>
+
+<h2>Sample resumes</h2>
+<p>Synthetic files for trying the tools. They describe a fictional person.</p>
+<ul>
+<li><a href="/job-kit-ai/samples/clean.pdf">clean.pdf</a>: no findings</li>
+<li><a href="/job-kit-ai/samples/scanned.pdf">scanned.pdf</a>: no text layer (blocking)</li>
+<li><a href="/job-kit-ai/samples/header-contact.docx">header-contact.docx</a>: contact details only in the page header (blocking)</li>
+<li><a href="/job-kit-ai/samples/hidden-text.docx">hidden-text.docx</a>: hidden text (blocking)</li>
+</ul>
+
+<h2>Limits</h2>
+<p>The scan reads the text layer. It does not run OCR, so a scanned image resume is reported as having no text. The rubric is a designed framework, not an employer's ATS score or a prediction of interview success. Each client address may make 30 requests per minute.</p>
+<footer>Resume Check is published by Rafael Ricco as part of <a href="https://github.com/rafaeelricco/job-kit-ai">Job Kit</a>. Last updated 2026-11-27.</footer>
+</main>
+</body>
+</html>

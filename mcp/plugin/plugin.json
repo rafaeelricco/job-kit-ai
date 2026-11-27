@@ -1,0 +1,97 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "resume-check",
+  "version": "1.0.0",
+  "description": "Scans PDF and DOCX resumes for parsing risks a page view hides and computes Job Kit rubric scores with fixed arithmetic.",
+  "author": {
+    "name": "Rafael Ricco",
+    "url": "https://github.com/rafaeelricco"
+  },
+  "homepage": "https://r1cco.com/job-kit-ai/",
+  "repository": "https://github.com/rafaeelricco/job-kit-ai",
+  "license": "MIT",
+  "keywords": [
+    "resume",
+    "cv",
+    "ats",
+    "job search",
+    "career"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Resume Check",
+        "shortDescription": "Scan and score resume files",
+        "longDescription": "Resume Check finds the problems in a resume file that a page view hides, before you apply. Attach a PDF or DOCX, or share a public link, and it reports scanned pages with no text layer, hidden text, contact details that appear only in a page header or footer, broken or private-use characters, text boxes, tables, images and oversized files. Each finding has a severity, and blocking defects are called out first.\n\nIt also scores the review. The assistant rates the resume against the Job Kit rubric: seven weighted criteria on a 0 to 4 scale, with bullets in the two most recent roles weighing double. Resume Check turns those ratings into a 0 to 100 score, applies the cap of 40 when a blocking defect is present, and reports how much of the rubric was assessed. With a job posting it also computes requirement alignment.\n\nResume Check needs no account and stores nothing: the file is deleted as soon as the report is built. The rubric is a designed framework, not an employer's applicant tracking score or a prediction of interview success.",
+        "developerName": "Rafael Ricco",
+        "category": "Productivity",
+        "capabilities": [
+          "Read"
+        ],
+        "websiteURL": "https://r1cco.com/job-kit-ai/",
+        "supportURL": "https://r1cco.com/job-kit-ai/support/",
+        "privacyPolicyURL": "https://r1cco.com/job-kit-ai/privacy/",
+        "termsOfServiceURL": "https://r1cco.com/job-kit-ai/terms/",
+        "defaultPrompt": [
+          "Check my attached resume for parsing problems before I apply.",
+          "Review and score my resume against the Resume Check rubric.",
+          "Why would an applicant tracking system misread my resume?"
+        ],
+        "brandColor": "#2F5D8A",
+        "brandColorDark": "#8DB8E3",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Return the rubric",
+              "prompt": "What rubric does Resume Check use to rate a resume? List the criteria and weights.",
+              "tools_triggered": "get_review_rubric",
+              "expected_behavior": "Lists rubric version 2 with seven criteria whose weights sum to 100, the 0-4 scale and the blocking cap of 40."
+            },
+            {
+              "description": "Scan a clean PDF by link",
+              "prompt": "Check this resume for parsing problems: https://r1cco.com/job-kit-ai/samples/clean.pdf",
+              "tools_triggered": "scan_resume_url",
+              "expected_behavior": "Reports a one-page PDF with no issues."
+            },
+            {
+              "description": "Scan a scanned PDF and cap the score",
+              "prompt": "Scan https://r1cco.com/job-kit-ai/samples/scanned.pdf and give it a full review score.",
+              "tools_triggered": "get_review_rubric, scan_resume_url, score_resume_review",
+              "expected_behavior": "Reports the blocking no_text_layer issue, passes it as a blocking defect, and the returned score is 40 or lower with capped true when the weighted score is higher."
+            },
+            {
+              "description": "Header-only contact in a DOCX",
+              "prompt": "Is the contact information in https://r1cco.com/job-kit-ai/samples/header-contact.docx readable by an ATS?",
+              "tools_triggered": "scan_resume_url",
+              "expected_behavior": "Reports the blocking contact_in_header_footer issue and explains the contact details are only in the page header."
+            },
+            {
+              "description": "Score given ratings",
+              "prompt": "Score a resume review with positioning 3, skills 4, organization 3, visual 4, writing 3, parsing 4, and bullets: two recent bullets rated 4 and 3, one older bullet rated 2.",
+              "tools_triggered": "score_resume_review",
+              "expected_behavior": "Returns score 85 with coverage 100, provisional false and capped false."
+            }
+          ],
+          "negative": [
+            {
+              "description": "General writing help",
+              "prompt": "Write me a cover letter for a marketing job."
+            },
+            {
+              "description": "Non-resume web fetch",
+              "prompt": "Download https://example.com and summarize the page."
+            },
+            {
+              "description": "Job search",
+              "prompt": "Find remote Python developer jobs in Canada."
+            }
+          ]
+        }
+      }
+    }
+  }
+}

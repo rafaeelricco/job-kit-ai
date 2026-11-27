@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Check privacy</title>
+<meta name="description" content="What Resume Check collects, how it is used, and how long it is kept.">
+<link rel="icon" type="image/png" sizes="32x32" href="/job-kit-ai/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/job-kit-ai/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/job-kit-ai/brand/apple-touch-icon.png">
+<meta property="og:title" content="Resume Check privacy">
+<meta property="og:description" content="What Resume Check collects, how it is used, and how long it is kept.">
+<meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/job-kit-ai/style.css">
+</head>
+<body>
+<main>
+<a class="brand" href="/job-kit-ai/"><img src="/job-kit-ai/brand/icon-192.png" alt="" width="40" height="40"><span>Resume Check</span></a>
+<nav><a href="/job-kit-ai/">Documentation</a><a href="/job-kit-ai/privacy/">Privacy</a><a href="/job-kit-ai/terms/">Terms</a><a href="/job-kit-ai/support/">Support</a></nav>
+<h1>Privacy policy</h1>
+<p class="lead">Resume Check processes a resume only to answer the request that sent it, and keeps nothing afterwards.</p>
+<h2>What is collected</h2>
+<p>When an assistant calls a tool, Resume Check receives the tool arguments: rubric ratings, or the link to a resume file. For a scan it downloads that file. It does not ask for your name, account or sign-in.</p>
+<h2>How it is used</h2>
+<p>The file is used only to build the scan report returned to your assistant. Ratings are used only to compute the score. Nothing is used for training, profiling, advertising or analytics.</p>
+<h2>How it is stored</h2>
+<p>The file and its extracted text exist only in memory and in a temporary folder created for that one request. The folder is deleted before the response is sent, whether the scan succeeds or fails. The download link and file identifier are not stored.</p>
+<h2>Logs</h2>
+<p>For each tool call the server logs the time, the tool name, whether it succeeded, how long it took and the file size in bytes. Logs contain no resume text, file name, link or finding. The web server keeps no access log for Resume Check addresses. Your IP address is held in memory only to enforce the rate limit.</p>
+<h2>Third parties</h2>
+<p>Resume Check shares nothing with third parties. It contacts only the host in the link your assistant sends, to download the file. Your assistant's provider, for example Anthropic or OpenAI, handles the conversation under its own privacy policy.</p>
+<h2>Retention</h2>
+<p>Resume files and their contents: none; they are deleted within the request. Operational logs: kept in the server's system journal and rotated, typically within 30 days.</p>
+<h2>Contact</h2>
+<p>Questions or requests: open an issue at <a href="https://github.com/rafaeelricco/job-kit-ai/issues">github.com/rafaeelricco/job-kit-ai/issues</a>. Do not attach a real resume to an issue.</p>
+<footer>Resume Check is published by Rafael Ricco as part of <a href="https://github.com/rafaeelricco/job-kit-ai">Job Kit</a>. Last updated 2026-11-27.</footer>
+</main>
+</body>
+</html>

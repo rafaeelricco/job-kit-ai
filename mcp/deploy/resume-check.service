@@ -1,0 +1,43 @@
+[Unit]
+Description=Resume Check MCP server (Job Kit)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=resume-check
+Group=resume-check
+WorkingDirectory=/opt/resume-check/current/mcp
+Environment=PATH=/usr/bin:/bin
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+Environment=RESUME_CHECK_PORT=3020
+ExecStart=/opt/resume-check/current/.venv/bin/python -m resume_check
+Restart=always
+RestartSec=2
+TimeoutStopSec=20
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+UMask=0077
+MemoryMax=768M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target
