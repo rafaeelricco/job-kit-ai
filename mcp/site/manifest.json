@@ -1,0 +1,16 @@
+{
+  "name": "Resume Check",
+  "short_name": "Resume Check",
+  "description": "Resume file scans and Job Kit rubric scoring for any MCP client",
+  "start_url": "/job-kit-ai/",
+  "scope": "/job-kit-ai/",
+  "display": "browser",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    { "src": "/job-kit-ai/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/job-kit-ai/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/job-kit-ai/brand/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/job-kit-ai/brand/mascot-mark.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

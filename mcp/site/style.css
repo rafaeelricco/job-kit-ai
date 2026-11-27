@@ -175,3 +175,13 @@ details[open] summary::after { content: "\2212"; }
   h2 { margin-top: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* footer brand: the Job Kit wordmark, swapped per theme */
+.foot-brand { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.foot-brand a { display: inline-flex; }
+.foot-brand img { height: 20px; width: auto; }
+
+/* footer brand: the Job Kit wordmark, swapped per theme */
+.foot-brand { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.foot-brand a { display: inline-flex; }
+.foot-brand img { height: 20px; width: auto; }

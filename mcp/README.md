@@ -23,7 +23,8 @@ Requirements are in [`../SPEC.md`](../SPEC.md).
 | `resume_check/server.py` | Tool descriptors, schemas, handlers, HTTP app, logging                |
 | `resume_check/core.py`   | Rubric, score and scan over the skill scripts                         |
 | `resume_check/fetch.py`  | https download: address checks, pinned connection, redirects, limits  |
-| `site/`                  | Public pages; `site/brand/` images come from job-kit-platform         |
+| `site/`                  | Public pages and `manifest.json`; `site/brand/` holds the job-kit-platform brand set |
+| `brand/`                 | `og-image.html` and `render_og.py`, which renders `site/brand/og-image.png` |
 | `build_assets.py`        | Writes synthetic sample resumes into `site/samples/` at deploy        |
 | `plugin/`                | OpenAI plugin package: `plugin.json`, `mcp.json`, `assets/icon.png`   |
 | `deploy/`                | `deploy.sh`, `remote_install.sh`, systemd unit, nginx files           |
