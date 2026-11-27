@@ -20,3 +20,23 @@
     }).catch(function () { dot.className = "dot down"; label.textContent = "unreachable"; });
   }
 })();
+
+// Theme toggle: light, dark, or follow the system. The choice is a per-browser convenience.
+(function () {
+  var root = document.documentElement;
+  function current() { return root.getAttribute("data-theme") || "system"; }
+  function render() {
+    document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
+      button.setAttribute("aria-pressed", String(button.getAttribute("data-theme-choice") === current()));
+    });
+  }
+  document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var choice = button.getAttribute("data-theme-choice");
+      if (choice === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", choice);
+      try { if (choice === "system") localStorage.removeItem("rc-theme"); else localStorage.setItem("rc-theme", choice); } catch (e) {}
+      render();
+    });
+  });
+  render();
+})();
