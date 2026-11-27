@@ -13,12 +13,36 @@
 <meta property="og:description" content="Terms of service for the Resume Check MCP server.">
 <meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/job-kit-ai/style.css?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&family=Space+Mono&display=swap">
+<link rel="stylesheet" href="/job-kit-ai/style.css?v=3">
 </head>
 <body>
-<main>
-<a class="brand" href="/job-kit-ai/"><picture><source srcset="/job-kit-ai/brand/mascot-mark-dark.svg" media="(prefers-color-scheme: dark)"><img src="/job-kit-ai/brand/mascot-mark.svg" alt="" width="40" height="40"></picture><span>Resume Check</span></a>
-<nav><a href="/job-kit-ai/">Documentation</a><a href="/job-kit-ai/privacy/">Privacy</a><a href="/job-kit-ai/terms/">Terms</a><a href="/job-kit-ai/support/">Support</a></nav>
+<div class="shell">
+<aside class="rail">
+  <a class="rail-header" href="/job-kit-ai/">
+    <img class="theme-light" src="/job-kit-ai/brand/mascot-mark.svg" alt="">
+    <img class="theme-dark" src="/job-kit-ai/brand/mascot-mark-dark.svg" alt="">
+    <span class="wordmark">Resume Check</span>
+  </a>
+  <nav class="rail-body" aria-label="Documentation">
+    <div class="rail-label">Docs</div>
+    <a class="row" href="/job-kit-ai/">MCP server</a>
+    <a class="row rail-sub" href="/job-kit-ai/#setup">Setup</a>
+    <a class="row rail-sub" href="/job-kit-ai/#tools">Tools</a>
+    <a class="row rail-sub" href="/job-kit-ai/#faq">FAQ</a>
+    <div class="rail-label">Policies</div>
+    <a class="row" href="/job-kit-ai/privacy/">Privacy</a>
+    <a class="row is-active" href="/job-kit-ai/terms/">Terms</a>
+    <a class="row" href="/job-kit-ai/support/">Support</a>
+  </nav>
+  <div class="rail-foot"><span class="status"><span class="dot" id="status-dot"></span><span id="status-label">checking</span></span></div>
+</aside>
+
+<main class="pane">
+<article class="doc">
+<p class="overline">Resume Check</p>
 <h1>Terms of service</h1>
 <p class="lead">By connecting to Resume Check you agree to these terms.</p>
 <h2>The service</h2>
@@ -33,7 +57,14 @@
 <p>The <a href="/job-kit-ai/privacy/">privacy policy</a> describes how data is handled.</p>
 <h2>Contact</h2>
 <p><a href="https://github.com/rafaeelricco/job-kit-ai/issues">github.com/rafaeelricco/job-kit-ai/issues</a></p>
-<footer>Resume Check is published by Rafael Ricco as part of <a href="https://github.com/rafaeelricco/job-kit-ai">Job Kit</a>. Last updated 2026-11-27.</footer>
+
+<footer class="foot">
+  <span>Published by Rafael Ricco as part of <a href="https://github.com/rafaeelricco/job-kit-ai">Job Kit</a> · Last updated 2026-11-27</span>
+  <span><a href="/job-kit-ai/privacy/">Privacy</a> · <a href="/job-kit-ai/terms/">Terms</a> · <a href="/job-kit-ai/support/">Support</a></span>
+</footer>
+</article>
 </main>
+</div>
+<script src="/job-kit-ai/site.js?v=1"></script>
 </body>
 </html>
