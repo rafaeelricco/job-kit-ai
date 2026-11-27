@@ -62,7 +62,7 @@ first; requirements below refer to them by ID.
 | D-5 | Interactive UI          | None in release 1                                                                                          | A UI adds a content security policy, screenshots and extra review. It is the first follow-up.                                                   |
 | D-6 | Scan by public URL      | Included (`scan_resume_url`)                                                                               | Works on every MCP host and gives reviewers a testable path. Risk: a reviewer may read it as a general fetch tool. FR-6 limits it.              |
 | D-7 | Publisher identity      | Rafael Ricco, individual                                                                                   | OpenAI rejects a listing whose publisher name is not a verified identity.                                                                       |
-| D-8 | Per-address rate limit  | 30 requests per minute                                                                                     | A number chosen for a small VPS, not measured.                                                                                                  |
+| D-8 | Per-address rate limit  | 120 requests per minute, burst 20                                                                          | Raised from 30 on 2026-11-27: Claude and ChatGPT call from shared provider addresses, so the limit is per provider, not per user. Not measured. |
 
 ## Functional requirements
 
