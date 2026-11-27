@@ -27,7 +27,7 @@ Requirements are in [`../SPEC.md`](../SPEC.md).
 | `brand/`                 | `og-image.html` and `render_og.py`, which renders `site/brand/og-image.png` |
 | `build_assets.py`        | Writes synthetic sample resumes into `site/samples/` at deploy        |
 | `plugin/`                | OpenAI plugin package: `plugin.json`, `mcp.json`, `assets/icon.png`   |
-| `deploy/`                | `deploy.sh`, `remote_install.sh`, systemd unit, nginx files           |
+| `deploy/`                | `deploy.sh`, `remote_install.sh`, systemd unit, nginx files, and `bin/pdftotext`, which bounds extraction memory, time and output |
 | `tests/`                 | Server tests and synthetic fixtures                                   |
 
 ## Develop and test
