@@ -182,7 +182,7 @@ Applies to FR-4 and FR-5.
       so a streamed response arrives as it is produced.
 - [x] FR-8.7 **(R1)** `pdftotext` (Poppler) is installed and on the service's
       path. A PDF scan succeeds on the VPS.
-- [ ] FR-8.8 **(R1)** The deployment is repeatable from commands written in
+- [x] FR-8.8 **(R1)** The deployment is repeatable from commands written in
       this repository. A second run on the same host upgrades in place.
 - [x] FR-8.9 **(R1)** After deployment, `https://r1cco.com/`,
       `https://r1cco.com/jobs/` and the Job Kit API health check answer as
