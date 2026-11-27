@@ -121,6 +121,13 @@ Run `/job-profile root` to print the active profile directory. See the
 [profile resolver](skill/job-profile/references/flows/flow-resolve-root.md) and
 the shared [job record rules](skill/job-store/SKILL.md).
 
+### Resume Check MCP server
+
+The resume file scan and review score are also available to any MCP client as
+a remote server at `https://r1cco.com/job-kit-ai/mcp`, with no install or
+sign-in. See the [public documentation](https://r1cco.com/job-kit-ai/) and
+[`mcp/`](mcp/README.md).
+
 ## Uninstall
 
 Remove installed skills while keeping Job Kit profile data and the cache.

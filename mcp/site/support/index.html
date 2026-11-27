@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Check support</title>
+<meta name="description" content="How to get help with Resume Check.">
+<link rel="icon" type="image/svg+xml" href="/job-kit-ai/brand/mascot-mark.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/job-kit-ai/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/job-kit-ai/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/job-kit-ai/brand/apple-touch-icon.png">
+<link rel="manifest" href="/job-kit-ai/manifest.json">
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Resume Check support">
+<meta property="og:description" content="How to get help with Resume Check.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Job Kit">
+<meta property="og:url" content="https://r1cco.com/job-kit-ai/support/">
+<meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Resume Check by Job Kit: scan and score resume files from any AI assistant">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&family=Space+Mono&display=swap">
+<script>try{var t=localStorage.getItem("rc-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="/job-kit-ai/style.css?v=7">
+</head>
+<body>
+<div class="shell">
+<aside class="rail">
+  <a class="rail-header" href="/job-kit-ai/">
+    <img class="theme-light" src="/job-kit-ai/brand/mascot-mark.svg" alt="">
+    <img class="theme-dark" src="/job-kit-ai/brand/mascot-mark-dark.svg" alt="">
+    <span class="wordmark">Resume Check</span>
+  </a>
+  <nav class="rail-body" aria-label="Documentation">
+    <div class="rail-label">Docs</div>
+    <a class="row" href="/job-kit-ai/">MCP server</a>
+    <a class="row rail-sub" href="/job-kit-ai/#setup">Setup</a>
+    <a class="row rail-sub" href="/job-kit-ai/#tools">Tools</a>
+    <a class="row rail-sub" href="/job-kit-ai/#faq">FAQ</a>
+    <div class="rail-label">Policies</div>
+    <a class="row" href="/job-kit-ai/privacy/">Privacy</a>
+    <a class="row" href="/job-kit-ai/terms/">Terms</a>
+    <a class="row is-active" href="/job-kit-ai/support/">Support</a>
+  </nav>
+  <div class="rail-foot">
+    <span class="status"><span class="dot" id="status-dot"></span><span id="status-label">checking</span></span>
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light" aria-label="Light theme" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button type="button" data-theme-choice="system" aria-label="System theme" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/></svg></button>
+      <button type="button" data-theme-choice="dark" aria-label="Dark theme" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
+  </div>
+</aside>
+
+<main class="pane">
+<article class="doc">
+<p class="overline">Resume Check</p>
+<h1>Support</h1>
+<p class="lead">Report a problem, ask a question, or request a change.</p>
+<h2>Contact</h2>
+<p>Open an issue at <a href="https://github.com/rafaeelricco/job-kit-ai/issues/new">github.com/rafaeelricco/job-kit-ai/issues</a>. Include the tool name, the time of the call and the error message your assistant showed. Do not attach a real resume; describe the file, or share a synthetic example.</p>
+<h2>Service status</h2>
+<p>The health check at <a href="/job-kit-ai/healthz">r1cco.com/job-kit-ai/healthz</a> answers <code>ok</code> while the server can run tools.</p>
+<h2>Common errors</h2>
+<h3>"only https URLs are supported"</h3>
+<p>Use an <code>https://</code> link. Plain http, local files and other schemes are refused.</p>
+<h3>"the URL points to a private or local address"</h3>
+<p>The file must be reachable on the public internet. Links to private networks are refused.</p>
+<h3>"unsupported file type"</h3>
+<p>Only PDF and DOCX resumes are supported. Export other formats to PDF first.</p>
+<h3>"the file exceeds the 10 MB download limit" or "download timed out"</h3>
+<p>Reduce the file size, or host it somewhere that serves it faster.</p>
+<h3>A scanned resume shows <code>no_text_layer</code></h3>
+<p>The file holds an image of text, which most applicant tracking systems cannot read. Export it from the original document instead.</p>
+
+<footer class="foot">
+  <span class="foot-brand"><a href="https://github.com/rafaeelricco/job-kit-ai" aria-label="Job Kit on GitHub"><img class="theme-light" src="/job-kit-ai/brand/wordmark.svg" alt=""><img class="theme-dark" src="/job-kit-ai/brand/wordmark-dark.svg" alt=""></a><span>Resume Check is published by Rafael Ricco · Last updated 2026-11-27</span></span>
+  <span><a href="/job-kit-ai/privacy/">Privacy</a> · <a href="/job-kit-ai/terms/">Terms</a> · <a href="/job-kit-ai/support/">Support</a></span>
+</footer>
+</article>
+</main>
+</div>
+<script src="/job-kit-ai/site.js?v=2"></script>
+</body>
+</html>

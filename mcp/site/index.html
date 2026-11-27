@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Check MCP server</title>
+<meta name="description" content="Connect Claude, ChatGPT, Cursor, VS Code and other MCP clients to Resume Check: resume file scans for parsing risks and Job Kit rubric scoring.">
+<link rel="icon" type="image/svg+xml" href="/job-kit-ai/brand/mascot-mark.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/job-kit-ai/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/job-kit-ai/brand/favicon-16.png">
+<link rel="apple-touch-icon" href="/job-kit-ai/brand/apple-touch-icon.png">
+<link rel="manifest" href="/job-kit-ai/manifest.json">
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Resume Check MCP server">
+<meta property="og:description" content="Resume file scans for parsing risks and Job Kit rubric scoring, for any MCP client.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Job Kit">
+<meta property="og:url" content="https://r1cco.com/job-kit-ai/">
+<meta property="og:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Resume Check by Job Kit: scan and score resume files from any AI assistant">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://r1cco.com/job-kit-ai/brand/og-image.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&family=Space+Mono&display=swap">
+<script>try{var t=localStorage.getItem("rc-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="/job-kit-ai/style.css?v=7">
+</head>
+<body>
+<div class="shell">
+<aside class="rail">
+  <a class="rail-header" href="/job-kit-ai/">
+    <img class="theme-light" src="/job-kit-ai/brand/mascot-mark.svg" alt="">
+    <img class="theme-dark" src="/job-kit-ai/brand/mascot-mark-dark.svg" alt="">
+    <span class="wordmark">Resume Check</span>
+  </a>
+  <nav class="rail-body" aria-label="Documentation">
+    <div class="rail-label">Docs</div>
+    <a class="row is-active" href="/job-kit-ai/">MCP server</a>
+    <a class="row rail-sub" href="#setup">Setup</a>
+    <a class="row rail-sub" href="#tools">Tools</a>
+    <a class="row rail-sub" href="#use-cases">Use cases</a>
+    <a class="row rail-sub" href="#faq">FAQ</a>
+    <div class="rail-label">Policies</div>
+    <a class="row" href="/job-kit-ai/privacy/">Privacy</a>
+    <a class="row" href="/job-kit-ai/terms/">Terms</a>
+    <a class="row" href="/job-kit-ai/support/">Support</a>
+  </nav>
+  <div class="rail-foot">
+    <span class="status"><span class="dot" id="status-dot"></span><span id="status-label">checking</span></span>
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button type="button" data-theme-choice="light" aria-label="Light theme" title="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button type="button" data-theme-choice="system" aria-label="System theme" title="System"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/></svg></button>
+      <button type="button" data-theme-choice="dark" aria-label="Dark theme" title="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
+  </div>
+</aside>
+
+<main class="pane">
+<article class="doc">
+<p class="overline">Job Kit AI</p>
+<h1>Resume Check MCP server</h1>
+<p class="lead">Resume Check lets an AI assistant check a resume file before you apply. It finds the parsing risks a page view hides, and it turns the assistant's rubric ratings into a score with fixed arithmetic, so every assistant gets the same number.</p>
+
+<div class="endpoint">
+  <span class="label">Server</span>
+  <span class="url" id="endpoint-url">https://r1cco.com/job-kit-ai/mcp</span>
+  <button class="copy" type="button" data-copy="endpoint-url"></button>
+</div>
+<div class="facts">
+  <span class="badge">Streamable HTTP</span>
+  <span class="badge">No sign-in</span>
+  <span class="badge">Read-only tools</span>
+  <span class="badge ok">Files not stored</span>
+</div>
+
+<h2 id="setup">Setup</h2>
+
+<h3 id="general">General</h3>
+<p>Resume Check is a remote MCP server at the address above. It speaks Streamable HTTP and needs no authentication. All four tools are read-only and none of them acts on an account.</p>
+<ul>
+  <li>Scans accept PDF and DOCX files up to 10 MB, served from a public <code>https</code> link or attached in ChatGPT.</li>
+  <li>The server does not call an AI model. Your assistant reads the resume and rates it; Resume Check scans the file and computes the score.</li>
+  <li>Each client address may make 120 requests a minute and 8 at a time.</li>
+</ul>
+<div class="note"><p>Clients that only support local servers can still connect through the <code>mcp-remote</code> bridge. See <a href="#others">Others</a>.</p></div>
+
+<h3 id="claude">Claude</h3>
+<ol>
+  <li>Open <strong>Settings</strong> → <strong>Connectors</strong> and choose <strong>Add custom connector</strong>.</li>
+  <li>Name it <strong>Resume Check</strong>, paste the server URL, and save.</li>
+  <li>In a conversation, turn Resume Check on from the tools menu.</li>
+</ol>
+<p>Custom connectors need a Claude plan that supports them. On Team and Enterprise plans, an owner adds the connector for the organization first.</p>
+
+<h3 id="claude-code">Claude Code</h3>
+<div class="block">
+  <div class="block-head"><span>terminal</span><button class="copy" type="button" data-copy="snippet-claude-code"></button></div>
+  <pre><code id="snippet-claude-code">claude mcp add --transport http resume-check https://r1cco.com/job-kit-ai/mcp</code></pre>
+</div>
+
+<h3 id="chatgpt">ChatGPT</h3>
+<ol>
+  <li>In <strong>Settings</strong> → <strong>Apps</strong> → <strong>Advanced settings</strong>, turn on <strong>Developer mode</strong>.</li>
+  <li>Choose <strong>Create app</strong>, name it <strong>Resume Check</strong>, paste the server URL, and set authentication to <strong>No authentication</strong>.</li>
+  <li>In a conversation, select Resume Check from the tools menu and attach your resume.</li>
+</ol>
+<p>An attached file reaches <code>scan_resume_file</code>; a link reaches <code>scan_resume_url</code>. Both return the same report.</p>
+
+<h3 id="codex">Codex</h3>
+<p>Add the server to <span class="id">~/.codex/config.toml</span>:</p>
+<div class="block">
+  <div class="block-head"><span>config.toml</span><button class="copy" type="button" data-copy="snippet-codex"></button></div>
+  <pre><code id="snippet-codex">[mcp_servers.resume-check]
+url = "https://r1cco.com/job-kit-ai/mcp"</code></pre>
+</div>
+
+<h3 id="cursor">Cursor</h3>
+<p>Add the server to <span class="id">~/.cursor/mcp.json</span>, or to <span class="id">.cursor/mcp.json</span> in a project:</p>
+<div class="block">
+  <div class="block-head"><span>mcp.json</span><button class="copy" type="button" data-copy="snippet-cursor"></button></div>
+  <pre><code id="snippet-cursor">{
+  "mcpServers": {
+    "resume-check": { "url": "https://r1cco.com/job-kit-ai/mcp" }
+  }
+}</code></pre>
+</div>
+
+<h3 id="vscode">Visual Studio Code</h3>
+<p>Add the server to <span class="id">.vscode/mcp.json</span>, or run <strong>MCP: Add Server</strong> from the command palette:</p>
+<div class="block">
+  <div class="block-head"><span>mcp.json</span><button class="copy" type="button" data-copy="snippet-vscode"></button></div>
+  <pre><code id="snippet-vscode">{
+  "servers": {
+    "resume-check": { "type": "http", "url": "https://r1cco.com/job-kit-ai/mcp" }
+  }
+}</code></pre>
+</div>
+
+<h3 id="agents-sdk">OpenAI Agents SDK</h3>
+<p>Connect from your own agent. The <a href="https://github.com/rafaeelricco/job-kit-ai/tree/main/review-agent">review agent</a> in the Job Kit repository is a complete example with guardrails.</p>
+<div class="block">
+  <div class="block-head"><span>agent.py</span><button class="copy" type="button" data-copy="snippet-agents"></button></div>
+  <pre><code id="snippet-agents">from agents import Agent, Runner
+from agents.mcp import MCPServerStreamableHttp
+
+async with MCPServerStreamableHttp(params={"url": "https://r1cco.com/job-kit-ai/mcp"}) as server:
+    agent = Agent(name="Reviewer", mcp_servers=[server],
+                  instructions="Review the resume with the Resume Check tools.")
+    result = await Runner.run(agent, "Scan https://r1cco.com/job-kit-ai/samples/clean.pdf")</code></pre>
+</div>
+
+<h3 id="others">Others</h3>
+<p>Any client that supports remote MCP servers over Streamable HTTP can use the server URL directly. For a client that only runs local servers, start the bridge as a stdio command:</p>
+<div class="block">
+  <div class="block-head"><span>terminal</span><button class="copy" type="button" data-copy="snippet-remote"></button></div>
+  <pre><code id="snippet-remote">npx -y mcp-remote https://r1cco.com/job-kit-ai/mcp</code></pre>
+</div>
+<p>To inspect the tools yourself, run <code>npx @modelcontextprotocol/inspector</code> and connect to the server URL with the Streamable HTTP transport.</p>
+
+<h2 id="tools">Tools</h2>
+<p>Every tool returns structured content that matches its output schema, plus the same data as JSON text.</p>
+<div class="table-wrap">
+<table class="table">
+  <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><span class="id">get_review_rubric</span></td><td>Returns the Job Kit rubric: seven weighted criteria, the 0 to 4 rating scale, the rule that bullets in the two most recent roles weigh double, the blocking defects and their cap of 40, and posting alignment weights.</td></tr>
+    <tr><td><span class="id">score_resume_review</span></td><td>Turns ratings into a 0 to 100 score. Returns the weighted score, whether the blocking cap applied, how much of the rubric was assessed, and posting alignment when requirements are given.</td></tr>
+    <tr><td><span class="id">scan_resume_url</span></td><td>Downloads a PDF or DOCX from a public <code>https</code> link and reports parsing risks: no text layer, hidden text, contact details only in a header or footer, broken or private-use characters, text boxes, tables, images and file size.</td></tr>
+    <tr><td><span class="id">scan_resume_file</span></td><td>The same scan for a resume attached in a ChatGPT conversation.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Sample resumes for trying the tools describe a fictional person:
+<a href="/job-kit-ai/samples/clean.pdf"><span class="id">clean.pdf</span></a>,
+<a href="/job-kit-ai/samples/scanned.pdf"><span class="id">scanned.pdf</span></a>,
+<a href="/job-kit-ai/samples/header-contact.docx"><span class="id">header-contact.docx</span></a> and
+<a href="/job-kit-ai/samples/hidden-text.docx"><span class="id">hidden-text.docx</span></a>.</p>
+
+<h2 id="use-cases">Common use cases</h2>
+<div class="stack">
+<details>
+  <summary>Check a resume before applying</summary>
+  <div class="answer">
+    <p>Find what an applicant tracking system may misread, before a recruiter sees it.</p>
+    <div class="prompt"><span class="prompt-label">Example prompt</span>Check my resume for parsing problems before I apply: https://r1cco.com/job-kit-ai/samples/header-contact.docx</div>
+  </div>
+</details>
+<details>
+  <summary>Get a full scored review</summary>
+  <div class="answer">
+    <p>The assistant reads the rubric, scans the file, rates each criterion and bullet, and asks Resume Check for the score.</p>
+    <div class="prompt"><span class="prompt-label">Example prompt</span>Review my attached resume against the Resume Check rubric and give me the score and the three changes that matter most.</div>
+  </div>
+</details>
+<details>
+  <summary>Score ratings you already have</summary>
+  <div class="answer">
+    <p>Skip the scan and compute the score from your own ratings.</p>
+    <div class="prompt"><span class="prompt-label">Example prompt</span>Score a resume review with positioning 3, skills 4, organization 3, visual 4, writing 3, parsing 4, and bullets: two recent bullets rated 4 and 3, one older bullet rated 2.</div>
+  </div>
+</details>
+<details>
+  <summary>Fix a scanned PDF</summary>
+  <div class="answer">
+    <p>A PDF exported as an image has no text for a parser to read. The scan reports it as a blocking defect, and the score is capped at 40.</p>
+    <div class="prompt"><span class="prompt-label">Example prompt</span>Why does https://r1cco.com/job-kit-ai/samples/scanned.pdf score so low, and how do I fix it?</div>
+  </div>
+</details>
+<details>
+  <summary>Match a resume to a job posting</summary>
+  <div class="answer">
+    <p>Give the posting as well, and the score comes with a separate alignment percentage. Must-have requirements weigh twice as much as preferences.</p>
+    <div class="prompt"><span class="prompt-label">Example prompt</span>Here is a job posting and my attached resume. Review the resume, list the posting's requirements with the evidence for each, and give me the score and alignment.</div>
+  </div>
+</details>
+</div>
+
+<h2 id="faq">FAQ</h2>
+<div class="stack">
+<details>
+  <summary>Does Resume Check store my resume?</summary>
+  <div class="answer"><p>No. The file exists only in memory and in a temporary folder for that one request, and the folder is deleted before the response is sent. Logs hold the time, tool, outcome, duration and file size, never the content, file name or link. See the <a href="/job-kit-ai/privacy/">privacy policy</a>.</p></div>
+</details>
+<details>
+  <summary>Why is my score capped at 40?</summary>
+  <div class="answer"><p>The resume has a blocking defect: no extractable text, text that is hidden on the page, role headers or dates that extract out of order, or contact details only in a page header or footer. Fix the defects the scan lists first, then review again.</p></div>
+</details>
+<details>
+  <summary>I see "only https URLs are supported" or "private or local address"</summary>
+  <div class="answer"><p>The scan fetches only public <code>https</code> links on the default port. Links to a private network, a local machine or plain <code>http</code> are refused before any connection. Attach the file instead, or host it at a public https address.</p></div>
+</details>
+<details>
+  <summary>My Google Drive or Dropbox link returns "unsupported file type"</summary>
+  <div class="answer"><p>A share link usually opens a preview page, not the file. Use the provider's direct download link, or attach the file in ChatGPT. Only PDF and DOCX are supported; export other formats to PDF first.</p></div>
+</details>
+<details>
+  <summary>I see "download timed out" or "exceeds the 10 MB download limit"</summary>
+  <div class="answer"><p>Each download has 15 seconds and 10 MB. Reduce the file size or host it somewhere faster. Files over 2.5 MB are still scanned, with a <code>file_too_large</code> note.</p></div>
+</details>
+<details>
+  <summary>I see "the server is busy" or a 429 error</summary>
+  <div class="answer"><p>The server limits concurrent scans and requests per address so one client cannot crowd out others. Wait a few seconds and try again.</p></div>
+</details>
+<details>
+  <summary>Is the score an employer's ATS score?</summary>
+  <div class="answer"><p>No. The rubric is a designed framework for resume quality. It is not any employer's applicant tracking score and does not predict interview outcomes.</p></div>
+</details>
+</div>
+
+<footer class="foot">
+  <span class="foot-brand"><a href="https://github.com/rafaeelricco/job-kit-ai" aria-label="Job Kit on GitHub"><img class="theme-light" src="/job-kit-ai/brand/wordmark.svg" alt=""><img class="theme-dark" src="/job-kit-ai/brand/wordmark-dark.svg" alt=""></a><span>Resume Check is published by Rafael Ricco · Last updated 2026-11-27</span></span>
+  <span><a href="/job-kit-ai/privacy/">Privacy</a> · <a href="/job-kit-ai/terms/">Terms</a> · <a href="/job-kit-ai/support/">Support</a></span>
+</footer>
+</article>
+</main>
+</div>
+<script src="/job-kit-ai/site.js?v=2"></script>
+</body>
+</html>

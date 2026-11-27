@@ -1,0 +1,11 @@
+[project]
+name = "resume-check-review-agent"
+version = "0.1.0"
+description = "A resume review agent on the OpenAI Agents SDK that uses the Resume Check MCP server"
+requires-python = ">=3.11"
+dependencies = [
+    "openai-agents==0.26.0",
+]
+
+[tool.uv]
+package = false

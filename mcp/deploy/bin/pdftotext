@@ -1,0 +1,6 @@
+#!/bin/sh
+# pdftotext with a per-process memory cap. resume-check.service puts this directory first on PATH, so
+# scan_cv.py's pdftotext call runs here: a crafted PDF that needs more memory fails as an unreadable PDF
+# instead of pushing the whole unit past MemoryMax.
+ulimit -v 524288
+exec /usr/bin/pdftotext "$@"
