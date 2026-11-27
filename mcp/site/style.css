@@ -16,4 +16,4 @@ pre { background: var(--code); padding: 12px; border-radius: 6px; overflow-x: au
 blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); }
 footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 600; margin-bottom: 16px; }
-.brand img { border-radius: 50%; background: #fff; }
+.brand picture, .brand img { display: block; width: 40px; height: 40px; }
