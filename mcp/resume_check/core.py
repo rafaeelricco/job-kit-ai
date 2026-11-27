@@ -20,9 +20,16 @@ import scan_cv  # noqa: E402
 
 from .fetch import MAX_DOWNLOAD_BYTES, FetchError, fetch  # noqa: E402
 
+# Downloads wait on the network and can be held for the whole 15 s deadline by a slow server, so they get
+# their own, larger pool: slow URLs cannot take the slots that parsing needs. Parsing is CPU and memory bound
+# (pdftotext) and short, so a call waits briefly for one of its few slots instead of failing at once.
+MAX_CONCURRENT_DOWNLOADS = 16
 MAX_CONCURRENT_SCANS = 4
+SCAN_SLOT_WAIT_SECONDS = 10.0
 TEMP_PREFIX = "resume-check-"
+_download_slots = threading.BoundedSemaphore(MAX_CONCURRENT_DOWNLOADS)
 _scan_slots = threading.BoundedSemaphore(MAX_CONCURRENT_SCANS)
+BUSY = "the server is busy scanning other resumes; retry in a few seconds"
 
 
 class ToolError(Exception):
@@ -164,17 +171,22 @@ def scan_url(url: Any, fetcher: Optional[Callable[[str], bytes]] = None) -> Dict
     """Download and scan. Blocking; run it in a worker thread."""
     if not isinstance(url, str) or not url.strip():
         raise ToolError("url must be a non-empty https URL string")
-    if not _scan_slots.acquire(blocking=False):
-        raise ToolError("the server is busy scanning other resumes; retry in a few seconds")
+    if not _download_slots.acquire(blocking=False):
+        raise ToolError(BUSY)
     try:
         try:
             data = (fetcher or fetch)(url)
         except FetchError as error:
             raise ToolError(str(error)) from None
-        if len(data) > MAX_DOWNLOAD_BYTES:
-            raise ToolError(f"the file exceeds the {MAX_DOWNLOAD_BYTES // 1_000_000} MB download limit")
-        if not data:
-            raise ToolError("the downloaded file is empty")
+    finally:
+        _download_slots.release()
+    if len(data) > MAX_DOWNLOAD_BYTES:
+        raise ToolError(f"the file exceeds the {MAX_DOWNLOAD_BYTES // 1_000_000} MB download limit")
+    if not data:
+        raise ToolError("the downloaded file is empty")
+    if not _scan_slots.acquire(timeout=SCAN_SLOT_WAIT_SECONDS):
+        raise ToolError(BUSY)
+    try:
         return scan_bytes(data)
     finally:
         _scan_slots.release()

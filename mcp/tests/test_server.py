@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 import zipfile
 from pathlib import Path
@@ -311,11 +312,43 @@ class ScanTest(unittest.TestCase):
         self.assertTrue(scan(fixtures.corrupt_pdf()).is_error)
         self.assertFalse(scan(fixtures.text_pdf()).is_error)
 
-    def test_busy_when_all_slots_taken(self) -> None:
+    def test_busy_when_all_download_slots_taken(self) -> None:
+        for _ in range(core.MAX_CONCURRENT_DOWNLOADS):
+            core._download_slots.acquire()
+        try:
+            result = scan(fixtures.text_pdf())
+        finally:
+            for _ in range(core.MAX_CONCURRENT_DOWNLOADS):
+                core._download_slots.release()
+        self.assertTrue(result.is_error)
+        self.assertIn("busy", text_of(result))
+
+    def test_slow_downloads_do_not_take_scan_slots(self) -> None:
+        """Held download slots, up to one less than the pool, leave every scan slot free."""
+        for _ in range(core.MAX_CONCURRENT_DOWNLOADS - 1):
+            core._download_slots.acquire()
+        try:
+            self.assertFalse(scan(fixtures.text_pdf()).is_error)
+        finally:
+            for _ in range(core.MAX_CONCURRENT_DOWNLOADS - 1):
+                core._download_slots.release()
+
+    def test_scan_waits_briefly_for_a_slot(self) -> None:
+        for _ in range(core.MAX_CONCURRENT_SCANS):
+            core._scan_slots.acquire()
+        threading.Timer(0.3, core._scan_slots.release).start()
+        try:
+            self.assertFalse(scan(fixtures.text_pdf()).is_error)
+        finally:
+            for _ in range(core.MAX_CONCURRENT_SCANS - 1):
+                core._scan_slots.release()
+
+    def test_busy_when_scan_slots_stay_taken(self) -> None:
         for _ in range(core.MAX_CONCURRENT_SCANS):
             core._scan_slots.acquire()
         try:
-            result = scan(fixtures.text_pdf())
+            with mock.patch.object(core, "SCAN_SLOT_WAIT_SECONDS", 0.2):
+                result = scan(fixtures.text_pdf())
         finally:
             for _ in range(core.MAX_CONCURRENT_SCANS):
                 core._scan_slots.release()
