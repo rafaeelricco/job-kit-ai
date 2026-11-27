@@ -43,6 +43,37 @@ from resume_check import server
 r = asyncio.run(server.call_tool('score_resume_review', {'criteria': {'parsing': 4}}))
 sys.exit(0 if r.structured_content and r.structured_content['score'] == 100 else 1)")
 
+say "configuring nginx"
+LIMITS=/etc/nginx/conf.d/resume-check.conf
+SNIPPET=/etc/nginx/snippets/job-kit-ai.conf
+BACKUP=$(mktemp -d)
+cp "$SITE" "$BACKUP/site"
+for f in "$LIMITS" "$SNIPPET"; do [ ! -e "$f" ] || cp "$f" "$BACKUP/$(basename "$f")"; done
+restore_nginx() {
+  cp "$BACKUP/site" "$SITE"
+  for f in "$LIMITS" "$SNIPPET"; do
+    if [ -e "$BACKUP/$(basename "$f")" ]; then cp "$BACKUP/$(basename "$f")" "$f"; else rm -f "$f"; fi
+  done
+}
+install -m 644 "$DEST/mcp/deploy/nginx-limits.conf" "$LIMITS"
+install -m 644 "$DEST/mcp/deploy/nginx-job-kit-ai.conf" "$SNIPPET"
+if ! grep -qF 'snippets/job-kit-ai.conf' "$SITE"; then
+  grep -qF "$ANCHOR" "$SITE" || { restore_nginx; say "anchor line not found in $SITE"; exit 1; }
+  awk -v anchor="$ANCHOR" -v line="$INCLUDE_LINE" '
+    { print }
+    index($0, anchor) && !done { print ""; print line; done = 1 }
+  ' "$BACKUP/site" > "$SITE"
+fi
+if ! nginx -t 2>/tmp/resume-check-nginx-test; then
+  cat /tmp/resume-check-nginx-test >&2
+  say "nginx -t failed; restoring the previous nginx files"
+  restore_nginx
+  nginx -t
+  exit 1
+fi
+rm -rf "$BACKUP"
+systemctl reload nginx
+
 say "switching current -> $RELEASE"
 ln -sfn "releases/$RELEASE" "$BASE/current.new"
 mv -T "$BASE/current.new" "$BASE/current"
@@ -52,28 +83,6 @@ systemctl daemon-reload
 systemctl enable -q resume-check.service
 systemctl restart resume-check.service
 
-say "configuring nginx"
-BACKUP=$(mktemp)
-cp "$SITE" "$BACKUP"
-install -m 644 "$DEST/mcp/deploy/nginx-limits.conf" /etc/nginx/conf.d/resume-check.conf
-install -m 644 "$DEST/mcp/deploy/nginx-job-kit-ai.conf" /etc/nginx/snippets/job-kit-ai.conf
-if ! grep -qF 'snippets/job-kit-ai.conf' "$SITE"; then
-  grep -qF "$ANCHOR" "$SITE" || { say "anchor line not found in $SITE"; exit 1; }
-  awk -v anchor="$ANCHOR" -v line="$INCLUDE_LINE" '
-    { print }
-    index($0, anchor) && !done { print ""; print line; done = 1 }
-  ' "$BACKUP" > "$SITE"
-fi
-if ! nginx -t 2>/tmp/resume-check-nginx-test; then
-  cat /tmp/resume-check-nginx-test >&2
-  say "nginx -t failed; restoring $SITE and removing Resume Check nginx files"
-  cp "$BACKUP" "$SITE"
-  rm -f /etc/nginx/conf.d/resume-check.conf /etc/nginx/snippets/job-kit-ai.conf
-  nginx -t
-  exit 1
-fi
-rm -f "$BACKUP"
-systemctl reload nginx
 
 say "waiting for health check"
 i=0

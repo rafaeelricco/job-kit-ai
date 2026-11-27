@@ -8,7 +8,7 @@ Type=simple
 User=resume-check
 Group=resume-check
 WorkingDirectory=/opt/resume-check/current/mcp
-Environment=PATH=/usr/bin:/bin
+Environment=PATH=/opt/resume-check/current/mcp/deploy/bin:/usr/bin:/bin
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 Environment=RESUME_CHECK_PORT=3020
@@ -36,7 +36,9 @@ AmbientCapabilities=
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 SystemCallArchitectures=native
 UMask=0077
-MemoryMax=768M
+MemoryMax=1G
+# If the kernel still kills a process, keep the unit and its other scans running.
+OOMPolicy=continue
 TasksMax=128
 
 [Install]
