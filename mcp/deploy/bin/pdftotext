@@ -1,6 +1,89 @@
-#!/bin/sh
-# pdftotext with a per-process memory cap. resume-check.service puts this directory first on PATH, so
-# scan_cv.py's pdftotext call runs here: a crafted PDF that needs more memory fails as an unreadable PDF
-# instead of pushing the whole unit past MemoryMax.
-ulimit -v 524288
-exec /usr/bin/pdftotext "$@"
+#!/usr/bin/env python3
+"""pdftotext with bounded memory, time and output, for Resume Check scans.
+
+resume-check.service puts this directory first on PATH, so scan_cv.py's own pdftotext call runs here
+unchanged. scan_cv captures the whole stdout in memory, so a small PDF that expands into a huge text
+layer could otherwise fill the service's memory or hold a scan slot for scan_cv's 60 s timeout. Here
+the real pdftotext runs with a 512 MB address-space limit, a 20 s deadline, and at most 2 MB of output;
+past any limit it is killed and this exits non-zero, which scan_cv reports as an unreadable PDF.
+
+RESUME_CHECK_PDFTOTEXT names the real binary (default /usr/bin/pdftotext); a path ending in .py runs
+with this interpreter, which the tests use.
+"""
+import os
+import subprocess
+import sys
+import threading
+
+REAL = os.environ.get("RESUME_CHECK_PDFTOTEXT", "/usr/bin/pdftotext")
+MAX_OUTPUT_BYTES = int(os.environ.get("RESUME_CHECK_PDFTOTEXT_MAX_BYTES", 2_000_000))
+TIMEOUT_SECONDS = float(os.environ.get("RESUME_CHECK_PDFTOTEXT_TIMEOUT", 20))
+ADDRESS_SPACE_BYTES = 512 * 1024 * 1024
+CHUNK = 65_536
+MAX_STDERR_BYTES = 65_536
+
+
+def limit_memory() -> None:
+    import resource
+    resource.setrlimit(resource.RLIMIT_AS, (ADDRESS_SPACE_BYTES, ADDRESS_SPACE_BYTES))
+
+
+def fail(message: str, code: int = 1) -> int:
+    sys.stderr.write(message + "\n")
+    return code
+
+
+def main(args: list) -> int:
+    command = [sys.executable, REAL] if REAL.endswith(".py") else [REAL]
+    try:
+        child = subprocess.Popen(command + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                 preexec_fn=limit_memory if os.name == "posix" else None)
+    except OSError as error:
+        return fail(f"cannot run {REAL}: {error}", 127)
+    timed_out = threading.Event()
+
+    def expire() -> None:
+        timed_out.set()
+        child.kill()
+
+    timer = threading.Timer(TIMEOUT_SECONDS, expire)
+    timer.daemon = True
+    timer.start()
+    errors = bytearray()
+
+    def drain_stderr() -> None:
+        # Read to EOF so a chatty extractor never blocks on a full pipe; keep only a bounded prefix.
+        for block in iter(lambda: child.stderr.read(CHUNK), b""):
+            if len(errors) < MAX_STDERR_BYTES:
+                errors.extend(block[:MAX_STDERR_BYTES - len(errors)])
+
+    reader = threading.Thread(target=drain_stderr, daemon=True)
+    reader.start()
+    out = sys.stdout.buffer
+    total = 0
+    try:
+        while True:
+            chunk = child.stdout.read1(CHUNK) if hasattr(child.stdout, "read1") else child.stdout.read(CHUNK)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_OUTPUT_BYTES:
+                child.kill()
+                child.wait()
+                return fail(f"extracted text exceeds the {MAX_OUTPUT_BYTES} byte limit")
+            out.write(chunk)
+        code = child.wait()
+    finally:
+        timer.cancel()
+    out.flush()
+    if timed_out.is_set():
+        return fail(f"text extraction exceeded {TIMEOUT_SECONDS:g} seconds")
+    if code != 0:
+        reader.join(1)
+        sys.stderr.buffer.write(bytes(errors))
+        return code if code > 0 else 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
